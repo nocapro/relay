@@ -1,10 +1,11 @@
 import { StateCreator } from 'zustand';
-import { Transaction } from '@/types/app.types';
+import { Transaction, GroupByStrategy, Prompt } from '@/types/app.types';
 import { api } from '@/services/api.service';
 import { RootState } from '../root.store';
 
 export interface TransactionSlice {
   transactions: Transaction[];
+  prompts: Prompt[]; // Store prompts for lookup
   isLoading: boolean;
   expandedId: string | null;
   isWatching: boolean;
@@ -13,13 +14,19 @@ export interface TransactionSlice {
   fetchTransactions: () => Promise<void>;
   addTransaction: (tx: Transaction) => void;
   approveTransaction: (id: string) => void;
+  
+  // Grouping State
+  groupBy: GroupByStrategy;
+  setGroupBy: (strategy: GroupByStrategy) => void;
 }
 
 export const createTransactionSlice: StateCreator<RootState, [], [], TransactionSlice> = (set, get) => ({
   transactions: [],
+  prompts: [],
   isLoading: false,
   expandedId: null,
   isWatching: false, // Default to false to show the "Start" state
+  groupBy: 'prompt', // Default grouping
 
   setExpandedId: (id) => set({ expandedId: id }),
   
@@ -33,6 +40,8 @@ export const createTransactionSlice: StateCreator<RootState, [], [], Transaction
       api.socket.stopEmitting();
     }
   },
+
+  setGroupBy: (strategy) => set({ groupBy: strategy }),
 
   addTransaction: (tx) => set((state) => ({ 
     transactions: [tx, ...state.transactions] 
@@ -50,7 +59,8 @@ export const createTransactionSlice: StateCreator<RootState, [], [], Transaction
     set({ isLoading: true });
     try {
       const data = await api.transactions.list();
-      set({ transactions: data });
+      const prompts = await api.transactions.prompts.list();
+      set({ transactions: data, prompts });
     } catch (error) {
       console.error('Failed to fetch transactions', error);
     }

@@ -20,7 +20,12 @@ import { StatusBadge } from "@/components/ui/status-badge.ui";
 import { DiffViewer } from "@/components/ui/diff-viewer.ui";
 import { useStore } from "@/store/root.store";
 
-export const TransactionCard = ({ tx }: { tx: Transaction }) => {
+interface TransactionCardProps {
+  tx: Transaction;
+  isNew?: boolean;
+}
+
+export const TransactionCard = ({ tx, isNew = false }: TransactionCardProps) => {
   const expandedId = useStore((state) => state.expandedId);
   const setExpandedId = useStore((state) => state.setExpandedId);
   const approveTransaction = useStore((state) => state.approveTransaction);
@@ -31,6 +36,7 @@ export const TransactionCard = ({ tx }: { tx: Transaction }) => {
 
   const onToggle = () => setExpandedId(expanded ? null : tx.id);
   const selectedFile = tx.files[selectedFileIndex];
+  const hasFiles = tx.files.length > 0;
 
   const handleApprove = (e: React.MouseEvent) => {
     e.stopPropagation();
@@ -39,9 +45,10 @@ export const TransactionCard = ({ tx }: { tx: Transaction }) => {
 
   return (
     <motion.div 
-      initial={{ opacity: 0, y: 20 }}
+      initial={isNew ? { opacity: 0, y: 20 } : false}
       animate={{ opacity: 1, y: 0 }}
       layout
+      layoutId={tx.id}
       className={cn(
         "group border rounded-xl transition-all duration-300 overflow-hidden relative",
         expanded 
@@ -201,31 +208,37 @@ export const TransactionCard = ({ tx }: { tx: Transaction }) => {
               <div className="bg-zinc-950 flex flex-col overflow-hidden min-h-[400px]">
                 
                 {/* Content Header */}
-                <div className="h-10 border-b border-zinc-800 flex items-center justify-between px-4 bg-zinc-900/20">
-                   <div className="flex items-center gap-2">
-                      <span className="text-xs font-medium text-zinc-400">
-                        {activeTab === 'diff' ? selectedFile.path : 'AI Reasoning Strategy'}
-                      </span>
-                   </div>
-                   <div className="flex items-center gap-2">
-                      <button className="p-1 hover:bg-zinc-800 rounded text-zinc-500 hover:text-zinc-300">
-                        <Copy className="w-3.5 h-3.5" />
-                      </button>
-                      <button className="p-1 hover:bg-zinc-800 rounded text-zinc-500 hover:text-zinc-300">
-                        <Code2 className="w-3.5 h-3.5" />
-                      </button>
-                   </div>
-                </div>
+                 <div className="h-10 border-b border-zinc-800 flex items-center justify-between px-4 bg-zinc-900/20">
+                    <div className="flex items-center gap-2">
+                       <span className="text-xs font-medium text-zinc-400">
+                         {activeTab === 'diff' ? (selectedFile?.path || 'No files') : 'AI Reasoning Strategy'}
+                       </span>
+                    </div>
+                    <div className="flex items-center gap-2">
+                       <button className="p-1 hover:bg-zinc-800 rounded text-zinc-500 hover:text-zinc-300">
+                         <Copy className="w-3.5 h-3.5" />
+                       </button>
+                       <button className="p-1 hover:bg-zinc-800 rounded text-zinc-500 hover:text-zinc-300">
+                         <Code2 className="w-3.5 h-3.5" />
+                       </button>
+                    </div>
+                 </div>
 
-                {/* Content Body */}
-                <div className="flex-1 overflow-auto custom-scrollbar">
-                   {activeTab === 'diff' ? (
-                     <DiffViewer 
-                        diff={selectedFile.diff} 
-                        language={selectedFile.language} 
-                        className="p-0"
-                     />
-                   ) : (
+                 {/* Content Body */}
+                 <div className="flex-1 overflow-auto custom-scrollbar">
+                    {activeTab === 'diff' ? (
+                      hasFiles && selectedFile ? (
+                        <DiffViewer 
+                           diff={selectedFile.diff} 
+                           language={selectedFile.language} 
+                           className="p-0"
+                        />
+                      ) : (
+                        <div className="flex items-center justify-center h-full text-zinc-500 text-sm">
+                          No files available
+                        </div>
+                      )
+                    ) : (
                      <div className="p-6">
                         <div className="prose prose-invert prose-sm max-w-none">
                            <div className="flex items-start gap-4">

@@ -1,12 +1,38 @@
-import { Transaction } from "@/types/app.types";
+import { Transaction, Prompt } from "@/types/app.types";
 
-// --- Mock Data (Moved from App.tsx) ---
+// --- Mock Data ---
+
+// New: Mock Prompts Database
+const MOCK_PROMPTS: Prompt[] = [
+  {
+    id: 'prompt-1',
+    title: 'Refactor Authentication System',
+    content: 'Refactor authentication middleware to support JWT rotation and improve security.',
+    timestamp: '10 mins ago'
+  },
+  {
+    id: 'prompt-2',
+    title: 'Fix Race Conditions',
+    content: 'Fix race condition in user profile update and optimize database queries.',
+    timestamp: '2 hours ago'
+  },
+  {
+    id: 'prompt-3',
+    title: 'Project Initialization',
+    content: 'Initialize project structure with Vite, React, and Tailwind configuration.',
+    timestamp: '1 day ago'
+  }
+];
+
 const MOCK_TRANSACTIONS: Transaction[] = [
   {
     id: 'tx-8f92a1',
     status: 'PENDING',
     description: 'Refactor authentication middleware to support JWT rotation',
     timestamp: 'Just now',
+    createdAt: new Date().toISOString(),
+    promptId: 'prompt-1',
+    author: 'alice',
     files: [
       {
         path: 'src/middleware/auth.ts',
@@ -54,6 +80,9 @@ const MOCK_TRANSACTIONS: Transaction[] = [
     status: 'FAILED',
     description: 'Fix race condition in user profile update',
     timestamp: '2 mins ago',
+    createdAt: new Date(Date.now() - 120000).toISOString(),
+    promptId: 'prompt-2',
+    author: 'bob',
     files: [
       {
         path: 'src/services/userService.ts',
@@ -78,10 +107,28 @@ const MOCK_TRANSACTIONS: Transaction[] = [
     tokens: '2,100'
   },
   {
+    id: 'tx-7b21c5',
+    status: 'APPLIED',
+    description: 'Optimize database connection pooling',
+    timestamp: '5 mins ago',
+    createdAt: new Date(Date.now() - 300000).toISOString(),
+    promptId: 'prompt-2',
+    author: 'alice',
+    files: [],
+    reasoning: 'Added connection pooling to reduce latency.',
+    provider: 'Anthropic',
+    model: 'claude-3.5-sonnet',
+    cost: '$0.015',
+    tokens: '900'
+  },
+  {
     id: 'tx-3d55e2',
     status: 'APPLIED',
     description: 'Add Tailwind CSS configuration for dark mode',
     timestamp: '15 mins ago',
+    createdAt: new Date(Date.now() - 900000).toISOString(),
+    promptId: 'prompt-3',
+    author: 'system',
     files: [
       {
         path: 'tailwind.config.js',
@@ -108,6 +155,9 @@ const MOCK_TRANSACTIONS: Transaction[] = [
     status: 'COMMITTED',
     description: 'Initialize project structure with Vite + React',
     timestamp: '1 hour ago',
+    createdAt: new Date(Date.now() - 3600000).toISOString(),
+    promptId: 'prompt-3',
+    author: 'system',
     files: [
       {
         path: 'package.json',
@@ -132,6 +182,9 @@ const MOCK_TRANSACTIONS: Transaction[] = [
     status: 'REVERTED',
     description: 'Temporary logging for debug (Reverted)',
     timestamp: '2 hours ago',
+    createdAt: new Date(Date.now() - 7200000).toISOString(),
+    promptId: 'prompt-2',
+    author: 'charlie',
     files: [
       {
         path: 'src/utils/logger.ts',
@@ -170,10 +223,18 @@ class TransactionSocket {
   // Simulates finding a new patch in the clipboard
   startEmitting() {
     if (this.interval) return;
+    const prompts = ['prompt-1', 'prompt-2', 'prompt-3'];
     this.interval = setInterval(() => {
       // In a real app, this would be data from the backend/clipboard
       const randomTx = MOCK_TRANSACTIONS[Math.floor(Math.random() * MOCK_TRANSACTIONS.length)];
-      const newTx = { ...randomTx, id: `tx-${Math.random().toString(36).substr(2, 6)}`, timestamp: 'Just now', status: 'PENDING' as const };
+      const newTx = { 
+        ...randomTx, 
+        id: `tx-${Math.random().toString(36).substr(2, 6)}`, 
+        promptId: prompts[Math.floor(Math.random() * prompts.length)],
+        timestamp: 'Just now', 
+        createdAt: new Date().toISOString(),
+        status: 'PENDING' as const 
+      };
       this.subscribers.forEach(cb => cb(newTx));
     }, 8000); // New patch every 8 seconds
   }
@@ -184,15 +245,16 @@ class TransactionSocket {
   }
 }
 
-// --- Elysia Client Stub ---
-// In a real app, this would use fetch/axios or the official Elysia Eden client
+// --- API Client ---
 export const api = {
   socket: new TransactionSocket(),
   transactions: {
     list: async (): Promise<Transaction[]> => {
-      // Simulate network delay
-      // await new Promise(resolve => setTimeout(resolve, 500));
       return MOCK_TRANSACTIONS;
+    },
+    prompts: {
+      list: async (): Promise<Prompt[]> => MOCK_PROMPTS,
+      get: async (id: string) => MOCK_PROMPTS.find(p => p.id === id)
     },
     updateStatus: async (id: string, status: Transaction['status']) => {
       console.log(`[API] Updating transaction ${id} to ${status}`);
