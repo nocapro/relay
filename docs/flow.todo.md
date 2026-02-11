@@ -19,11 +19,16 @@ changeSummary:
 promptSummary: Improve Dashboard page features and UI/UX based on readme.md philosophy (TUI style, shortcuts, stream view).
 gitCommitMsg: "feat: enhance dashboard UI with TUI-inspired stream view and shortcut hints"
 ```
+
+===
+
+we need multi select feature for transaction list
+
 ===
 
 update transaction card UI UX and cohesiveness because the content of the changes contains markdown like this docs/relay.md
 
-===
+=== 
 
 add grouping feature to transaction list.
 
