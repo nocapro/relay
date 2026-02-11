@@ -28,6 +28,7 @@
     }
   },
   "include": [
+    "readme.md",
     "src/",
     "index.html",
     "package.json",

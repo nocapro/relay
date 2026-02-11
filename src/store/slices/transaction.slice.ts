@@ -11,16 +11,40 @@ export interface TransactionSlice {
   setExpandedId: (id: string | null) => void;
   toggleWatching: () => void;
   fetchTransactions: () => Promise<void>;
+  addTransaction: (tx: Transaction) => void;
+  approveTransaction: (id: string) => void;
 }
 
-export const createTransactionSlice: StateCreator<RootState, [], [], TransactionSlice> = (set) => ({
+export const createTransactionSlice: StateCreator<RootState, [], [], TransactionSlice> = (set, get) => ({
   transactions: [],
   isLoading: false,
-  expandedId: 'tx-8f92a1',
-  isWatching: true,
+  expandedId: null,
+  isWatching: false, // Default to false to show the "Start" state
 
   setExpandedId: (id) => set({ expandedId: id }),
-  toggleWatching: () => set((state) => ({ isWatching: !state.isWatching })),
+  
+  toggleWatching: () => {
+    const isNowWatching = !get().isWatching;
+    set({ isWatching: isNowWatching });
+    
+    if (isNowWatching) {
+      api.socket.startEmitting();
+    } else {
+      api.socket.stopEmitting();
+    }
+  },
+
+  addTransaction: (tx) => set((state) => ({ 
+    transactions: [tx, ...state.transactions] 
+  })),
+
+  approveTransaction: (id) => set((state) => ({
+    transactions: state.transactions.map((t) => 
+      t.id === id 
+        ? { ...t, status: 'APPLIED' as const } 
+        : t
+    )
+  })),
 
   fetchTransactions: async () => {
     set({ isLoading: true });
@@ -29,8 +53,14 @@ export const createTransactionSlice: StateCreator<RootState, [], [], Transaction
       set({ transactions: data });
     } catch (error) {
       console.error('Failed to fetch transactions', error);
-    } finally {
-      set({ isLoading: false });
     }
+    set({ isLoading: false });
+
+    // Setup subscription
+    api.socket.subscribe((newTx) => {
+      if (get().isWatching) {
+        get().addTransaction(newTx);
+      }
+    });
   },
 });

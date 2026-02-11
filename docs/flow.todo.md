@@ -1,3 +1,18 @@
+
+===
+
+understand readme.md to improve dashboard page UI UX to be
+
+1. more observability
+2. more cohesive transaction card
+3. amazing diffs showcase
+
+don't forget to work on the architecture.
+
+give me the most comprehensive detailed diff patches with very valid accurate format and strategy in x parts... now start with part 1/x 
+
+=== DONE
+
 1. I want vite-swc
 2. file naming should like having special extension like domain.service.ts dashboard.page.tsx etc
 3. project name is relay

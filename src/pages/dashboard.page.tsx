@@ -1,6 +1,6 @@
 import { useEffect } from 'react';
-import { Play, Pause, Activity, RefreshCw, Filter } from 'lucide-react';
-import { motion } from 'framer-motion';
+import { Play, Pause, Activity, RefreshCw, Filter, Terminal, Command } from 'lucide-react';
+import { motion, AnimatePresence } from 'framer-motion';
 import { cn } from "@/utils/cn.util";
 import { useStore } from "@/store/root.store";
 import { TransactionCard } from "@/features/transactions/components/transaction-card.component";
@@ -15,13 +15,21 @@ export const Dashboard = () => {
     fetchTransactions();
   }, [fetchTransactions]);
 
+  const hasTransactions = transactions.length > 0;
+
   return (
-    <div className="p-4 md:p-8 max-w-7xl mx-auto space-y-6 md:space-y-8 pb-32">
+    <div className="p-4 md:p-6 lg:p-8 max-w-[1600px] mx-auto space-y-6 md:space-y-8 pb-32">
       
-      {/* Hero Status Card */}
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 md:gap-6">
-        <div className="lg:col-span-2 relative overflow-hidden rounded-2xl border border-zinc-800/60 bg-gradient-to-br from-zinc-900 to-zinc-950 p-6 md:p-8 shadow-2xl group">
-          <div className="relative z-10 flex flex-col justify-between h-full min-h-[160px]">
+      {/* Hero Status Bar - Compact if active, large if empty */}
+      <div className="grid grid-cols-1 lg:grid-cols-4 gap-4 md:gap-6">
+        <motion.div 
+          layout
+          className={cn(
+            "relative overflow-hidden rounded-2xl border border-zinc-800/60 bg-gradient-to-br from-zinc-900 to-zinc-950 shadow-2xl group transition-all duration-500",
+            hasTransactions ? "lg:col-span-3 p-6" : "lg:col-span-4 p-12 py-20"
+          )}
+        >
+          <div className="relative z-10 flex flex-col md:flex-row md:items-center justify-between gap-6 h-full">
             <div>
               <div className="flex items-center gap-3 mb-3">
                 <span className={cn("relative flex h-3 w-3")}>
@@ -32,117 +40,119 @@ export const Dashboard = () => {
                   {isWatching ? 'System Active' : 'System Paused'}
                 </h2>
               </div>
-              <h1 className="text-2xl md:text-3xl font-bold text-white mb-2 tracking-tight">
-                {isWatching ? 'Listening for patches...' : 'Monitoring paused'}
+              <h1 className={cn("font-bold text-white mb-2 tracking-tight transition-all", hasTransactions ? "text-xl md:text-2xl" : "text-3xl md:text-4xl")}>
+                {isWatching ? 'Monitoring Clipboard Stream' : 'Ready to Intercept Patches'}
               </h1>
-              <p className="text-zinc-500 text-sm md:text-base max-w-md leading-relaxed">
+              <p className={cn("text-zinc-500 transition-all leading-relaxed", hasTransactions ? "text-sm max-w-lg" : "text-base max-w-2xl")}>
                 {isWatching 
-                  ? 'Relaycode is actively monitoring your clipboard. Copy any AI-generated code block to instantly create a transaction.' 
-                  : 'Resume monitoring to detect new patches. Your pending transactions remain safe.'}
+                  ? 'Relaycode is actively scanning for AI code blocks. Patches will appear below automatically.' 
+                  : 'Resume monitoring to detect new AI patches from your clipboard.'}
               </p>
             </div>
 
-            <div className="mt-8 flex flex-wrap items-center gap-4">
+            <div className="flex flex-wrap items-center gap-4">
               <button 
                 onClick={toggleWatching}
                 className={cn(
-                  "px-5 py-2.5 rounded-lg font-semibold text-sm flex items-center gap-2 transition-all transform active:scale-95",
+                  "px-6 py-3 rounded-xl font-bold text-sm flex items-center gap-2 transition-all transform active:scale-95 shadow-xl",
                   isWatching 
                     ? "bg-zinc-800 hover:bg-zinc-700 text-zinc-200 border border-zinc-700"
-                    : "bg-emerald-600 hover:bg-emerald-500 text-white shadow-lg shadow-emerald-900/20 ring-1 ring-emerald-500/50"
+                    : "bg-emerald-600 hover:bg-emerald-500 text-white shadow-emerald-900/20 ring-1 ring-emerald-500/50"
                 )}
               >
                 {isWatching ? (
-                  <><Pause className="w-4 h-4 fill-current" /> Pause</>
+                  <><Pause className="w-4 h-4 fill-current" /> Pause Watcher</>
                 ) : (
-                  <><Play className="w-4 h-4 fill-current" /> Resume</>
+                  <><Play className="w-4 h-4 fill-current" /> Start Monitoring</>
                 )}
               </button>
-              
-              <div className="hidden sm:flex items-center gap-2 text-xs text-zinc-500">
-                <div className="w-1 h-1 rounded-full bg-zinc-700" />
-                <span>Last checked 2s ago</span>
-              </div>
             </div>
           </div>
           
           {/* Decorative Elements */}
-          <div className="absolute right-0 top-0 h-full w-2/3 bg-gradient-to-l from-indigo-500/10 to-transparent pointer-events-none transition-opacity duration-500 group-hover:opacity-75" />
-          <div className="absolute -right-20 -bottom-20 h-80 w-80 bg-indigo-500/20 blur-[100px] rounded-full pointer-events-none animate-pulse-slow" />
-        </div>
+          <div className="absolute right-0 top-0 h-full w-2/3 bg-gradient-to-l from-indigo-500/5 to-transparent pointer-events-none" />
+        </motion.div>
 
-        {/* Stats Card */}
-        <div className="rounded-2xl border border-zinc-800/60 bg-zinc-900/40 p-6 flex flex-col justify-between space-y-6 backdrop-blur-sm">
-          <div className="flex items-center justify-between">
-            <span className="text-sm text-zinc-500 font-medium">Session Metrics</span>
-            <span className="text-emerald-400 text-xs font-bold bg-emerald-500/10 border border-emerald-500/20 px-2 py-1 rounded-md flex items-center gap-1">
-               <Activity className="w-3 h-3" /> 94% Success
-            </span>
-          </div>
-          
-          <div className="grid grid-cols-2 gap-4">
-            <div className="p-4 rounded-xl bg-zinc-900/80 border border-zinc-800">
-              <div className="text-2xl font-bold text-white mb-1">12</div>
-              <div className="text-xs text-zinc-500 font-medium">Patches Applied</div>
-            </div>
-            <div className="p-4 rounded-xl bg-zinc-900/80 border border-zinc-800">
-              <div className="text-2xl font-bold text-zinc-400 mb-1">1.4s</div>
-              <div className="text-xs text-zinc-500 font-medium">Avg. Latency</div>
-            </div>
-          </div>
-          
-          <div className="space-y-2">
-             <div className="flex justify-between text-xs text-zinc-500">
-                <span>Daily Quota</span>
-                <span>75% used</span>
+        {/* Stats Card - Only visible when we have data to show context */}
+        {hasTransactions && (
+          <motion.div 
+            initial={{ opacity: 0, x: 20 }}
+            animate={{ opacity: 1, x: 0 }}
+            className="lg:col-span-1 rounded-2xl border border-zinc-800/60 bg-zinc-900/40 p-6 flex flex-col justify-center gap-4 backdrop-blur-sm"
+          >
+             <div className="flex items-center justify-between mb-2">
+                <span className="text-xs text-zinc-500 font-medium uppercase tracking-wider">Session Stats</span>
+                <Activity className="w-4 h-4 text-emerald-500" />
              </div>
-             <div className="h-1.5 w-full bg-zinc-800 rounded-full overflow-hidden">
-                <motion.div 
-                   initial={{ width: 0 }}
-                   animate={{ width: "75%" }}
-                   className="h-full bg-gradient-to-r from-indigo-500 to-purple-500" 
-                />
+             <div className="grid grid-cols-2 gap-4">
+                <div>
+                   <div className="text-2xl font-bold text-white">{transactions.length}</div>
+                   <div className="text-xs text-zinc-500">Events Captured</div>
+                </div>
+                <div>
+                   <div className="text-2xl font-bold text-zinc-300">92%</div>
+                   <div className="text-xs text-zinc-500">Auto-Success</div>
+                </div>
              </div>
-          </div>
-        </div>
+          </motion.div>
+        )}
       </div>
 
       {/* Transactions List */}
       <div className="space-y-4">
-        <div className="sticky top-0 z-20 bg-zinc-950/95 backdrop-blur-xl py-4 -my-4 md:static md:bg-transparent md:backdrop-blur-none md:p-0 md:m-0 flex items-center justify-between border-b border-zinc-800/50 md:border-none px-1 md:px-0">
-          <div className="flex items-center gap-3">
-             <h3 className="text-lg font-semibold text-white flex items-center gap-2">
-                Event Stream
-             </h3>
-             <span className="text-[10px] font-bold text-emerald-500 bg-emerald-500/10 px-2 py-0.5 rounded-full border border-emerald-500/20 animate-pulse">LIVE</span>
-          </div>
-          
-          <div className="flex items-center gap-2">
-            <button className="md:hidden p-2 text-zinc-400 hover:bg-zinc-800 rounded-lg">
-               <Filter className="w-4 h-4" />
-            </button>
-            <div className="hidden md:flex items-center gap-2">
-               <button className="text-xs text-zinc-400 hover:text-white px-3 py-1.5 rounded-md hover:bg-zinc-800 transition-colors">
-                 Clear
-               </button>
-               <div className="h-4 w-px bg-zinc-800" />
-               <button className="text-xs flex items-center gap-1.5 text-zinc-400 hover:text-white px-3 py-1.5 rounded-md hover:bg-zinc-800 transition-colors">
-                  <RefreshCw className="w-3 h-3" /> Refresh
-               </button>
+        {hasTransactions && (
+          <div className="sticky top-0 z-20 bg-zinc-950/95 backdrop-blur-xl py-4 -my-4 md:static md:bg-transparent md:backdrop-blur-none md:p-0 md:m-0 flex items-center justify-between border-b border-zinc-800/50 md:border-none px-1 md:px-0">
+            <div className="flex items-center gap-3">
+              <Terminal className="w-5 h-5 text-zinc-500" />
+              <h3 className="text-lg font-semibold text-white">Event Log</h3>
+              <span className="text-xs font-mono text-zinc-500 bg-zinc-900 px-2 py-0.5 rounded-full border border-zinc-800">{transactions.length}</span>
+            </div>
+            
+            <div className="flex items-center gap-2">
+              <button className="text-xs flex items-center gap-1.5 text-zinc-400 hover:text-white px-3 py-1.5 rounded-md hover:bg-zinc-800 transition-colors">
+                  <Filter className="w-3.5 h-3.5" /> Filter
+              </button>
+              <div className="h-4 w-px bg-zinc-800" />
+              <button className="text-xs flex items-center gap-1.5 text-zinc-400 hover:text-white px-3 py-1.5 rounded-md hover:bg-zinc-800 transition-colors">
+                  <RefreshCw className="w-3.5 h-3.5" /> Refresh
+              </button>
             </div>
           </div>
-        </div>
+        )}
 
-        <div className="space-y-3 pt-2 md:pt-0">
-          {transactions.map((tx) => (
-            <TransactionCard 
-              key={tx.id} 
-              tx={tx} 
-            />
-          ))}
+        <div className="space-y-3 pt-2 md:pt-0 min-h-[300px]">
+          <AnimatePresence mode='popLayout'>
+            {hasTransactions ? (
+              transactions.map((tx) => (
+                <TransactionCard 
+                  key={tx.id} 
+                  tx={tx} 
+                />
+              ))
+            ) : (
+              <motion.div 
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                className="flex flex-col items-center justify-center py-20 text-zinc-500 border-2 border-dashed border-zinc-800/50 rounded-2xl bg-zinc-900/20"
+              >
+                <div className="w-16 h-16 bg-zinc-900 rounded-full flex items-center justify-center mb-4 shadow-xl">
+                   <Command className="w-8 h-8 text-zinc-600" />
+                </div>
+                <h3 className="text-lg font-medium text-zinc-300 mb-2">No patches detected yet</h3>
+                <p className="max-w-sm text-center text-sm mb-6">
+                  Copy any AI-generated code block (Claude, GPT, etc.) to your clipboard to see it appear here instantly.
+                </p>
+                <button 
+                  onClick={toggleWatching}
+                  className="px-4 py-2 bg-zinc-800 hover:bg-zinc-700 text-zinc-300 rounded-lg text-sm font-medium transition-colors"
+                >
+                  {isWatching ? 'Waiting for clipboard events...' : 'Start Monitoring'}
+                </button>
+              </motion.div>
+            )}
+          </AnimatePresence>
         </div>
       </div>
-
     </div>
   );
 };
