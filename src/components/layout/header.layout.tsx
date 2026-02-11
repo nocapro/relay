@@ -1,10 +1,10 @@
 import { Terminal, ChevronDown, GitBranch, Search, Settings } from 'lucide-react';
-import { cn } from "@/utils/cn";
-import { useAppStore } from "@/store/useAppStore";
-import { useIsMobile } from "@/hooks/use-mobile";
+import { cn } from "@/utils/cn.util";
+import { useStore } from "@/store/root.store";
+import { useIsMobile } from "@/hooks/mobile.hook";
 
 export const Header = () => {
-  const { setCmdOpen } = useAppStore();
+  const setCmdOpen = useStore((state) => state.setCmdOpen);
   const isMobile = useIsMobile();
 
   return (

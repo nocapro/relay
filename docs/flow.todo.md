@@ -1,5 +1,12 @@
 1. I want vite-swc
-2. 
+2. file naming should like having special extension like domain.service.ts dashboard.page.tsx etc
+3. project name is relay
+4. state management should has slices not only stores
+5. state management prefer global usage over local
+6. state management should domain based
+
+give me the most comprehensive detailed diff patches with very valid accurate format and strategy in x parts... now start with part 1/x
+
 
 ===
 

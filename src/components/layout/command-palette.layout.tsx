@@ -1,9 +1,10 @@
 import { Search, Play, CheckCircle2, RefreshCw } from 'lucide-react';
 import { motion } from 'framer-motion';
-import { useAppStore } from "@/store/useAppStore";
+import { useStore } from "@/store/root.store";
 
 export const CommandPalette = () => {
-  const { isCmdOpen, setCmdOpen } = useAppStore();
+  const isCmdOpen = useStore((state) => state.isCmdOpen);
+  const setCmdOpen = useStore((state) => state.setCmdOpen);
   
   if (!isCmdOpen) return null;
   

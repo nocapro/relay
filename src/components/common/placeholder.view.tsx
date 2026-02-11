@@ -1,4 +1,11 @@
-export const PlaceholderView = ({ title, icon: Icon }: { title: string, icon: any }) => (
+import { LucideIcon } from 'lucide-react';
+
+interface PlaceholderViewProps {
+  title: string;
+  icon: LucideIcon;
+}
+
+export const PlaceholderView = ({ title, icon: Icon }: PlaceholderViewProps) => (
   <div className="flex flex-col items-center justify-center h-[calc(100vh-8rem)] text-zinc-500 animate-in fade-in zoom-in duration-300">
     <div className="p-6 rounded-3xl bg-zinc-900/50 border border-zinc-800 mb-6 shadow-2xl">
       <Icon className="w-12 h-12 text-zinc-400" />

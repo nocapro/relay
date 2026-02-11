@@ -1,4 +1,4 @@
-import { Transaction } from "@/types";
+import { Transaction } from "@/types/app.types";
 
 // --- Mock Data (Moved from App.tsx) ---
 const MOCK_TRANSACTIONS: Transaction[] = [

@@ -5,8 +5,8 @@ import {
   GitCommit, 
   RotateCcw 
 } from 'lucide-react';
-import { cn } from "@/utils/cn";
-import { TransactionStatus } from "@/types";
+import { cn } from "@/utils/cn.util";
+import { TransactionStatus } from "@/types/app.types";
 
 const styles = {
   PENDING: 'bg-amber-500/10 text-amber-500 border-amber-500/20 ring-amber-500/10',

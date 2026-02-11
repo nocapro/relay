@@ -1,12 +1,15 @@
 import { useEffect } from 'react';
 import { Play, Pause, Activity, RefreshCw, Filter } from 'lucide-react';
 import { motion } from 'framer-motion';
-import { cn } from "@/utils/cn";
-import { useTransactionStore } from "@/store/useTransactionStore";
-import { TransactionCard } from "@/features/transactions/components/TransactionCard";
+import { cn } from "@/utils/cn.util";
+import { useStore } from "@/store/root.store";
+import { TransactionCard } from "@/features/transactions/components/transaction-card.component";
 
 export const Dashboard = () => {
-  const { transactions, fetchTransactions, isWatching, toggleWatching } = useTransactionStore();
+  const transactions = useStore((state) => state.transactions);
+  const fetchTransactions = useStore((state) => state.fetchTransactions);
+  const isWatching = useStore((state) => state.isWatching);
+  const toggleWatching = useStore((state) => state.toggleWatching);
 
   useEffect(() => {
     fetchTransactions();

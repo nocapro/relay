@@ -1,27 +1,25 @@
-import { create } from 'zustand';
-import { Transaction } from '@/types';
-import { api } from '@/services/api';
+import { StateCreator } from 'zustand';
+import { Transaction } from '@/types/app.types';
+import { api } from '@/services/api.service';
+import { RootState } from '../root.store';
 
-interface TransactionState {
+export interface TransactionSlice {
   transactions: Transaction[];
   isLoading: boolean;
   expandedId: string | null;
   isWatching: boolean;
-  
-  // Actions
   setExpandedId: (id: string | null) => void;
   toggleWatching: () => void;
   fetchTransactions: () => Promise<void>;
 }
 
-export const useTransactionStore = create<TransactionState>((set, get) => ({
+export const createTransactionSlice: StateCreator<RootState, [], [], TransactionSlice> = (set) => ({
   transactions: [],
   isLoading: false,
-  expandedId: 'tx-8f92a1', // Default open
+  expandedId: 'tx-8f92a1',
   isWatching: true,
 
   setExpandedId: (id) => set({ expandedId: id }),
-  
   toggleWatching: () => set((state) => ({ isWatching: !state.isWatching })),
 
   fetchTransactions: async () => {
@@ -34,5 +32,5 @@ export const useTransactionStore = create<TransactionState>((set, get) => ({
     } finally {
       set({ isLoading: false });
     }
-  }
-}));
+  },
+});

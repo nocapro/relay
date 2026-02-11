@@ -11,13 +11,14 @@ import {
   Command 
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { cn } from "@/utils/cn";
-import { Transaction } from "@/types";
-import { StatusBadge } from "@/components/ui/StatusBadge";
-import { useTransactionStore } from "@/store/useTransactionStore";
+import { cn } from "@/utils/cn.util";
+import { Transaction } from "@/types/app.types";
+import { StatusBadge } from "@/components/ui/status-badge.ui";
+import { useStore } from "@/store/root.store";
 
 export const TransactionCard = ({ tx }: { tx: Transaction }) => {
-  const { expandedId, setExpandedId } = useTransactionStore();
+  const expandedId = useStore((state) => state.expandedId);
+  const setExpandedId = useStore((state) => state.setExpandedId);
   const expanded = expandedId === tx.id;
 
   const onToggle = () => setExpandedId(expanded ? null : tx.id);

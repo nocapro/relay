@@ -1,12 +1,13 @@
 import { Activity, Settings, Clock, Terminal } from 'lucide-react';
 import { motion } from 'framer-motion';
-import { cn } from "@/utils/cn";
-import { useAppStore } from "@/store/useAppStore";
-import { useIsMobile } from "@/hooks/use-mobile";
-import { AppTab } from '@/types';
+import { cn } from "@/utils/cn.util";
+import { useStore } from "@/store/root.store";
+import { useIsMobile } from "@/hooks/mobile.hook";
+import { AppTab } from '@/types/app.types';
 
 export const Navigation = () => {
-  const { activeTab, setActiveTab } = useAppStore();
+  const activeTab = useStore((state) => state.activeTab);
+  const setActiveTab = useStore((state) => state.setActiveTab);
   const isMobile = useIsMobile();
 
   const items: { id: AppTab; icon: any; label: string }[] = [
