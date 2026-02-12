@@ -1,5 +1,5 @@
 import { StateCreator } from 'zustand';
-import { Transaction, GroupByStrategy, Prompt } from '@/types/app.types';
+import { Transaction, Prompt } from '@/types/app.types';
 import { api } from '@/services/api.service';
 import { RootState } from '../root.store';
 
@@ -14,10 +14,6 @@ export interface TransactionSlice {
   fetchTransactions: () => Promise<void>;
   addTransaction: (tx: Transaction) => void;
   approveTransaction: (id: string) => void;
-  
-  // Grouping State
-  groupBy: GroupByStrategy;
-  setGroupBy: (strategy: GroupByStrategy) => void;
 }
 
 export const createTransactionSlice: StateCreator<RootState, [], [], TransactionSlice> = (set, get) => ({
@@ -26,7 +22,6 @@ export const createTransactionSlice: StateCreator<RootState, [], [], Transaction
   isLoading: false,
   expandedId: null,
   isWatching: false, // Default to false to show the "Start" state
-  groupBy: 'prompt', // Default grouping
 
   setExpandedId: (id) => set({ expandedId: id }),
   
@@ -40,8 +35,6 @@ export const createTransactionSlice: StateCreator<RootState, [], [], Transaction
       api.socket.stopEmitting();
     }
   },
-
-  setGroupBy: (strategy) => set({ groupBy: strategy }),
 
   addTransaction: (tx) => set((state) => ({ 
     transactions: [tx, ...state.transactions] 

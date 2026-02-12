@@ -11,7 +11,6 @@ export const useStore = create<RootState>()((...a) => ({
 
 // Export specialized selectors for cleaner global usage
 export const useUiActions = () => useStore((state) => ({
-  setActiveTab: state.setActiveTab,
   setCmdOpen: state.setCmdOpen,
   toggleCmd: state.toggleCmd,
 }));

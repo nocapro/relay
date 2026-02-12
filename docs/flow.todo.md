@@ -1,6 +1,6 @@
 
 
-===
+=== DONE
 
 everything should be react router 7 based.
 
@@ -26,7 +26,7 @@ we need multi select feature for transaction list
 
 ===
 
-update transaction card UI UX and cohesiveness because the content of the changes contains markdown like this docs/relay.md
+update transaction card UI UX and cohesiveness because the content of the changes contains markdown like this docs/relay.md so I want basically showin rendered markdown but with interactive code block
 
 === 
 

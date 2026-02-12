@@ -45,12 +45,18 @@ export const TransactionCard = ({ tx, isNew = false }: TransactionCardProps) => 
 
   return (
     <motion.div 
-      initial={isNew ? { opacity: 0, y: 20 } : false}
-      animate={{ opacity: 1, y: 0 }}
+      initial={isNew ? { opacity: 0, y: 20, scale: 0.98 } : false}
+      animate={{ opacity: 1, y: 0, scale: 1 }}
+      transition={isNew ? { 
+        type: 'spring', 
+        stiffness: 300, 
+        damping: 25,
+        duration: 0.4 
+      } : { duration: 0 }}
       layout
       layoutId={tx.id}
       className={cn(
-        "group border rounded-xl transition-all duration-300 overflow-hidden relative",
+        "group border rounded-xl transition-colors duration-300 overflow-hidden relative",
         expanded 
           ? "bg-zinc-950 border-indigo-500/30 shadow-2xl shadow-black/50 ring-1 ring-indigo-500/20 z-10" 
           : "bg-zinc-900/30 border-zinc-800/60 hover:bg-zinc-900/60 hover:border-zinc-700"

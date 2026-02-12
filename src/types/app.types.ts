@@ -31,7 +31,5 @@ export interface Transaction {
   tokens: string;
 }
 
-export type AppTab = 'dashboard' | 'history' | 'settings';
-
 // New: Grouping Strategies
 export type GroupByStrategy = 'prompt' | 'date' | 'author' | 'status' | 'files' | 'none';

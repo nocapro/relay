@@ -1,20 +1,37 @@
 import { useEffect, useState, useRef } from 'react';
 import { Play, Pause, Activity, RefreshCw, Filter, Terminal, Command, Layers, Calendar, User, FileCode, CheckCircle2, ChevronDown, ChevronRight } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
+import { useSearchParams } from 'react-router';
 import { cn } from "@/utils/cn.util";
 import { useStore } from "@/store/root.store";
 import { TransactionCard } from "@/features/transactions/components/transaction-card.component";
 import { groupTransactions } from "@/utils/group.util";
 import { GroupByStrategy } from "@/types/app.types";
 
+const DEFAULT_GROUP_BY: GroupByStrategy = 'prompt';
+const VALID_GROUP_STRATEGIES: GroupByStrategy[] = ['prompt', 'date', 'author', 'status', 'files', 'none'];
+
 export const Dashboard = () => {
+  const [searchParams, setSearchParams] = useSearchParams();
+  
   const transactions = useStore((state) => state.transactions);
   const prompts = useStore((state) => state.prompts);
-  const groupBy = useStore((state) => state.groupBy);
-  const setGroupBy = useStore((state) => state.setGroupBy);
   const fetchTransactions = useStore((state) => state.fetchTransactions);
   const isWatching = useStore((state) => state.isWatching);
   const toggleWatching = useStore((state) => state.toggleWatching);
+  
+  // Get groupBy from URL search params
+  const groupByParam = searchParams.get('groupBy');
+  const groupBy: GroupByStrategy = VALID_GROUP_STRATEGIES.includes(groupByParam as GroupByStrategy) 
+    ? (groupByParam as GroupByStrategy) 
+    : DEFAULT_GROUP_BY;
+  
+  const setGroupBy = (strategy: GroupByStrategy) => {
+    setSearchParams(prev => {
+      prev.set('groupBy', strategy);
+      return prev;
+    });
+  };
 
   // Track collapsed state of each group
   const [collapsedGroups, setCollapsedGroups] = useState<Set<string>>(new Set());
@@ -23,20 +40,24 @@ export const Dashboard = () => {
   const seenTransactionIdsRef = useRef<Set<string>>(new Set());
   const [seenTransactionIds, setSeenTransactionIds] = useState<Set<string>>(new Set());
   
-  // Update seen transactions when transactions change
+  // Update seen transactions when transactions change (with delay for animation)
   useEffect(() => {
-    const currentIds = new Set(transactions.map(t => t.id));
     const newIds = new Set<string>();
     
     transactions.forEach(tx => {
       if (!seenTransactionIdsRef.current.has(tx.id)) {
         newIds.add(tx.id);
-        seenTransactionIdsRef.current.add(tx.id);
       }
     });
     
     if (newIds.size > 0) {
-      setSeenTransactionIds(new Set(seenTransactionIdsRef.current));
+      // Delay marking as seen to allow enter animation to complete
+      const timer = setTimeout(() => {
+        newIds.forEach(id => seenTransactionIdsRef.current.add(id));
+        setSeenTransactionIds(new Set(seenTransactionIdsRef.current));
+      }, 500); // Wait for animation to complete
+      
+      return () => clearTimeout(timer);
     }
   }, [transactions]);
 
