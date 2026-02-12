@@ -45,7 +45,7 @@ lets change the data and naming convention shape, card title = git commit messag
 
 please think about amazing UI cohesive UX about each transaction sometimes has one parent transaction. so something like transaction chainning. of course in single prompt can having many chanis of transactions 
 
-====
+==== DONE
 
 - outline: should be full path not only file name
 - outline: dot and active color should be the same as status color

@@ -46,7 +46,10 @@ export function groupTransactions(
     date:   (tx) => ({ key: getRelativeDate(tx.createdAt), label: getRelativeDate(tx.createdAt) }),
     author: (tx) => ({ key: tx.author || '?', label: tx.author ? `@${tx.author}` : 'Unknown' }),
     status: (tx) => ({ key: tx.status, label: tx.status.charAt(0) + tx.status.slice(1).toLowerCase() }),
-    files:  (tx) => ({ key: tx.files[0]?.path || '?', label: tx.files[0]?.path || 'No Files' }),
+    files:  (tx) => {
+      const firstFile = tx.files?.[0] || tx.blocks?.find(b => b.type === 'file')?.file;
+      return { key: firstFile?.path || '?', label: firstFile?.path || 'No Files' };
+    },
     none:   () => ({ key: 'all', label: 'All' }),
   };
 

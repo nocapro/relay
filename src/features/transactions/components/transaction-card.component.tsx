@@ -15,14 +15,13 @@ import {
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { cn } from "@/utils/cn.util";
-import { TransactionStatus, TransactionBlock, TransactionFile } from "@/types/app.types";
+import { TransactionStatus, TransactionBlock, TransactionFile, STATUS_CONFIG, FILE_STATUS_CONFIG } from "@/types/app.types";
 import { StatusBadge } from "@/components/ui/status-badge.ui";
 import { useStore } from "@/store/root.store";
 import { calculateTotalStats } from "@/utils/diff.util";
 import { DiffStat } from "@/components/ui/diff-stat.ui";
 import { FileSection } from "./file-section.component";
 import { Metric } from "@/components/ui/metric.ui";
-import { STATUS_CONFIG } from '@/types/app.types';
 
 interface TransactionCardProps {
   id: string;
@@ -154,9 +153,10 @@ export const TransactionCard = memo(({
       animate={{ opacity: 1, y: 0 }}
       className={cn(
         "rounded-2xl border transition-all duration-300 relative isolate",
+        STATUS_CONFIG[status].border,
         expanded
-          ? "bg-zinc-900/80 z-10 my-12 border-indigo-500/30 shadow-xl shadow-indigo-900/10 ring-1 ring-indigo-500/20"
-          : cn("bg-zinc-900/40 hover:bg-zinc-900/60 shadow-sm", STATUS_CONFIG[status].border)
+          ? "bg-zinc-900/80 z-10 my-12 shadow-xl shadow-indigo-900/10 ring-1 ring-indigo-500/20"
+          : "bg-zinc-900/40 hover:bg-zinc-900/60 shadow-sm"
       )}
     >
       {expanded && <div className="absolute inset-0 bg-gradient-to-b from-indigo-500/5 to-transparent pointer-events-none" />}
@@ -281,17 +281,19 @@ export const TransactionCard = memo(({
                             className={cn(
                               "w-full text-left px-3 py-2 rounded-lg text-[11px] font-mono transition-all truncate group flex items-center gap-2",
                               isActive 
-                                ? "text-indigo-400 bg-indigo-500/10 border-l-2 border-indigo-500" 
+                                ? cn("bg-zinc-800/80 border-l-2", 
+                                     FILE_STATUS_CONFIG[info.file.status].color.replace('bg-', 'border-'), 
+                                     FILE_STATUS_CONFIG[info.file.status].color.replace('bg-', 'text-'))
                                 : "text-zinc-500 hover:text-zinc-300 hover:bg-zinc-800/50 border-l-2 border-transparent"
                             )}
                           >
                             <span className={cn(
-                              "w-1.5 h-1.5 rounded-full shrink-0 transition-colors",
+                              "w-1.5 h-1.5 rounded-full shrink-0 transition-all",
                               isActive 
-                                ? "bg-indigo-400 shadow-[0_0_6px_rgba(129,140,248,0.6)]"
+                                ? cn(FILE_STATUS_CONFIG[info.file.status].color, "shadow-[0_0_8px_currentColor]")
                                 : "bg-zinc-700 group-hover:bg-zinc-500"
                             )} />
-                            <span className="truncate">{info.file.path.split('/').pop()}</span>
+                            <span className="truncate">{info.file.path}</span>
                           </button>
                         );
                       })}

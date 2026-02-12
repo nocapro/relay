@@ -11,6 +11,7 @@ src/
     ui/
       diff-stat.ui.tsx
       diff-viewer.ui.tsx
+      metric.ui.tsx
       status-badge.ui.tsx
   features/
     transactions/
@@ -146,6 +147,33 @@ export const DiffStat = memo(({ adds, subs, className }: DiffStatProps) => (
 ));
 ```
 
+## File: src/components/ui/metric.ui.tsx
+```typescript
+import { memo } from 'react';
+import { LucideIcon } from 'lucide-react';
+import { cn } from "@/utils/cn.util";
+
+interface MetricProps {
+  icon: LucideIcon;
+  label: string;
+  value: string | number;
+  color?: string;
+  className?: string;
+}
+
+export const Metric = memo(({ icon: Icon, label, value, color, className }: MetricProps) => (
+  <div className={cn("flex items-center gap-2 shrink-0", className)}>
+    <div className={cn("p-1.5 rounded bg-zinc-800/50 border border-zinc-700/50", color)}>
+      <Icon className="w-3 h-3" />
+    </div>
+    <div className="flex flex-col">
+      <span className="text-[9px] text-zinc-500 uppercase font-bold tracking-tighter leading-none mb-0.5">{label}</span>
+      <span className="text-[11px] font-mono text-zinc-300 leading-none">{value}</span>
+    </div>
+  </div>
+));
+```
+
 ## File: src/features/transactions/components/transaction-group.component.tsx
 ```typescript
 import { motion, AnimatePresence } from 'framer-motion';
@@ -245,102 +273,6 @@ import { twMerge } from "tailwind-merge";
 
 export function cn(...inputs: ClassValue[]) {
   return twMerge(clsx(inputs));
-}
-```
-
-## File: src/utils/group.util.ts
-```typescript
-import { Transaction, Prompt, GroupByStrategy } from '@/types/app.types';
-
-export interface GroupedData {
-  id: string;
-  label: string;
-  count: number;
-  transactions: Transaction[];
-}
-
-// Helper to get relative date
-const getRelativeDate = (dateStr: string): string => {
-  const date = new Date(dateStr);
-  const now = new Date();
-  const diffDays = Math.floor((now.getTime() - date.getTime()) / (1000 * 60 * 60 * 24));
-
-  if (diffDays === 0) return 'Today';
-  if (diffDays === 1) return 'Yesterday';
-  if (diffDays < 7) return 'This Week';
-  if (diffDays < 30) return 'This Month';
-  return 'Older';
-};
-
-export function groupTransactions(
-  transactions: Transaction[],
-  prompts: Prompt[],
-  strategy: GroupByStrategy
-): GroupedData[] {
-  if (strategy === 'none' || !transactions.length) {
-    return [{
-      id: 'all',
-      label: 'All Transactions',
-      count: transactions.length,
-      transactions
-    }];
-  }
-
-  const groups = new Map<string, { label: string; transactions: Transaction[] }>();
-
-  // 1. Sort transactions by date first for consistent ordering
-  const sorted = [...transactions].sort((a, b) => 
-    new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
-  );
-
-  sorted.forEach(tx => {
-    let key = 'unknown';
-    let label = 'Unknown';
-
-    switch (strategy) {
-      case 'prompt': {
-        key = tx.promptId;
-        const prompt = prompts.find(p => p.id === tx.promptId);
-        label = prompt?.title || 'Orphaned Transactions';
-        break;
-      }
-      case 'date': {
-        key = getRelativeDate(tx.createdAt);
-        label = key;
-        break;
-      }
-      case 'author': {
-        key = tx.author || 'unknown';
-        label = tx.author ? `@${tx.author}` : 'Unknown Author';
-        break;
-      }
-      case 'status': {
-        key = tx.status;
-        label = tx.status.charAt(0) + tx.status.slice(1).toLowerCase();
-        break;
-      }
-      case 'files': {
-        // Group by the first file path or "No Files"
-        const firstFile = tx.files[0];
-        key = firstFile?.path || 'no-files';
-        label = firstFile?.path || 'No Files Attached';
-        break;
-      }
-    }
-
-    if (!groups.has(key)) {
-      groups.set(key, { label, transactions: [] });
-    }
-    groups.get(key)!.transactions.push(tx);
-  });
-
-  // Convert map to array and calculate counts
-  return Array.from(groups.entries()).map(([id, data]) => ({
-    id,
-    label: data.label,
-    count: data.transactions.length,
-    transactions: data.transactions
-  }));
 }
 ```
 
@@ -483,145 +415,6 @@ export const CommandPalette = () => {
 };
 ```
 
-## File: src/components/ui/status-badge.ui.tsx
-```typescript
-import { 
-  CheckCircle2, 
-  XCircle, 
-  Clock, 
-  GitCommit, 
-  RotateCcw,
-  Loader2
-} from 'lucide-react';
-import { cn } from "@/utils/cn.util";
-import { TransactionStatus } from "@/types/app.types";
-
-const styles = {
-  PENDING: 'bg-amber-500/5 text-amber-500 border-amber-500/20 shadow-[0_0_10px_-3px_rgba(245,158,11,0.2)]',
-  APPLIED: 'bg-emerald-500/5 text-emerald-500 border-emerald-500/20 shadow-[0_0_10px_-3px_rgba(16,185,129,0.2)]',
-  COMMITTED: 'bg-blue-500/5 text-blue-500 border-blue-500/20',
-  REVERTED: 'bg-zinc-500/5 text-zinc-400 border-zinc-500/20',
-  FAILED: 'bg-red-500/5 text-red-500 border-red-500/20',
-};
-
-const icons = {
-  PENDING: Loader2, // Animated loader for pending
-  APPLIED: CheckCircle2,
-  COMMITTED: GitCommit,
-  REVERTED: RotateCcw,
-  FAILED: XCircle,
-};
-
-export const StatusBadge = ({ status }: { status: TransactionStatus }) => {
-  const Icon = icons[status];
-  const isPending = status === 'PENDING';
-
-  return (
-    <div className={cn(
-      "flex items-center gap-1.5 px-2.5 py-1 rounded-md text-[10px] md:text-xs font-medium border transition-all", 
-      styles[status]
-    )}>
-      <Icon className={cn("w-3.5 h-3.5", isPending && "animate-spin")} />
-      <span className="tracking-wide uppercase">{status}</span>
-    </div>
-  );
-};
-```
-
-## File: src/features/transactions/components/file-section.component.tsx
-```typescript
-import { memo, useState, useCallback, useMemo } from 'react';
-import { motion, AnimatePresence } from 'framer-motion';
-import { ChevronDown, Copy } from 'lucide-react';
-import { cn } from "@/utils/cn.util";
-import { TransactionFile } from "@/types/app.types";
-import { DiffViewer } from "@/components/ui/diff-viewer.ui.tsx";
-import { getDiffStats } from "@/utils/diff.util";
-import { DiffStat } from "@/components/ui/diff-stat.ui";
-
-export const MetaItem = memo(({ icon: Icon, label, value, color }: any) => (
-  <div className="flex items-center gap-2 shrink-0">
-    <div className={cn("p-1.5 rounded bg-zinc-800/50 border border-zinc-700/50", color)}>
-      <Icon className="w-3 h-3" />
-    </div>
-    <div className="flex flex-col">
-      <span className="text-[9px] text-zinc-500 uppercase font-bold tracking-tighter leading-none mb-0.5">{label}</span>
-      <span className="text-[11px] font-mono text-zinc-300 leading-none">{value}</span>
-    </div>
-  </div>
-));
-
-export const FileSection = memo(({ file }: { file: TransactionFile }) => {
-  const [isExpanded, setIsExpanded] = useState(true);
-  const stats = useMemo(() => getDiffStats(file.diff), [file.diff]);
-
-  const toggleExpanded = useCallback(() => setIsExpanded(prev => !prev), []);
-
-  const stopPropagation = useCallback((e: React.MouseEvent) => {
-    e.stopPropagation();
-  }, []);
-
-  return (
-    <div className="relative mb-10 group/file">
-      <div 
-        className={cn(
-          "sticky top-36 z-10 flex items-center justify-between px-4 py-2.5 bg-zinc-900/95 backdrop-blur-sm border border-zinc-800/60 transition-all duration-300 cursor-pointer select-none",
-          isExpanded ? "rounded-t-xl border-b-zinc-800/30" : "rounded-xl"
-        )}
-        onClick={toggleExpanded}
-      >
-        <div className="flex items-center gap-3 min-w-0">
-          <div className={cn(
-            "w-1.5 h-1.5 rounded-full shrink-0",
-            file.status === 'modified' ? "bg-amber-500 shadow-[0_0_8px_rgba(245,158,11,0.5)]" :
-            file.status === 'created' ? "bg-emerald-500 shadow-[0_0_8px_rgba(16,185,129,0.5)]" : "bg-red-500"
-          )} />
-          <span className="text-xs font-mono text-zinc-300 truncate">{file.path}</span>
-          <DiffStat 
-            adds={stats.adds} 
-            subs={stats.subs} 
-            className="hidden sm:flex text-[10px] ml-2 opacity-60" 
-          />
-        </div>
-        
-        <div className="flex items-center gap-1 ml-4" onClick={stopPropagation}>
-          <button 
-            onClick={toggleExpanded}
-            className="p-1.5 text-zinc-500 hover:text-white hover:bg-zinc-800 rounded-md transition-all"
-            title={isExpanded ? "Collapse" : "Expand"}
-          >
-            <ChevronDown className={cn("w-3.5 h-3.5 transition-transform duration-300", !isExpanded && "-rotate-90")} />
-          </button>
-          <button className="p-1.5 text-zinc-500 hover:text-white hover:bg-zinc-800 rounded-md transition-all">
-            <Copy className="w-3.5 h-3.5" />
-          </button>
-        </div>
-      </div>
-
-      <AnimatePresence initial={false}>
-        {isExpanded ? (
-          <motion.div
-            initial={{ height: 0, opacity: 0 }}
-            animate={{ height: "auto", opacity: 1 }}
-            exit={{ height: 0, opacity: 0 }}
-            className="relative z-0 overflow-hidden border-x border-b border-zinc-800/60 rounded-b-xl bg-zinc-950"
-          >
-            <DiffViewer diff={file.diff} language={file.language} className="max-h-[600px]" />
-          </motion.div>
-        ) : (
-          <motion.div
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 0 }}
-            exit={{ opacity: 0 }}
-            className="hidden"
-          />
-        )}
-      </AnimatePresence>
-    </div>
-  );
-});
-```
-
 ## File: src/routes/dashboard.tsx
 ```typescript
 import { Dashboard } from '@/pages/dashboard.page';
@@ -679,6 +472,77 @@ export const useTransactionActions = () => useStore((state) => ({
   toggleWatching: state.toggleWatching,
   fetchTransactions: state.fetchTransactions,
 }));
+```
+
+## File: src/utils/group.util.ts
+```typescript
+import { Transaction, Prompt, GroupByStrategy } from '@/types/app.types';
+
+export interface GroupedData {
+  id: string;
+  label: string;
+  count: number;
+  transactions: Transaction[];
+}
+
+// Helper to get relative date
+const getRelativeDate = (dateStr: string): string => {
+  const date = new Date(dateStr);
+  const now = new Date();
+  const diffDays = Math.floor((now.getTime() - date.getTime()) / (1000 * 60 * 60 * 24));
+
+  if (diffDays === 0) return 'Today';
+  if (diffDays === 1) return 'Yesterday';
+  if (diffDays < 7) return 'This Week';
+  if (diffDays < 30) return 'This Month';
+  return 'Older';
+};
+
+export function groupTransactions(
+  transactions: Transaction[],
+  prompts: Prompt[],
+  strategy: GroupByStrategy
+): GroupedData[] {
+  if (strategy === 'none' || !transactions.length) {
+    return [{
+      id: 'all',
+      label: 'All Transactions',
+      count: transactions.length,
+      transactions
+    }];
+  }
+
+  const groups = new Map<string, { label: string; transactions: Transaction[] }>();
+
+  // 1. Sort transactions by date first for consistent ordering
+  const sorted = [...transactions].sort((a, b) => 
+    new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
+  );
+
+  const strategies: Record<GroupByStrategy, (tx: Transaction) => { key: string; label: string }> = {
+    prompt: (tx) => ({ key: tx.promptId, label: prompts.find(p => p.id === tx.promptId)?.title || 'Orphaned' }),
+    date:   (tx) => ({ key: getRelativeDate(tx.createdAt), label: getRelativeDate(tx.createdAt) }),
+    author: (tx) => ({ key: tx.author || '?', label: tx.author ? `@${tx.author}` : 'Unknown' }),
+    status: (tx) => ({ key: tx.status, label: tx.status.charAt(0) + tx.status.slice(1).toLowerCase() }),
+    files:  (tx) => ({ key: tx.files[0]?.path || '?', label: tx.files[0]?.path || 'No Files' }),
+    none:   () => ({ key: 'all', label: 'All' }),
+  };
+
+  sorted.forEach(tx => {
+    const { key, label } = strategies[strategy](tx);
+    const group = groups.get(key) || { label, transactions: [] };
+    group.transactions.push(tx);
+    groups.set(key, group);
+  });
+
+  // Convert map to array and calculate counts
+  return Array.from(groups.entries()).map(([id, data]) => ({
+    id,
+    label: data.label,
+    count: data.transactions.length,
+    transactions: data.transactions
+  }));
+}
 ```
 
 ## File: src/components/layout/navigation.layout.tsx
@@ -779,138 +643,101 @@ export const Navigation = () => {
 };
 ```
 
-## File: src/utils/diff.util.ts
+## File: src/components/ui/status-badge.ui.tsx
 ```typescript
-import { ClassValue } from "clsx";
+import { cn } from "@/utils/cn.util";
+import { TransactionStatus, STATUS_CONFIG } from "@/types/app.types";
 
-export interface DiffLine {
-  type: 'hunk' | 'add' | 'remove' | 'context';
-  content: string;
-  oldLine?: number;
-  newLine?: number;
-}
+export const StatusBadge = ({ status }: { status: TransactionStatus }) => {
+  const cfg = STATUS_CONFIG[status];
+  return (
+    <div className={cn(
+      "flex items-center gap-1.5 px-2.5 py-1 rounded-md text-[10px] md:text-xs font-medium border transition-all", 
+      cfg.color, cfg.border
+    )}>
+      <cfg.icon className={cn("w-3.5 h-3.5", cfg.animate && "animate-spin")} />
+      <span className="tracking-wide uppercase">{status}</span>
+    </div>
+  );
+};
+```
 
-export interface SyntaxToken {
-  text: string;
-  className?: string;
-}
+## File: src/features/transactions/components/file-section.component.tsx
+```typescript
+import { memo, useState, useCallback, useMemo } from 'react';
+import { motion, AnimatePresence } from 'framer-motion';
+import { ChevronDown, Copy } from 'lucide-react';
+import { cn } from "@/utils/cn.util";
+import { TransactionFile, FILE_STATUS_CONFIG } from "@/types/app.types";
+import { DiffViewer } from "@/components/ui/diff-viewer.ui.tsx";
+import { getDiffStats } from "@/utils/diff.util";
+import { DiffStat } from "@/components/ui/diff-stat.ui";
 
-/**
- * Parses a unified diff string into structured lines for rendering.
- */
-export function parseDiff(diff: string): DiffLine[] {
-  const lines = diff.split('\n');
-  const result: DiffLine[] = [];
-  let oldLine = 0;
-  let newLine = 0;
+export const FileSection = memo(({ file }: { file: TransactionFile }) => {
+  const [isExpanded, setIsExpanded] = useState(true);
+  const stats = useMemo(() => getDiffStats(file.diff), [file.diff]);
 
-  for (const line of lines) {
-    if (line.startsWith('@@')) {
-      // Parse hunk header: @@ -1,4 +1,5 @@
-      const match = line.match(/@@ -(\d+),?(\d*) \+(\d+),?(\d*) @@/);
-      if (match) {
-        oldLine = parseInt(match[1], 10) - 1;
-        newLine = parseInt(match[3], 10) - 1;
-      }
-      result.push({ type: 'hunk', content: line });
-      continue;
-    }
+  const toggleExpanded = useCallback(() => setIsExpanded(prev => !prev), []);
 
-    if (line.startsWith('+')) {
-      newLine++;
-      result.push({ type: 'add', content: line.substring(1), newLine });
-    } else if (line.startsWith('-')) {
-      oldLine++;
-      result.push({ type: 'remove', content: line.substring(1), oldLine });
-    } else if (line.startsWith(' ')) {
-      oldLine++;
-      newLine++;
-      result.push({ type: 'context', content: line.substring(1), oldLine, newLine });
-    }
-  }
+  const stopPropagation = useCallback((e: React.MouseEvent) => {
+    e.stopPropagation();
+  }, []);
 
-  return result;
-}
+  return (
+    <div className="relative mb-10 group/file">
+      <div 
+        className={cn(
+          "sticky top-36 z-10 flex items-center justify-between px-4 py-2.5 bg-zinc-900/95 backdrop-blur-sm border border-zinc-800/60 transition-all duration-300 cursor-pointer select-none",
+          isExpanded ? "rounded-t-xl border-b-zinc-800/30" : "rounded-xl"
+        )}
+        onClick={toggleExpanded}
+      >
+        <div className="flex items-center gap-3 min-w-0">
+          <div className={cn("w-1.5 h-1.5 rounded-full shrink-0", FILE_STATUS_CONFIG[file.status].color)} />
+          <span className="text-xs font-mono text-zinc-300 truncate">{file.path}</span>
+          <DiffStat 
+            adds={stats.adds} 
+            subs={stats.subs} 
+            className="hidden sm:flex text-[10px] ml-2 opacity-60" 
+          />
+        </div>
+        
+        <div className="flex items-center gap-1 ml-4" onClick={stopPropagation}>
+          <button 
+            onClick={toggleExpanded}
+            className="p-1.5 text-zinc-500 hover:text-white hover:bg-zinc-800 rounded-md transition-all"
+            title={isExpanded ? "Collapse" : "Expand"}
+          >
+            <ChevronDown className={cn("w-3.5 h-3.5 transition-transform duration-300", !isExpanded && "-rotate-90")} />
+          </button>
+          <button className="p-1.5 text-zinc-500 hover:text-white hover:bg-zinc-800 rounded-md transition-all">
+            <Copy className="w-3.5 h-3.5" />
+          </button>
+        </div>
+      </div>
 
-/**
- * Extracts addition/removal stats from a raw diff string
- */
-export function getDiffStats(diff: string) {
-  const lines = diff.split('\n');
-  const adds = lines.filter(l => l.startsWith('+') && !l.startsWith('+++')).length;
-  const subs = lines.filter(l => l.startsWith('-') && !l.startsWith('---')).length;
-  return { adds, subs, total: adds + subs };
-}
-
-/**
- * Calculates aggregate stats for a collection of files
- */
-export function calculateTotalStats(files: { diff: string }[]) {
-  return files.reduce((acc, f) => {
-    const s = getDiffStats(f.diff);
-    return { adds: acc.adds + s.adds, subs: acc.subs + s.subs, files: acc.files + 1 };
-  }, { adds: 0, subs: 0, files: 0 });
-}
-
-/**
- * Basic syntax highlighter for JS/TS/CSS
- */
-const KEYWORDS = [
-  'import', 'export', 'const', 'let', 'var', 'function', 'return', 'if', 'else', 
-  'interface', 'type', 'from', 'async', 'await', 'class', 'extends', 'implements'
-];
-
-export function tokenizeCode(code: string): SyntaxToken[] {
-  // Simple regex based tokenizer
-  // 1. Strings
-  // 2. Keywords
-  // 3. Comments
-  // 4. Numbers
-  // 5. Normal text
-  
-  const tokens: SyntaxToken[] = [];
-  let remaining = code;
-
-  // Very naive splitting by word boundary, space, or special chars
-  // For a production app, use PrismJS or Shiki. This is a lightweight substitute.
-  const regex = /(".*?"|'.*?'|\/\/.*$|\/\*[\s\S]*?\*\/|\b\w+\b|[^\w\s])/gm;
-  
-  let match;
-  let lastIndex = 0;
-
-  while ((match = regex.exec(code)) !== null) {
-    // Add whitespace/text before match
-    if (match.index > lastIndex) {
-      tokens.push({ text: code.substring(lastIndex, match.index) });
-    }
-
-    const text = match[0];
-    let className: string | undefined;
-
-    if (text.startsWith('"') || text.startsWith("'")) {
-      className = "text-emerald-300"; // String
-    } else if (text.startsWith('//') || text.startsWith('/*')) {
-      className = "text-zinc-500 italic"; // Comment
-    } else if (KEYWORDS.includes(text)) {
-      className = "text-purple-400 font-medium"; // Keyword
-    } else if (/^\d+$/.test(text)) {
-      className = "text-orange-300"; // Number
-    } else if (/^[A-Z]/.test(text)) {
-      className = "text-yellow-200"; // PascalCase (likely type/class)
-    } else if (['{', '}', '(', ')', '[', ']'].includes(text)) {
-      className = "text-zinc-400"; // Brackets
-    }
-
-    tokens.push({ text, className });
-    lastIndex = regex.lastIndex;
-  }
-
-  if (lastIndex < code.length) {
-    tokens.push({ text: code.substring(lastIndex) });
-  }
-
-  return tokens;
-}
+      <AnimatePresence initial={false}>
+        {isExpanded ? (
+          <motion.div
+            initial={{ height: 0, opacity: 0 }}
+            animate={{ height: "auto", opacity: 1 }}
+            exit={{ height: 0, opacity: 0 }}
+            className="relative z-0 overflow-hidden border-x border-b border-zinc-800/60 rounded-b-xl bg-zinc-950"
+          >
+            <DiffViewer diff={file.diff} language={file.language} className="max-h-[600px]" />
+          </motion.div>
+        ) : (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 0 }}
+            exit={{ opacity: 0 }}
+            className="hidden"
+          />
+        )}
+      </AnimatePresence>
+    </div>
+  );
+});
 ```
 
 ## File: src/root.tsx
@@ -998,87 +825,6 @@ export default defineConfig({
 });
 ```
 
-## File: src/components/ui/diff-viewer.ui.tsx
-```typescript
-import { useMemo, memo } from 'react';
-import { parseDiff, tokenizeCode, DiffLine } from "@/utils/diff.util";
-import { cn } from "@/utils/cn.util";
-
-interface DiffViewerProps {
-  diff: string;
-  language: string;
-  className?: string;
-}
-
-export const DiffViewer = memo(({ diff, language, className }: DiffViewerProps) => {
-  const lines = useMemo(() => parseDiff(diff), [diff]);
-  
-  return (
-    <div className={cn("font-mono text-[11px] md:text-xs overflow-x-auto relative", className)}>
-      <div className="min-w-full inline-block">
-        {lines.map((line, i) => (
-          <LineRow key={i} line={line} />
-        ))}
-      </div>
-    </div>
-  );
-});
-
-const LineRow = memo(({ line }: { line: DiffLine }) => {
-  const tokens = useMemo(() => tokenizeCode(line.content), [line.content]);
-
-  // Styles based on line type
-  const bgClass = 
-    line.type === 'add' ? 'bg-emerald-500/10' :
-    line.type === 'remove' ? 'bg-red-500/10' :
-    line.type === 'hunk' ? 'bg-zinc-800/50' : 
-    'transparent';
-
-  const textClass = 
-    line.type === 'hunk' ? 'text-zinc-500' :
-    line.type === 'context' ? 'text-zinc-400' :
-    'text-zinc-300';
-
-  const gutterClass = 
-    line.type === 'add' ? 'bg-emerald-500/20 text-emerald-500' :
-    line.type === 'remove' ? 'bg-red-500/20 text-red-500' :
-    'text-zinc-700';
-
-  return (
-    <div className={cn("flex w-full group/line hover:bg-white/5 transition-colors", bgClass)}>
-      {/* Line Numbers */}
-      <div className={cn("w-6 md:w-8 flex-shrink-0 select-none text-right pr-1 py-0.5 border-r border-white/5 font-mono opacity-40 group-hover/line:opacity-100 transition-opacity", gutterClass)}>
-        {line.oldLine || ' '}
-      </div>
-      <div className={cn("w-6 md:w-8 flex-shrink-0 select-none text-right pr-1 py-0.5 border-r border-white/5 font-mono opacity-40 group-hover/line:opacity-100 transition-opacity", gutterClass)}>
-        {line.newLine || ' '}
-      </div>
-      
-      {/* Content */}
-      <div className={cn("flex-1 px-4 py-0.5 whitespace-pre", textClass)}>
-        {line.type === 'hunk' ? (
-          <span className="opacity-70">{line.content}</span>
-        ) : (
-          <span className="relative">
-             {/* Marker */}
-             <span className="absolute -left-2 select-none opacity-50">
-               {line.type === 'add' ? '+' : line.type === 'remove' ? '-' : ' '}
-             </span>
-             
-             {/* Syntax Highlighted Code */}
-             {tokens.map((token, idx) => (
-               <span key={idx} className={token.className}>
-                 {token.text}
-               </span>
-             ))}
-          </span>
-        )}
-      </div>
-    </div>
-  );
-});
-```
-
 ## File: src/store/slices/transaction.slice.ts
 ```typescript
 import { StateCreator } from 'zustand';
@@ -1149,6 +895,212 @@ export const createTransactionSlice: StateCreator<RootState, [], [], Transaction
       }
     });
   },
+});
+```
+
+## File: src/utils/diff.util.ts
+```typescript
+export interface DiffLine {
+  type: 'hunk' | 'add' | 'remove' | 'context';
+  content: string;
+  oldLine?: number;
+  newLine?: number;
+}
+
+export interface SyntaxToken {
+  text: string;
+  className?: string;
+}
+
+/**
+ * Parses a unified diff string into structured lines for rendering.
+ */
+export function parseDiff(diff: string): DiffLine[] {
+  const lines = diff.split('\n');
+  const result: DiffLine[] = [];
+  let oldLine = 0;
+  let newLine = 0;
+
+  for (const line of lines) {
+    if (line.startsWith('@@')) {
+      // Parse hunk header: @@ -1,4 +1,5 @@
+      const match = line.match(/@@ -(\d+),?(\d*) \+(\d+),?(\d*) @@/);
+      if (match) {
+        oldLine = parseInt(match[1], 10) - 1;
+        newLine = parseInt(match[3], 10) - 1;
+      }
+      result.push({ type: 'hunk', content: line });
+      continue;
+    }
+
+    if (line.startsWith('+')) {
+      newLine++;
+      result.push({ type: 'add', content: line.substring(1), newLine });
+    } else if (line.startsWith('-')) {
+      oldLine++;
+      result.push({ type: 'remove', content: line.substring(1), oldLine });
+    } else if (line.startsWith(' ')) {
+      oldLine++;
+      newLine++;
+      result.push({ type: 'context', content: line.substring(1), oldLine, newLine });
+    }
+  }
+
+  return result;
+}
+
+/**
+ * Extracts addition/removal stats from a raw diff string
+ */
+export function getDiffStats(diff: string) {
+  const lines = diff.split('\n');
+  const adds = lines.filter(l => l.startsWith('+') && !l.startsWith('+++')).length;
+  const subs = lines.filter(l => l.startsWith('-') && !l.startsWith('---')).length;
+  return { adds, subs, total: adds + subs };
+}
+
+/**
+ * Calculates aggregate stats for a collection of files
+ */
+export function calculateTotalStats(files: { diff: string }[]) {
+  return files.reduce((acc, f) => {
+    const s = getDiffStats(f.diff);
+    return { adds: acc.adds + s.adds, subs: acc.subs + s.subs, files: acc.files + 1 };
+  }, { adds: 0, subs: 0, files: 0 });
+}
+
+/**
+ * Basic syntax highlighter for JS/TS/CSS
+ */
+const KEYWORDS = [
+  'import', 'export', 'const', 'let', 'var', 'function', 'return', 'if', 'else', 
+  'interface', 'type', 'from', 'async', 'await', 'class', 'extends', 'implements'
+];
+
+export function tokenizeCode(code: string): SyntaxToken[] {
+  // Simple regex based tokenizer
+  const tokens: SyntaxToken[] = [];
+
+  // Very naive splitting by word boundary, space, or special chars
+  // For a production app, use PrismJS or Shiki. This is a lightweight substitute.
+  const regex = /(".*?"|'.*?'|\/\/.*$|\/\*[\s\S]*?\*\/|\b\w+\b|[^\w\s])/gm;
+  
+  let match;
+  let lastIndex = 0;
+
+  while ((match = regex.exec(code)) !== null) {
+    // Add whitespace/text before match
+    if (match.index > lastIndex) {
+      tokens.push({ text: code.substring(lastIndex, match.index) });
+    }
+
+    const text = match[0];
+    let className: string | undefined;
+
+    if (text.startsWith('"') || text.startsWith("'")) {
+      className = "text-emerald-300"; // String
+    } else if (text.startsWith('//') || text.startsWith('/*')) {
+      className = "text-zinc-500 italic"; // Comment
+    } else if (KEYWORDS.includes(text)) {
+      className = "text-purple-400 font-medium"; // Keyword
+    } else if (/^\d+$/.test(text)) {
+      className = "text-orange-300"; // Number
+    } else if (/^[A-Z]/.test(text)) {
+      className = "text-yellow-200"; // PascalCase (likely type/class)
+    } else if (['{', '}', '(', ')', '[', ']'].includes(text)) {
+      className = "text-zinc-400"; // Brackets
+    }
+
+    tokens.push({ text, className });
+    lastIndex = regex.lastIndex;
+  }
+
+  if (lastIndex < code.length) {
+    tokens.push({ text: code.substring(lastIndex) });
+  }
+
+  return tokens;
+}
+```
+
+## File: src/components/ui/diff-viewer.ui.tsx
+```typescript
+import { useMemo, memo } from 'react';
+import { parseDiff, tokenizeCode, DiffLine } from "@/utils/diff.util";
+import { cn } from "@/utils/cn.util";
+
+interface DiffViewerProps {
+  diff: string;
+  language: string;
+  className?: string;
+}
+
+export const DiffViewer = memo(({ diff, className }: DiffViewerProps) => {
+  const lines = useMemo(() => parseDiff(diff), [diff]);
+  
+  return (
+    <div className={cn("font-mono text-[11px] md:text-xs overflow-x-auto relative", className)}>
+      <div className="min-w-full inline-block">
+        {lines.map((line, i) => (
+          <LineRow key={i} line={line} />
+        ))}
+      </div>
+    </div>
+  );
+});
+
+const LineRow = memo(({ line }: { line: DiffLine }) => {
+  const tokens = useMemo(() => tokenizeCode(line.content), [line.content]);
+
+  // Styles based on line type
+  const bgClass = 
+    line.type === 'add' ? 'bg-emerald-500/10' :
+    line.type === 'remove' ? 'bg-red-500/10' :
+    line.type === 'hunk' ? 'bg-zinc-800/50' : 
+    'transparent';
+
+  const textClass = 
+    line.type === 'hunk' ? 'text-zinc-500' :
+    line.type === 'context' ? 'text-zinc-400' :
+    'text-zinc-300';
+
+  const gutterClass = 
+    line.type === 'add' ? 'bg-emerald-500/20 text-emerald-500' :
+    line.type === 'remove' ? 'bg-red-500/20 text-red-500' :
+    'text-zinc-700';
+
+  return (
+    <div className={cn("flex w-full group/line hover:bg-white/5 transition-colors", bgClass)}>
+      {/* Line Numbers */}
+      <div className={cn("w-6 md:w-8 flex-shrink-0 select-none text-right pr-1 py-0.5 border-r border-white/5 font-mono opacity-40 group-hover/line:opacity-100 transition-opacity", gutterClass)}>
+        {line.oldLine || ' '}
+      </div>
+      <div className={cn("w-6 md:w-8 flex-shrink-0 select-none text-right pr-1 py-0.5 border-r border-white/5 font-mono opacity-40 group-hover/line:opacity-100 transition-opacity", gutterClass)}>
+        {line.newLine || ' '}
+      </div>
+      
+      {/* Content */}
+      <div className={cn("flex-1 px-4 py-0.5 whitespace-pre", textClass)}>
+        {line.type === 'hunk' ? (
+          <span className="opacity-70">{line.content}</span>
+        ) : (
+          <span className="relative">
+             {/* Marker */}
+             <span className="absolute -left-2 select-none opacity-50">
+               {line.type === 'add' ? '+' : line.type === 'remove' ? '-' : ' '}
+             </span>
+             
+             {/* Syntax Highlighted Code */}
+             {tokens.map((token, idx) => (
+               <span key={idx} className={token.className}>
+                 {token.text}
+               </span>
+             ))}
+          </span>
+        )}
+      </div>
+    </div>
+  );
 });
 ```
 
@@ -1375,50 +1327,6 @@ export const FloatingActionBar = () => {
 }
 ```
 
-## File: src/types/app.types.ts
-```typescript
-export type TransactionStatus = 'PENDING' | 'APPLIED' | 'COMMITTED' | 'REVERTED' | 'FAILED';
-
-export interface TransactionFile {
-  path: string;
-  status: 'modified' | 'created' | 'deleted' | 'renamed';
-  language: string;
-  diff: string;
-}
-
-// New: Prompt entity to support grouping
-export interface Prompt {
-  id: string;
-  title: string;
-  content: string;
-  timestamp: string;
-}
-
-export type TransactionBlock =
-  | { type: 'markdown'; content: string }
-  | { type: 'file'; file: TransactionFile };
-
-export interface Transaction {
-  id: string;
-  status: TransactionStatus;
-  description: string;
-  timestamp: string;
-  createdAt: string;
-  promptId: string;
-  author: string;
-  blocks: TransactionBlock[]; // New narrative structure
-  files: TransactionFile[];   // Keep for compatibility/summaries
-  provider: string;
-  model: string;
-  cost: string;
-  tokens: string;
-  reasoning: string; // Legacy fallback
-}
-
-// New: Grouping Strategies
-export type GroupByStrategy = 'prompt' | 'date' | 'author' | 'status' | 'files' | 'none';
-```
-
 ## File: package.json
 ```json
 {
@@ -1460,6 +1368,83 @@ export type GroupByStrategy = 'prompt' | 'date' | 'author' | 'status' | 'files' 
     "vite-plugin-singlefile": "2.3.0"
   }
 }
+```
+
+## File: src/types/app.types.ts
+```typescript
+import { 
+  CheckCircle2, 
+  XCircle, 
+  Loader2, 
+  GitCommit, 
+  RotateCcw,
+  PlusCircle,
+  FileEdit,
+  Trash2,
+  RefreshCw,
+  LucideIcon
+} from 'lucide-react';
+
+export type TransactionStatus = 'PENDING' | 'APPLIED' | 'COMMITTED' | 'REVERTED' | 'FAILED';
+
+export const STATUS_CONFIG: Record<TransactionStatus, { 
+  icon: LucideIcon; 
+  color: string; 
+  border: string; 
+  animate?: boolean;
+}> = {
+  PENDING:   { icon: Loader2,     color: 'text-amber-500',   border: 'border-amber-500/20 bg-amber-500/5', animate: true },
+  APPLIED:   { icon: CheckCircle2, color: 'text-emerald-500', border: 'border-emerald-500/20 bg-emerald-500/5' },
+  COMMITTED: { icon: GitCommit,    color: 'text-blue-500',    border: 'border-blue-500/20 bg-blue-500/5' },
+  REVERTED:  { icon: RotateCcw,    color: 'text-zinc-400',    border: 'border-zinc-500/20 bg-zinc-500/5' },
+  FAILED:    { icon: XCircle,      color: 'text-red-500',     border: 'border-red-500/20 bg-red-500/5' },
+};
+
+export const FILE_STATUS_CONFIG = {
+  created:  { color: 'bg-emerald-500', icon: PlusCircle, label: 'Added' },
+  modified: { color: 'bg-amber-500',   icon: FileEdit,   label: 'Modified' },
+  deleted:  { color: 'bg-red-500',     icon: Trash2,     label: 'Deleted' },
+  renamed:  { color: 'bg-blue-500',    icon: RefreshCw,  label: 'Renamed' },
+} as const;
+
+export interface TransactionFile {
+  path: string;
+  status: 'modified' | 'created' | 'deleted' | 'renamed';
+  language: string;
+  diff: string;
+}
+
+// New: Prompt entity to support grouping
+export interface Prompt {
+  id: string;
+  title: string;
+  content: string;
+  timestamp: string;
+}
+
+export type TransactionBlock =
+  | { type: 'markdown'; content: string }
+  | { type: 'file'; file: TransactionFile };
+
+export interface Transaction {
+  id: string;
+  status: TransactionStatus;
+  description: string;
+  timestamp: string;
+  createdAt: string;
+  promptId: string;
+  author: string;
+  blocks: TransactionBlock[]; // New narrative structure
+  files: TransactionFile[];   // Keep for compatibility/summaries
+  provider: string;
+  model: string;
+  cost: string;
+  tokens: string;
+  reasoning: string; // Legacy fallback
+}
+
+// New: Grouping Strategies
+export type GroupByStrategy = 'prompt' | 'date' | 'author' | 'status' | 'files' | 'none';
 ```
 
 ## File: src/pages/dashboard.page.tsx
@@ -1752,7 +1737,9 @@ import { StatusBadge } from "@/components/ui/status-badge.ui";
 import { useStore } from "@/store/root.store";
 import { calculateTotalStats } from "@/utils/diff.util";
 import { DiffStat } from "@/components/ui/diff-stat.ui";
-import { FileSection, MetaItem } from "./file-section.component";
+import { FileSection } from "./file-section.component";
+import { Metric } from "@/components/ui/metric.ui";
+import { STATUS_CONFIG } from '@/types/app.types';
 
 interface TransactionCardProps {
   id: string;
@@ -1876,17 +1863,7 @@ export const TransactionCard = memo(({
     return () => observer.disconnect();
   }, [expanded, fileInfos.length]);
 
-  const statusBorderColors = {
-    PENDING:    'border-amber-500/40 hover:border-amber-500/60',
-    APPLIED:    'border-emerald-500/40 hover:border-emerald-500/60',
-    COMMITTED:  'border-blue-500/40 hover:border-blue-500/60',
-    REVERTED:   'border-zinc-500/30 hover:border-zinc-500/50',
-    FAILED:     'border-red-500/40 hover:border-red-500/60',
-  };
-
-  const stats = useMemo(() => 
-    calculateTotalStats(fileInfos.map(i => i.file)), 
-  [fileInfos]);
+  const stats = useMemo(() => calculateTotalStats(fileInfos.map(i => i.file)), [fileInfos]);
 
   return (
     <motion.div 
@@ -1896,8 +1873,7 @@ export const TransactionCard = memo(({
         "rounded-2xl border transition-all duration-300 relative isolate",
         expanded
           ? "bg-zinc-900/80 z-10 my-12 border-indigo-500/30 shadow-xl shadow-indigo-900/10 ring-1 ring-indigo-500/20"
-          : "bg-zinc-900/40 hover:bg-zinc-900/60 shadow-sm",
-        !expanded && statusBorderColors[status]
+          : cn("bg-zinc-900/40 hover:bg-zinc-900/60 shadow-sm", STATUS_CONFIG[status].border)
       )}
     >
       {expanded && <div className="absolute inset-0 bg-gradient-to-b from-indigo-500/5 to-transparent pointer-events-none" />}
@@ -1987,9 +1963,9 @@ export const TransactionCard = memo(({
           >
             {/* Observability Strip */}
             <div className="flex items-center gap-6 px-8 py-3 bg-zinc-950 border-b border-zinc-900/50 overflow-x-auto scrollbar-hide">
-               <MetaItem icon={Cpu} label="Engine" value={`${provider} / ${model}`} color="text-indigo-400" />
-               <MetaItem icon={Terminal} label="Context" value={`${tokens} tokens`} color="text-emerald-400" />
-               <MetaItem icon={Coins} label="Cost" value={cost} color="text-amber-400" />
+               <Metric icon={Cpu} label="Engine" value={`${provider} / ${model}`} color="text-indigo-400" />
+               <Metric icon={Terminal} label="Context" value={`${tokens} tokens`} color="text-emerald-400" />
+               <Metric icon={Coins} label="Cost" value={cost} color="text-amber-400" />
                <div className="ml-auto hidden md:flex items-center gap-2 text-[10px] text-zinc-500 font-mono">
                   <ExternalLink className="w-3 h-3" />
                   <span>Report v2.4</span>
@@ -2043,7 +2019,7 @@ export const TransactionCard = memo(({
 
               {/* MAIN CONTENT STREAM */}
               <div className="flex-1 space-y-12 min-w-0">
-                {(blocks || []).length > 0 ? (
+                {blocks && blocks.length > 0 ? (
                   // Render blocks with interleaved markdown and files
                   blocks.map((block, blockIdx) => {
                     if (block.type === 'markdown') {
