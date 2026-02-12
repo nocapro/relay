@@ -8,8 +8,10 @@ export interface TransactionSlice {
   prompts: Prompt[]; // Store prompts for lookup
   isLoading: boolean;
   expandedId: string | null;
+  hoveredChainId: string | null;
   isWatching: boolean;
   setExpandedId: (id: string | null) => void;
+  setHoveredChain: (id: string | null) => void;
   toggleWatching: () => void;
   fetchTransactions: () => Promise<void>;
   addTransaction: (tx: Transaction) => void;
@@ -21,9 +23,11 @@ export const createTransactionSlice: StateCreator<RootState, [], [], Transaction
   prompts: [],
   isLoading: false,
   expandedId: null,
+  hoveredChainId: null,
   isWatching: false, // Default to false to show the "Start" state
 
   setExpandedId: (id) => set({ expandedId: id }),
+  setHoveredChain: (id) => set({ hoveredChainId: id }),
   
   toggleWatching: () => {
     const isNowWatching = !get().isWatching;

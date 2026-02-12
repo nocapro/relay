@@ -1,10 +1,14 @@
 import { Transaction, Prompt, GroupByStrategy } from '@/types/app.types';
 
+export interface GroupedTransaction extends Transaction {
+  depth: number;
+}
+
 export interface GroupedData {
   id: string;
   label: string;
   count: number;
-  transactions: Transaction[];
+  transactions: GroupedTransaction[];
 }
 
 // Helper to get relative date
@@ -30,7 +34,7 @@ export function groupTransactions(
       id: 'all',
       label: 'All Transactions',
       count: transactions.length,
-      transactions
+      transactions: transactions.map(tx => ({ ...tx, depth: 0 }))
     }];
   }
 
@@ -61,10 +65,52 @@ export function groupTransactions(
   });
 
   // Convert map to array and calculate counts
-  return Array.from(groups.entries()).map(([id, data]) => ({
-    id,
-    label: data.label,
-    count: data.transactions.length,
-    transactions: data.transactions
-  }));
+  return Array.from(groups.entries()).map(([id, data]) => {
+    // Threading Logic: Sort by chain and calculate depths
+    const threaded: GroupedTransaction[] = [];
+    const pool = [...data.transactions];
+    
+    const addToChain = (parentId: string | undefined, depth: number) => {
+      // Find children for this parent in the current pool
+      const children = pool.filter(tx => tx.parentId === parentId);
+      
+      children.forEach(child => {
+        const idx = pool.findIndex(t => t.id === child.id);
+        if (idx > -1) {
+          pool.splice(idx, 1);
+          threaded.push({ ...child, depth });
+          // Recursively add descendants
+          addToChain(child.id, depth + 1);
+        }
+      });
+    };
+
+    // 1. Identify "roots" for this group. A root has no parent, 
+    // or its parent is not present in this specific filtered group.
+    const rootCandidates = pool.filter(tx => 
+      !tx.parentId || !pool.some(p => p.id === tx.parentId)
+    );
+
+    rootCandidates.forEach(root => {
+      const idx = pool.findIndex(t => t.id === root.id);
+      if (idx > -1) {
+        pool.splice(idx, 1);
+        threaded.push({ ...root, depth: 0 });
+        addToChain(root.id, 1);
+      }
+    });
+
+    // 2. Safety: Handle any remaining orphans that might have missed the tree logic
+    while (pool.length > 0) {
+      const tx = pool.shift()!;
+      threaded.push({ ...tx, depth: 0 });
+    }
+
+    return {
+      id,
+      label: data.label,
+      count: data.transactions.length,
+      transactions: threaded
+    };
+  });
 }

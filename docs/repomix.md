@@ -212,12 +212,13 @@ export const TransactionGroup = ({ group, isCollapsed, onToggle, seenIds }: Tran
           transition={{ duration: 0.2, ease: 'easeInOut' }}
           className="overflow-visible"
         >
-          <div className="space-y-6 pl-0 md:pl-2 ml-3">
+          <div className="space-y-6 pl-0 md:pl-2 ml-3 relative">
             {group.transactions.map((tx) => (
               <TransactionCard 
                 key={tx.id} 
                 {...tx}
-                isNew={!seenIds.has(tx.id)} 
+                isNew={!seenIds.has(tx.id)}
+                depth={tx.depth}
               />
             ))}
           </div>
@@ -469,80 +470,10 @@ export const useUiActions = () => useStore((state) => ({
 
 export const useTransactionActions = () => useStore((state) => ({
   setExpandedId: state.setExpandedId,
+  setHoveredChain: state.setHoveredChain,
   toggleWatching: state.toggleWatching,
   fetchTransactions: state.fetchTransactions,
 }));
-```
-
-## File: src/utils/group.util.ts
-```typescript
-import { Transaction, Prompt, GroupByStrategy } from '@/types/app.types';
-
-export interface GroupedData {
-  id: string;
-  label: string;
-  count: number;
-  transactions: Transaction[];
-}
-
-// Helper to get relative date
-const getRelativeDate = (dateStr: string): string => {
-  const date = new Date(dateStr);
-  const now = new Date();
-  const diffDays = Math.floor((now.getTime() - date.getTime()) / (1000 * 60 * 60 * 24));
-
-  if (diffDays === 0) return 'Today';
-  if (diffDays === 1) return 'Yesterday';
-  if (diffDays < 7) return 'This Week';
-  if (diffDays < 30) return 'This Month';
-  return 'Older';
-};
-
-export function groupTransactions(
-  transactions: Transaction[],
-  prompts: Prompt[],
-  strategy: GroupByStrategy
-): GroupedData[] {
-  if (strategy === 'none' || !transactions.length) {
-    return [{
-      id: 'all',
-      label: 'All Transactions',
-      count: transactions.length,
-      transactions
-    }];
-  }
-
-  const groups = new Map<string, { label: string; transactions: Transaction[] }>();
-
-  // 1. Sort transactions by date first for consistent ordering
-  const sorted = [...transactions].sort((a, b) => 
-    new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
-  );
-
-  const strategies: Record<GroupByStrategy, (tx: Transaction) => { key: string; label: string }> = {
-    prompt: (tx) => ({ key: tx.promptId, label: prompts.find(p => p.id === tx.promptId)?.title || 'Orphaned' }),
-    date:   (tx) => ({ key: getRelativeDate(tx.createdAt), label: getRelativeDate(tx.createdAt) }),
-    author: (tx) => ({ key: tx.author || '?', label: tx.author ? `@${tx.author}` : 'Unknown' }),
-    status: (tx) => ({ key: tx.status, label: tx.status.charAt(0) + tx.status.slice(1).toLowerCase() }),
-    files:  (tx) => ({ key: tx.files[0]?.path || '?', label: tx.files[0]?.path || 'No Files' }),
-    none:   () => ({ key: 'all', label: 'All' }),
-  };
-
-  sorted.forEach(tx => {
-    const { key, label } = strategies[strategy](tx);
-    const group = groups.get(key) || { label, transactions: [] };
-    group.transactions.push(tx);
-    groups.set(key, group);
-  });
-
-  // Convert map to array and calculate counts
-  return Array.from(groups.entries()).map(([id, data]) => ({
-    id,
-    label: data.label,
-    count: data.transactions.length,
-    transactions: data.transactions
-  }));
-}
 ```
 
 ## File: src/components/layout/navigation.layout.tsx
@@ -740,6 +671,126 @@ export const FileSection = memo(({ file }: { file: TransactionFile }) => {
 });
 ```
 
+## File: src/utils/group.util.ts
+```typescript
+import { Transaction, Prompt, GroupByStrategy } from '@/types/app.types';
+
+export interface GroupedTransaction extends Transaction {
+  depth: number;
+}
+
+export interface GroupedData {
+  id: string;
+  label: string;
+  count: number;
+  transactions: GroupedTransaction[];
+}
+
+// Helper to get relative date
+const getRelativeDate = (dateStr: string): string => {
+  const date = new Date(dateStr);
+  const now = new Date();
+  const diffDays = Math.floor((now.getTime() - date.getTime()) / (1000 * 60 * 60 * 24));
+
+  if (diffDays === 0) return 'Today';
+  if (diffDays === 1) return 'Yesterday';
+  if (diffDays < 7) return 'This Week';
+  if (diffDays < 30) return 'This Month';
+  return 'Older';
+};
+
+export function groupTransactions(
+  transactions: Transaction[],
+  prompts: Prompt[],
+  strategy: GroupByStrategy
+): GroupedData[] {
+  if (strategy === 'none' || !transactions.length) {
+    return [{
+      id: 'all',
+      label: 'All Transactions',
+      count: transactions.length,
+      transactions: transactions.map(tx => ({ ...tx, depth: 0 }))
+    }];
+  }
+
+  const groups = new Map<string, { label: string; transactions: Transaction[] }>();
+
+  // 1. Sort transactions by date first for consistent ordering
+  const sorted = [...transactions].sort((a, b) => 
+    new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
+  );
+
+  const strategies: Record<GroupByStrategy, (tx: Transaction) => { key: string; label: string }> = {
+    prompt: (tx) => ({ key: tx.promptId, label: prompts.find(p => p.id === tx.promptId)?.title || 'Orphaned' }),
+    date:   (tx) => ({ key: getRelativeDate(tx.createdAt), label: getRelativeDate(tx.createdAt) }),
+    author: (tx) => ({ key: tx.author || '?', label: tx.author ? `@${tx.author}` : 'Unknown' }),
+    status: (tx) => ({ key: tx.status, label: tx.status.charAt(0) + tx.status.slice(1).toLowerCase() }),
+    files:  (tx) => {
+      const firstFile = tx.files?.[0] || tx.blocks?.find(b => b.type === 'file')?.file;
+      return { key: firstFile?.path || '?', label: firstFile?.path || 'No Files' };
+    },
+    none:   () => ({ key: 'all', label: 'All' }),
+  };
+
+  sorted.forEach(tx => {
+    const { key, label } = strategies[strategy](tx);
+    const group = groups.get(key) || { label, transactions: [] };
+    group.transactions.push(tx);
+    groups.set(key, group);
+  });
+
+  // Convert map to array and calculate counts
+  return Array.from(groups.entries()).map(([id, data]) => {
+    // Threading Logic: Sort by chain and calculate depths
+    const threaded: GroupedTransaction[] = [];
+    const pool = [...data.transactions];
+    
+    const addToChain = (parentId: string | undefined, depth: number) => {
+      // Find children for this parent in the current pool
+      const children = pool.filter(tx => tx.parentId === parentId);
+      
+      children.forEach(child => {
+        const idx = pool.findIndex(t => t.id === child.id);
+        if (idx > -1) {
+          pool.splice(idx, 1);
+          threaded.push({ ...child, depth });
+          // Recursively add descendants
+          addToChain(child.id, depth + 1);
+        }
+      });
+    };
+
+    // 1. Identify "roots" for this group. A root has no parent, 
+    // or its parent is not present in this specific filtered group.
+    const rootCandidates = pool.filter(tx => 
+      !tx.parentId || !pool.some(p => p.id === tx.parentId)
+    );
+
+    rootCandidates.forEach(root => {
+      const idx = pool.findIndex(t => t.id === root.id);
+      if (idx > -1) {
+        pool.splice(idx, 1);
+        threaded.push({ ...root, depth: 0 });
+        addToChain(root.id, 1);
+      }
+    });
+
+    // 2. Safety: Handle any remaining orphans that might have missed the tree logic
+    while (pool.length > 0) {
+      const tx = pool.shift()!;
+      threaded.push({ ...tx, depth: 0 });
+    }
+
+    return {
+      id,
+      label: data.label,
+      count: data.transactions.length,
+      transactions: threaded
+    };
+  });
+}
+```
+
 ## File: src/root.tsx
 ```typescript
 import { Links, Meta, Scripts, ScrollRestoration, Outlet } from 'react-router';
@@ -837,8 +888,10 @@ export interface TransactionSlice {
   prompts: Prompt[]; // Store prompts for lookup
   isLoading: boolean;
   expandedId: string | null;
+  hoveredChainId: string | null;
   isWatching: boolean;
   setExpandedId: (id: string | null) => void;
+  setHoveredChain: (id: string | null) => void;
   toggleWatching: () => void;
   fetchTransactions: () => Promise<void>;
   addTransaction: (tx: Transaction) => void;
@@ -850,9 +903,11 @@ export const createTransactionSlice: StateCreator<RootState, [], [], Transaction
   prompts: [],
   isLoading: false,
   expandedId: null,
+  hoveredChainId: null,
   isWatching: false, // Default to false to show the "Start" state
 
   setExpandedId: (id) => set({ expandedId: id }),
+  setHoveredChain: (id) => set({ hoveredChainId: id }),
   
   toggleWatching: () => {
     const isNowWatching = !get().isWatching;
@@ -1274,6 +1329,25 @@ export const FloatingActionBar = () => {
     padding-bottom: env(safe-area-inset-bottom);
   }
 
+  /* Hierarchical Vertical Connectors */
+  .thread-connector-v {
+    position: absolute;
+    left: 50%;
+    top: -24px; /* Matches space-y-6 (1.5rem) */
+    width: 2px;
+    height: 24px;
+    background: linear-gradient(to bottom, var(--color-zinc-800), var(--color-zinc-700));
+    transform: translateX(-50%);
+    z-index: -1;
+    transition: all 0.3s ease;
+  }
+
+  .chain-highlight .thread-connector-v {
+    background: var(--color-indigo-500);
+    box-shadow: 0 0 12px var(--color-indigo-500/60);
+    width: 3px;
+  }
+
   html {
     scroll-behavior: smooth;
     height: 100%;
@@ -1433,6 +1507,8 @@ export interface Transaction {
   timestamp: string;
   createdAt: string;
   promptId: string;
+  parentId?: string;   // For chaining
+  isChainRoot?: boolean; // To identify entry points
   author: string;
   blocks: TransactionBlock[]; // New narrative structure
   files: TransactionFile[];   // Keep for compatibility/summaries
@@ -1728,18 +1804,18 @@ import {
   History,
   ExternalLink,
   ListTree,
-  FileCode
+  FileCode,
+  Layers
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { cn } from "@/utils/cn.util";
-import { TransactionStatus, TransactionBlock, TransactionFile } from "@/types/app.types";
+import { TransactionStatus, TransactionBlock, TransactionFile, STATUS_CONFIG, FILE_STATUS_CONFIG } from "@/types/app.types";
 import { StatusBadge } from "@/components/ui/status-badge.ui";
 import { useStore } from "@/store/root.store";
 import { calculateTotalStats } from "@/utils/diff.util";
 import { DiffStat } from "@/components/ui/diff-stat.ui";
 import { FileSection } from "./file-section.component";
 import { Metric } from "@/components/ui/metric.ui";
-import { STATUS_CONFIG } from '@/types/app.types';
 
 interface TransactionCardProps {
   id: string;
@@ -1753,6 +1829,8 @@ interface TransactionCardProps {
   blocks?: TransactionBlock[];
   files?: TransactionFile[];
   isNew?: boolean;
+  depth?: number;
+  parentId?: string;
 }
 
 // Helper to get file info with original block index
@@ -1773,10 +1851,14 @@ export const TransactionCard = memo(({
   cost,
   blocks,
   files: filesProp,
-  isNew = false
+  isNew = false,
+  depth = 0,
+  parentId
 }: TransactionCardProps) => {
   const expandedId = useStore((state) => state.expandedId);
   const setExpandedId = useStore((state) => state.setExpandedId);
+  const hoveredChainId = useStore((state) => state.hoveredChainId);
+  const setHoveredChain = useStore((state) => state.setHoveredChain);
   const approveTransaction = useStore((state) => state.approveTransaction);
   const expanded = expandedId === id;
   
@@ -1865,17 +1947,31 @@ export const TransactionCard = memo(({
 
   const stats = useMemo(() => calculateTotalStats(fileInfos.map(i => i.file)), [fileInfos]);
 
+  const isChainHovered = useMemo(() => {
+    if (!hoveredChainId) return false;
+    // Highlight if this is the hovered item or a direct relative in the same thread
+    return hoveredChainId === id || hoveredChainId === parentId || (parentId && parentId === hoveredChainId);
+  }, [hoveredChainId, id, parentId]);
+
   return (
     <motion.div 
       initial={isNew ? { opacity: 0, y: 20 } : false}
       animate={{ opacity: 1, y: 0 }}
+      onMouseEnter={() => setHoveredChain(parentId || id)}
+      onMouseLeave={() => setHoveredChain(null)}
       className={cn(
         "rounded-2xl border transition-all duration-300 relative isolate",
+        STATUS_CONFIG[status].border,
         expanded
-          ? "bg-zinc-900/80 z-10 my-12 border-indigo-500/30 shadow-xl shadow-indigo-900/10 ring-1 ring-indigo-500/20"
-          : cn("bg-zinc-900/40 hover:bg-zinc-900/60 shadow-sm", STATUS_CONFIG[status].border)
+          ? "bg-zinc-900/80 z-10 my-12 shadow-xl shadow-indigo-900/10 ring-1 ring-indigo-500/20"
+          : "bg-zinc-900/40 hover:bg-zinc-900/60 shadow-sm",
+        isChainHovered && "chain-highlight ring-1 ring-indigo-500/40"
       )}
     >
+      {/* Centered Thread Connector */}
+      {parentId && (
+        <div className="thread-connector-v" />
+      )}
       {expanded && <div className="absolute inset-0 bg-gradient-to-b from-indigo-500/5 to-transparent pointer-events-none" />}
       {/* STICKY HEADER: Integrated Controls */}
       <div
@@ -1898,12 +1994,19 @@ export const TransactionCard = memo(({
           <div className="flex-1 flex items-center gap-4 min-w-0">
             <StatusBadge status={status} />
             <div className="flex-1 min-w-0">
-              <h3 className={cn(
-                "text-sm font-semibold truncate",
-                expanded ? "text-white" : "text-zinc-300"
-              )}>
-                {description}
-              </h3>
+              <div className="flex items-center gap-2 mb-0.5">
+                <h3 className={cn(
+                  "text-sm font-semibold truncate",
+                  expanded ? "text-white" : "text-zinc-300"
+                )}>
+                  {description}
+                </h3>
+                {parentId && (
+                  <div className="flex items-center gap-1.5 px-2 py-0.5 rounded-full bg-zinc-800 text-[9px] font-bold text-zinc-500 uppercase tracking-tighter">
+                    <Layers className="w-2.5 h-2.5" /> Follow-up
+                  </div>
+                )}
+              </div>
               <div className="flex items-center gap-2 mt-0.5 text-[10px] text-zinc-500 font-mono">
                 <History className="w-3 h-3" /> {timestamp}
                 <span>•</span>
@@ -1998,17 +2101,19 @@ export const TransactionCard = memo(({
                             className={cn(
                               "w-full text-left px-3 py-2 rounded-lg text-[11px] font-mono transition-all truncate group flex items-center gap-2",
                               isActive 
-                                ? "text-indigo-400 bg-indigo-500/10 border-l-2 border-indigo-500" 
+                                ? cn("bg-zinc-800/80 border-l-2", 
+                                     FILE_STATUS_CONFIG[info.file.status].color.replace('bg-', 'border-'), 
+                                     FILE_STATUS_CONFIG[info.file.status].color.replace('bg-', 'text-'))
                                 : "text-zinc-500 hover:text-zinc-300 hover:bg-zinc-800/50 border-l-2 border-transparent"
                             )}
                           >
                             <span className={cn(
-                              "w-1.5 h-1.5 rounded-full shrink-0 transition-colors",
+                              "w-1.5 h-1.5 rounded-full shrink-0 transition-all",
                               isActive 
-                                ? "bg-indigo-400 shadow-[0_0_6px_rgba(129,140,248,0.6)]"
+                                ? cn(FILE_STATUS_CONFIG[info.file.status].color, "shadow-[0_0_8px_currentColor]")
                                 : "bg-zinc-700 group-hover:bg-zinc-500"
                             )} />
-                            <span className="truncate">{info.file.path.split('/').pop()}</span>
+                            <span className="truncate">{info.file.path}</span>
                           </button>
                         );
                       })}

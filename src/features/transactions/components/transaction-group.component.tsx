@@ -34,12 +34,13 @@ export const TransactionGroup = ({ group, isCollapsed, onToggle, seenIds }: Tran
           transition={{ duration: 0.2, ease: 'easeInOut' }}
           className="overflow-visible"
         >
-          <div className="space-y-6 pl-0 md:pl-2 ml-3">
+          <div className="space-y-6 pl-0 md:pl-2 ml-3 relative">
             {group.transactions.map((tx) => (
               <TransactionCard 
                 key={tx.id} 
                 {...tx}
-                isNew={!seenIds.has(tx.id)} 
+                isNew={!seenIds.has(tx.id)}
+                depth={tx.depth}
               />
             ))}
           </div>

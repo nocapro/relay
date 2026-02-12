@@ -71,6 +71,49 @@
     padding-bottom: env(safe-area-inset-bottom);
   }
 
+  /* Hierarchical Vertical Connectors - The "Backbone" */
+  .thread-connector-v {
+    position: absolute;
+    left: 50%;
+    width: 2px;
+    background: linear-gradient(to bottom, var(--color-zinc-800), var(--color-zinc-700));
+    transform: translateX(-50%);
+    z-index: -1;
+    transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+    
+    /* Default gap: matches parent space-y-6 (1.5rem / 24px) */
+    top: -24px;
+    height: 24px;
+  }
+
+  /* Stretching Logic: Adapts to expanded card margins (my-12 = 48px mt/mb) */
+  
+  /* 1. If the CURRENT card is expanded, it adds 48px top margin */
+  .transaction-card[data-expanded="true"] > .thread-connector-v {
+    top: -48px;
+    height: 48px;
+  }
+
+  /* 2. If the PREVIOUS sibling is expanded, it adds 48px bottom margin. 
+        Normal gap (24px) + Prev expansion (48px) = 72px total gap. */
+  .transaction-card[data-expanded="true"] + .transaction-card > .thread-connector-v {
+    top: -72px;
+    height: 72px;
+  }
+
+  /* 3. Both are expanded: Prev mb-12 (48px) + Current mt-12 (48px) = 96px total gap. */
+  .transaction-card[data-expanded="true"] + .transaction-card[data-expanded="true"] > .thread-connector-v {
+    top: -96px;
+    height: 96px;
+  }
+
+  .chain-highlight .thread-connector-v {
+    background: var(--color-indigo-500);
+    box-shadow: 0 0 15px var(--color-indigo-500);
+    width: 3px;
+    opacity: 1;
+  }
+
   html {
     scroll-behavior: smooth;
     height: 100%;

@@ -142,6 +142,7 @@
     {
       "id": "tx-auth-oidc",
       "status": "PENDING",
+      "isChainRoot": true,
       "description": "Security: Auth0 Integration & Middleware Hardening",
       "timestamp": "15 mins ago",
       "createdAt": "2026-02-12T12:15:00.000Z",
@@ -235,8 +236,39 @@
       ]
     },
     {
-      "id": "tx-perf-redis",
-      "status": "APPLIED",
+        "id": "tx-auth-types-cleanup",
+        "parentId": "tx-auth-oidc",
+        "status": "PENDING",
+        "description": "Security: Legacy Session Type Cleanup",
+        "timestamp": "10 mins ago",
+        "createdAt": "2026-02-12T12:20:00.000Z",
+        "promptId": "prompt-security-oidc",
+        "author": "security-bot",
+        "provider": "OpenRouter",
+        "model": "anthropic/claude-3-opus",
+        "cost": "$0.005",
+        "tokens": "450",
+        "reasoning": "Removing deprecated session interfaces that are no longer compatible with OIDC providers.",
+        "files": [],
+        "blocks": [
+          {
+            "type": "markdown",
+            "content": "Now that we've switched to Auth0, the local `InternalSession` type is redundant and potentially confusing for developers. I'm removing it from the global types file."
+          },
+          {
+            "type": "file",
+            "file": {
+              "path": "src/types/auth.ts",
+              "status": "modified",
+              "language": "typescript",
+              "diff": "@@ -10,12 +10,4 @@\n   updated_at: string;\n }\n-\n-export interface InternalSession {\n-  sessionId: string;\n-  expires: number;\n-  userId: string;\n-}"
+            }
+          }
+        ]
+      },
+      {
+        "id": "tx-perf-redis",
+        "status": "APPLIED",
       "description": "Performance: Redis Cache Layer & Query Optimization",
       "timestamp": "1 hour ago",
       "createdAt": "2026-02-12T11:30:00.000Z",

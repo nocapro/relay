@@ -59,6 +59,8 @@ export interface Transaction {
   timestamp: string;
   createdAt: string;
   promptId: string;
+  parentId?: string;   // For chaining
+  isChainRoot?: boolean; // To identify entry points
   author: string;
   blocks: TransactionBlock[]; // New narrative structure
   files: TransactionFile[];   // Keep for compatibility/summaries

@@ -11,7 +11,8 @@ import {
   History,
   ExternalLink,
   ListTree,
-  FileCode
+  FileCode,
+  Layers
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { cn } from "@/utils/cn.util";
@@ -35,6 +36,8 @@ interface TransactionCardProps {
   blocks?: TransactionBlock[];
   files?: TransactionFile[];
   isNew?: boolean;
+  depth?: number;
+  parentId?: string;
 }
 
 // Helper to get file info with original block index
@@ -55,10 +58,14 @@ export const TransactionCard = memo(({
   cost,
   blocks,
   files: filesProp,
-  isNew = false
+  isNew = false,
+  depth = 0,
+  parentId
 }: TransactionCardProps) => {
   const expandedId = useStore((state) => state.expandedId);
   const setExpandedId = useStore((state) => state.setExpandedId);
+  const hoveredChainId = useStore((state) => state.hoveredChainId);
+  const setHoveredChain = useStore((state) => state.setHoveredChain);
   const approveTransaction = useStore((state) => state.approveTransaction);
   const expanded = expandedId === id;
   
@@ -147,18 +154,32 @@ export const TransactionCard = memo(({
 
   const stats = useMemo(() => calculateTotalStats(fileInfos.map(i => i.file)), [fileInfos]);
 
+  const isChainHovered = useMemo(() => {
+    if (!hoveredChainId) return false;
+    // Highlight if this is the hovered item or a direct relative in the same thread
+    return hoveredChainId === id || hoveredChainId === parentId || (parentId && parentId === hoveredChainId);
+  }, [hoveredChainId, id, parentId]);
+
   return (
     <motion.div 
       initial={isNew ? { opacity: 0, y: 20 } : false}
       animate={{ opacity: 1, y: 0 }}
+      onMouseEnter={() => setHoveredChain(parentId || id)}
+      onMouseLeave={() => setHoveredChain(null)}
+      data-expanded={expanded}
       className={cn(
-        "rounded-2xl border transition-all duration-300 relative isolate",
+        "transaction-card rounded-2xl border transition-all duration-300 relative isolate",
         STATUS_CONFIG[status].border,
         expanded
           ? "bg-zinc-900/80 z-10 my-12 shadow-xl shadow-indigo-900/10 ring-1 ring-indigo-500/20"
-          : "bg-zinc-900/40 hover:bg-zinc-900/60 shadow-sm"
+          : "bg-zinc-900/40 hover:bg-zinc-900/60 shadow-sm",
+        isChainHovered && "chain-highlight ring-1 ring-indigo-500/40"
       )}
     >
+      {/* Centered Thread Connector */}
+      {parentId && depth > 0 && (
+        <div className="thread-connector-v" />
+      )}
       {expanded && <div className="absolute inset-0 bg-gradient-to-b from-indigo-500/5 to-transparent pointer-events-none" />}
       {/* STICKY HEADER: Integrated Controls */}
       <div
@@ -181,12 +202,19 @@ export const TransactionCard = memo(({
           <div className="flex-1 flex items-center gap-4 min-w-0">
             <StatusBadge status={status} />
             <div className="flex-1 min-w-0">
-              <h3 className={cn(
-                "text-sm font-semibold truncate",
-                expanded ? "text-white" : "text-zinc-300"
-              )}>
-                {description}
-              </h3>
+              <div className="flex items-center gap-2 mb-0.5">
+                <h3 className={cn(
+                  "text-sm font-semibold truncate",
+                  expanded ? "text-white" : "text-zinc-300"
+                )}>
+                  {description}
+                </h3>
+                {parentId && (
+                  <div className="flex items-center gap-1.5 px-2 py-0.5 rounded-full bg-zinc-800 text-[9px] font-bold text-zinc-500 uppercase tracking-tighter">
+                    <Layers className="w-2.5 h-2.5" /> Follow-up
+                  </div>
+                )}
+              </div>
               <div className="flex items-center gap-2 mt-0.5 text-[10px] text-zinc-500 font-mono">
                 <History className="w-3 h-3" /> {timestamp}
                 <span>•</span>
