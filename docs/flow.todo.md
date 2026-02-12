@@ -45,7 +45,13 @@ lets change the data and naming convention shape, card title = git commit messag
 
 please think about amazing UI cohesive UX about each transaction sometimes has one parent transaction. so something like transaction chainning. of course in single prompt can having many chanis of transactions 
 
-2.
+====
+
+2. 
+
+===
+
+we want DRY for less LOC
 
 === DONE
 
