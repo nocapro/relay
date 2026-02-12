@@ -1,4 +1,4 @@
-import { useMemo } from 'react';
+import { useMemo, memo } from 'react';
 import { parseDiff, tokenizeCode, DiffLine } from "@/utils/diff.util";
 import { cn } from "@/utils/cn.util";
 
@@ -8,7 +8,7 @@ interface DiffViewerProps {
   className?: string;
 }
 
-export const DiffViewer = ({ diff, language, className }: DiffViewerProps) => {
+export const DiffViewer = memo(({ diff, language, className }: DiffViewerProps) => {
   const lines = useMemo(() => parseDiff(diff), [diff]);
   
   return (
@@ -20,9 +20,9 @@ export const DiffViewer = ({ diff, language, className }: DiffViewerProps) => {
       </div>
     </div>
   );
-};
+});
 
-const LineRow = ({ line }: { line: DiffLine }) => {
+const LineRow = memo(({ line }: { line: DiffLine }) => {
   const tokens = useMemo(() => tokenizeCode(line.content), [line.content]);
 
   // Styles based on line type
@@ -74,4 +74,4 @@ const LineRow = ({ line }: { line: DiffLine }) => {
       </div>
     </div>
   );
-};
+});

@@ -815,52 +815,6 @@ export function tokenizeCode(code: string): SyntaxToken[] {
 }
 ```
 
-## File: src/features/transactions/components/action-bar.component.tsx
-```typescript
-import { motion, AnimatePresence } from 'framer-motion';
-import { CheckCircle2, GitCommit } from 'lucide-react';
-import { useStore } from "@/store/root.store";
-
-export const FloatingActionBar = () => {
-  const transactions = useStore((state) => state.transactions);
-  const pendingCount = transactions.filter(t => t.status === 'PENDING').length;
-  const appliedCount = transactions.filter(t => t.status === 'APPLIED').length;
-  const showBar = pendingCount > 0 || appliedCount > 0;
-
-  return (
-    <AnimatePresence>
-      {showBar && (
-        <div className="fixed bottom-24 md:bottom-8 left-1/2 md:left-[calc(50%+8rem)] -translate-x-1/2 z-40 w-full max-w-xs md:max-w-md px-4">
-          <motion.div 
-            initial={{ y: 50, opacity: 0 }}
-            animate={{ y: 0, opacity: 1 }}
-            exit={{ y: 50, opacity: 0 }}
-            className="bg-zinc-900/90 backdrop-blur-xl border border-zinc-700/50 shadow-2xl shadow-black/50 rounded-2xl p-2 flex items-center justify-between px-3 md:px-4 ring-1 ring-white/10"
-          >
-              <div className="hidden md:flex items-center gap-2 border-r border-zinc-700/50 mr-2">
-              <div className="w-2 h-2 rounded-full bg-amber-500 animate-pulse" />
-              <span className="text-xs font-semibold text-zinc-300">{pendingCount} Pending</span>
-            </div>
-            
-            <div className="flex items-center gap-2 w-full md:w-auto justify-between md:justify-end">
-              <button className="flex-1 md:flex-none px-4 py-2.5 md:py-2 bg-zinc-100 text-zinc-950 hover:bg-white text-sm font-bold rounded-xl shadow-lg transition-colors flex items-center justify-center gap-2">
-                <CheckCircle2 className="w-4 h-4" />
-                Approve
-              </button>
-              
-              <button className="flex-1 md:flex-none px-4 py-2.5 md:py-2 bg-zinc-800 hover:bg-zinc-700 text-zinc-200 text-sm font-medium rounded-xl border border-zinc-700 transition-colors flex items-center justify-center gap-2">
-                <GitCommit className="w-4 h-4" />
-                Commit
-              </button>
-            </div>
-          </motion.div>
-        </div>
-      )}
-    </AnimatePresence>
-  );
-};
-```
-
 ## File: src/root.tsx
 ```typescript
 import { Links, Meta, Scripts, ScrollRestoration, Outlet } from 'react-router';
@@ -944,6 +898,52 @@ export default defineConfig({
     },
   },
 });
+```
+
+## File: src/features/transactions/components/action-bar.component.tsx
+```typescript
+import { motion, AnimatePresence } from 'framer-motion';
+import { CheckCircle2, GitCommit } from 'lucide-react';
+import { useStore } from "@/store/root.store";
+
+export const FloatingActionBar = () => {
+  const transactions = useStore((state) => state.transactions);
+  const pendingCount = transactions.filter(t => t.status === 'PENDING').length;
+  const appliedCount = transactions.filter(t => t.status === 'APPLIED').length;
+  const showBar = pendingCount > 0 || appliedCount > 0;
+
+  return (
+    <AnimatePresence>
+      {showBar && (
+        <div className="fixed bottom-24 md:bottom-8 left-1/2 md:left-[calc(50%+8rem)] -translate-x-1/2 z-40 w-full max-w-xs md:max-w-md px-4">
+          <motion.div 
+            initial={{ y: 50, opacity: 0 }}
+            animate={{ y: 0, opacity: 1 }}
+            exit={{ y: 50, opacity: 0 }}
+            className="bg-zinc-900/90 backdrop-blur-xl border border-zinc-700/50 shadow-2xl shadow-black/50 rounded-2xl p-2 flex items-center px-3 md:px-4 ring-1 ring-white/10"
+          >
+              <div className="hidden md:flex items-center gap-2 border-r border-zinc-700/50 pr-4">
+              <div className="w-2 h-2 rounded-full bg-amber-500 animate-pulse" />
+              <span className="text-xs font-semibold text-zinc-300">{pendingCount} Pending</span>
+            </div>
+            
+            <div className="flex items-center gap-2 w-full md:w-auto justify-between md:justify-end">
+              <button className="flex-1 md:flex-none px-4 py-2.5 md:py-2 bg-zinc-100 text-zinc-950 hover:bg-white text-sm font-bold rounded-xl shadow-lg transition-colors flex items-center justify-center gap-2">
+                <CheckCircle2 className="w-4 h-4" />
+                Approve
+              </button>
+              
+              <button className="flex-1 md:flex-none px-4 py-2.5 md:py-2 bg-zinc-800 hover:bg-zinc-700 text-zinc-200 text-sm font-medium rounded-xl border border-zinc-700 transition-colors flex items-center justify-center gap-2">
+                <GitCommit className="w-4 h-4" />
+                Commit
+              </button>
+            </div>
+          </motion.div>
+        </div>
+      )}
+    </AnimatePresence>
+  );
+};
 ```
 
 ## File: src/services/api.service.ts
@@ -2123,7 +2123,7 @@ export const TransactionCard = ({ tx, isNew = false }: TransactionCardProps) => 
             initial={{ height: 0, opacity: 0 }}
             animate={{ height: "auto", opacity: 1 }}
             exit={{ height: 0, opacity: 0 }}
-            className="border-t border-zinc-800/50 bg-zinc-950/30 relative z-10 overflow-visible"
+            className="bg-zinc-950/30 relative z-10 overflow-visible"
           >
             {/* Observability Strip */}
             <div className="flex items-center gap-6 px-8 py-3 bg-zinc-950 border-b border-zinc-900/50 overflow-x-auto scrollbar-hide">
@@ -2142,7 +2142,7 @@ export const TransactionCard = ({ tx, isNew = false }: TransactionCardProps) => 
               <div className="hidden lg:block w-64 shrink-0">
                 <div 
                   ref={outlineRef}
-                  className="sticky top-36 space-y-6 max-h-[calc(100vh-10rem)] overflow-y-auto custom-scrollbar-thin flex flex-col"
+                  className="sticky top-36 space-y-6 max-h-[calc(100vh-10rem)] overflow-y-auto overflow-x-hidden custom-scrollbar-thin flex flex-col"
                 >
                   <div className="flex items-center gap-2 text-zinc-500 mb-2 shrink-0">
                     <ListTree className="w-4 h-4" />
@@ -2151,7 +2151,7 @@ export const TransactionCard = ({ tx, isNew = false }: TransactionCardProps) => 
                       {tx.blocks?.filter(b => b.type === 'file').length || 0} files
                     </span>
                   </div>
-                  <nav className="space-y-0.5 overflow-y-auto custom-scrollbar-thin pr-2 -mr-2 pb-4">
+                  <nav className="space-y-0.5 pb-4">
                     {tx.blocks?.map((block, idx) => {
                       if (block.type !== 'file') return null;
                       const isActive = activeIndex === idx;

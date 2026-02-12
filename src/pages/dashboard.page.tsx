@@ -1,4 +1,4 @@
-import { useEffect, useState, useRef } from 'react';
+import { useEffect, useState, useRef, useMemo } from 'react';
 import { Play, Pause, Activity, RefreshCw, Filter, Terminal, Command, Layers, Calendar, User, FileCode, CheckCircle2, ChevronDown, ChevronRight } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useSearchParams } from 'react-router';
@@ -79,17 +79,20 @@ export const Dashboard = () => {
 
   const hasTransactions = transactions.length > 0;
   
-  // Derived Grouped Data
-  const groupedData = groupTransactions(transactions, prompts, groupBy);
+  // Derived Grouped Data - Memoized to prevent O(N) grouping on every render
+  const groupedData = useMemo(() => 
+    groupTransactions(transactions, prompts, groupBy),
+    [transactions, prompts, groupBy]
+  );
 
-  const groupOptions: { id: GroupByStrategy; icon: React.ElementType; label: string }[] = [
-    { id: 'prompt', icon: Layers, label: 'Prompt' },
-    { id: 'date', icon: Calendar, label: 'Date' },
-    { id: 'author', icon: User, label: 'Author' },
-    { id: 'status', icon: CheckCircle2, label: 'Status' },
-    { id: 'files', icon: FileCode, label: 'Files' },
-    { id: 'none', icon: Filter, label: 'None' },
-  ];
+  const groupOptions = useMemo(() => [
+    { id: 'prompt' as const, icon: Layers, label: 'Prompt' },
+    { id: 'date' as const, icon: Calendar, label: 'Date' },
+    { id: 'author' as const, icon: User, label: 'Author' },
+    { id: 'status' as const, icon: CheckCircle2, label: 'Status' },
+    { id: 'files' as const, icon: FileCode, label: 'Files' },
+    { id: 'none' as const, icon: Filter, label: 'None' },
+  ], []);
 
   return (
     <div className="p-4 md:p-6 lg:p-8 max-w-[1600px] mx-auto space-y-6 md:space-y-8 pb-32">

@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef, useCallback } from 'react';
+import { useState, useEffect, useRef, useCallback, memo, useMemo } from 'react';
 import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
 import {
@@ -26,7 +26,7 @@ interface TransactionCardProps {
   isNew?: boolean;
 }
 
-export const TransactionCard = ({ tx, isNew = false }: TransactionCardProps) => {
+export const TransactionCard = memo(({ tx, isNew = false }: TransactionCardProps) => {
   const expandedId = useStore((state) => state.expandedId);
   const setExpandedId = useStore((state) => state.setExpandedId);
   const approveTransaction = useStore((state) => state.approveTransaction);
@@ -37,12 +37,12 @@ export const TransactionCard = ({ tx, isNew = false }: TransactionCardProps) => 
   const blockRefs = useRef<(HTMLDivElement | null)[]>([]);
   const outlineRef = useRef<HTMLDivElement>(null);
   
-  const onToggle = () => setExpandedId(expanded ? null : tx.id);
+  const onToggle = useCallback(() => setExpandedId(expanded ? null : tx.id), [expanded, setExpandedId, tx.id]);
 
-  const handleApprove = (e: React.MouseEvent) => {
+  const handleApprove = useCallback((e: React.MouseEvent) => {
     e.stopPropagation();
     approveTransaction(tx.id);
-  };
+  }, [tx.id, approveTransaction]);
 
   const scrollToId = useCallback((id: string, index: number) => {
     const el = document.getElementById(id);
@@ -273,9 +273,9 @@ export const TransactionCard = ({ tx, isNew = false }: TransactionCardProps) => 
       </AnimatePresence>
     </motion.div>
   );
-};
+});
 
-const MetaItem = ({ icon: Icon, label, value, color }: any) => (
+const MetaItem = memo(({ icon: Icon, label, value, color }: any) => (
   <div className="flex items-center gap-2 shrink-0">
     <div className={cn("p-1.5 rounded bg-zinc-800/50 border border-zinc-700/50", color)}>
       <Icon className="w-3 h-3" />
@@ -285,11 +285,13 @@ const MetaItem = ({ icon: Icon, label, value, color }: any) => (
       <span className="text-[11px] font-mono text-zinc-300 leading-none">{value}</span>
     </div>
   </div>
-);
+));
 
-const FileSection = ({ file }: { file: any }) => {
+const FileSection = memo(({ file }: { file: any }) => {
   const [isExpanded, setIsExpanded] = useState(true);
-  const stats = getDiffStats(file.diff);
+  const stats = useMemo(() => getDiffStats(file.diff), [file.diff]);
+
+  const toggleExpanded = useCallback(() => setIsExpanded(!isExpanded), [isExpanded]);
 
   return (
     <div className="mb-10 group/file">
@@ -301,7 +303,7 @@ const FileSection = ({ file }: { file: any }) => {
       >
         <div 
           className="flex items-center gap-3 min-w-0 cursor-pointer select-none"
-          onClick={() => setIsExpanded(!isExpanded)}
+          onClick={toggleExpanded}
         >
           <div className={cn(
             "w-1.5 h-1.5 rounded-full shrink-0",
@@ -317,7 +319,7 @@ const FileSection = ({ file }: { file: any }) => {
         
         <div className="flex items-center gap-1 ml-4">
           <button 
-            onClick={() => setIsExpanded(!isExpanded)}
+            onClick={toggleExpanded}
             className="p-1.5 text-zinc-500 hover:text-white hover:bg-zinc-800 rounded-md transition-all"
             title={isExpanded ? "Collapse" : "Expand"}
           >
@@ -350,4 +352,4 @@ const FileSection = ({ file }: { file: any }) => {
       </AnimatePresence>
     </div>
   );
-};
+});
