@@ -18,7 +18,8 @@ import { cn } from "@/utils/cn.util";
 import { TransactionStatus, TransactionBlock, TransactionFile } from "@/types/app.types";
 import { StatusBadge } from "@/components/ui/status-badge.ui";
 import { useStore } from "@/store/root.store";
-import { getDiffStats } from "@/utils/diff.util";
+import { calculateTotalStats } from "@/utils/diff.util";
+import { DiffStat } from "@/components/ui/diff-stat.ui";
 import { FileSection, MetaItem } from "./file-section.component";
 
 interface TransactionCardProps {
@@ -151,21 +152,9 @@ export const TransactionCard = memo(({
     FAILED:     'border-red-500/40 hover:border-red-500/60',
   };
 
-  // Calculate aggregate stats for all files in the transaction
-  const transactionStats = useMemo(() => {
-    let totalAdds = 0;
-    let totalSubs = 0;
-    let fileCount = 0;
-    
-    fileInfos.forEach(({ file }) => {
-      const stats = getDiffStats(file.diff);
-      totalAdds += stats.adds;
-      totalSubs += stats.subs;
-      fileCount++;
-    });
-    
-    return { totalAdds, totalSubs, fileCount };
-  }, [fileInfos]);
+  const stats = useMemo(() => 
+    calculateTotalStats(fileInfos.map(i => i.file)), 
+  [fileInfos]);
 
   return (
     <motion.div 
@@ -217,13 +206,10 @@ export const TransactionCard = memo(({
                     <span className="hidden sm:inline text-zinc-700">•</span>
                     <span className="hidden sm:inline-flex items-center gap-1 text-zinc-400">
                       <FileCode className="w-3 h-3" />
-                      {transactionStats.fileCount}
+                      {stats.files}
                     </span>
                     <span className="hidden sm:inline text-zinc-700">•</span>
-                    <span className="hidden sm:inline-flex items-center gap-1.5">
-                      <span className="text-emerald-500">+{transactionStats.totalAdds}</span>
-                      <span className="text-red-500">-{transactionStats.totalSubs}</span>
-                    </span>
+                    <DiffStat adds={stats.adds} subs={stats.subs} className="hidden sm:flex" />
                   </>
                 )}
               </div>
@@ -231,16 +217,12 @@ export const TransactionCard = memo(({
           </div>
 
           <div className="flex items-center gap-2">
-            {/* Mobile stats - Only visible when collapsed on mobile */}
             {!expanded && hasFiles && (
               <div className="flex md:hidden items-center gap-2 px-2">
                 <span className="text-[10px] text-zinc-500 flex items-center gap-1">
-                  <FileCode className="w-3 h-3" />
-                  {transactionStats.fileCount}
+                  <FileCode className="w-3 h-3" /> {stats.files}
                 </span>
-                <span className="text-[10px] font-mono">
-                  <span className="text-emerald-500">+{transactionStats.totalAdds}</span>
-                </span>
+                <DiffStat adds={stats.adds} subs={stats.subs} className="text-[10px]" />
               </div>
             )}
             {status === 'PENDING' && (

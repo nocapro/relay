@@ -5,6 +5,7 @@ import { cn } from "@/utils/cn.util";
 import { TransactionFile } from "@/types/app.types";
 import { DiffViewer } from "@/components/ui/diff-viewer.ui.tsx";
 import { getDiffStats } from "@/utils/diff.util";
+import { DiffStat } from "@/components/ui/diff-stat.ui";
 
 export const MetaItem = memo(({ icon: Icon, label, value, color }: any) => (
   <div className="flex items-center gap-2 shrink-0">
@@ -44,10 +45,11 @@ export const FileSection = memo(({ file }: { file: TransactionFile }) => {
             file.status === 'created' ? "bg-emerald-500 shadow-[0_0_8px_rgba(16,185,129,0.5)]" : "bg-red-500"
           )} />
           <span className="text-xs font-mono text-zinc-300 truncate">{file.path}</span>
-          <div className="hidden sm:flex items-center gap-2 text-[10px] font-mono ml-2 opacity-60">
-            <span className="text-emerald-500">+{stats.adds}</span>
-            <span className="text-red-500">-{stats.subs}</span>
-          </div>
+          <DiffStat 
+            adds={stats.adds} 
+            subs={stats.subs} 
+            className="hidden sm:flex text-[10px] ml-2 opacity-60" 
+          />
         </div>
         
         <div className="flex items-center gap-1 ml-4" onClick={stopPropagation}>

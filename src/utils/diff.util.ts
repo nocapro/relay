@@ -56,7 +56,17 @@ export function getDiffStats(diff: string) {
   const lines = diff.split('\n');
   const adds = lines.filter(l => l.startsWith('+') && !l.startsWith('+++')).length;
   const subs = lines.filter(l => l.startsWith('-') && !l.startsWith('---')).length;
-  return { adds, subs };
+  return { adds, subs, total: adds + subs };
+}
+
+/**
+ * Calculates aggregate stats for a collection of files
+ */
+export function calculateTotalStats(files: { diff: string }[]) {
+  return files.reduce((acc, f) => {
+    const s = getDiffStats(f.diff);
+    return { adds: acc.adds + s.adds, subs: acc.subs + s.subs, files: acc.files + 1 };
+  }, { adds: 0, subs: 0, files: 0 });
 }
 
 /**

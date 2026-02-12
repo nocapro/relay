@@ -47,7 +47,9 @@ please think about amazing UI cohesive UX about each transaction sometimes has o
 
 ====
 
-2. 
+- outline: should be full path not only file name
+- outline: dot and active color should be the same as status color
+- transaction card border color on expanded should be the same as collapsed
 
 ===
 
