@@ -221,17 +221,17 @@ export const Dashboard = () => {
           </div>
         )}
 
-        <div className="space-y-3 min-h-[300px] mt-8">
+        <div className="space-y-10 min-h-[300px] mt-8">
           <AnimatePresence mode='popLayout'>
             {hasTransactions ? (
               groupedData.map((group) => {
                 const isCollapsed = collapsedGroups.has(group.id);
                 return (
-                  <div key={group.id} className="space-y-3">
+                  <div key={group.id} className="space-y-6">
                     {/* Group Header - Clickable */}
                     <button
                       onClick={() => toggleGroupCollapse(group.id)}
-                      className="flex items-center gap-3 pt-4 first:pt-0 w-full group/header"
+                      className="flex items-center gap-3 pt-12 first:pt-0 w-full group/header"
                     >
                       <div className="h-px flex-1 bg-zinc-800/50" />
                       <div className="flex items-center gap-2 px-3 py-1 rounded-full bg-zinc-900 border border-zinc-800 hover:border-zinc-700 transition-colors">
@@ -255,7 +255,7 @@ export const Dashboard = () => {
                           exit={{ height: 0, opacity: 0 }}
                           transition={{ duration: 0.2, ease: 'easeInOut' }}
                         >
-                          <div className="space-y-3 pl-0 md:pl-2 ml-3">
+                          <div className="space-y-6 pl-0 md:pl-2 ml-3">
                             {group.transactions.map((tx) => (
                               <TransactionCard 
                                 key={tx.id} 

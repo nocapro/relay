@@ -376,18 +376,7 @@ export const TransactionCard = memo(({
                   </div>
                 ))}
 
-                {/* Action Footer */}
-                {status === 'PENDING' && (
-                  <div className="flex items-center justify-center pt-8 border-t border-zinc-800/50">
-                    <button
-                      onClick={handleApprove}
-                      className="px-8 py-3 bg-white text-zinc-950 rounded-xl font-bold text-sm hover:bg-zinc-200 transition-all flex items-center gap-3 shadow-2xl shadow-white/5"
-                    >
-                      <CheckCircle2 className="w-5 h-5" />
-                      Approve Implementation
-                    </button>
-                  </div>
-                )}
+
               </div>
             </div>
           </motion.div>
@@ -413,20 +402,22 @@ const FileSection = memo(({ file }: { file: TransactionFile }) => {
   const [isExpanded, setIsExpanded] = useState(true);
   const stats = useMemo(() => getDiffStats(file.diff), [file.diff]);
 
-  const toggleExpanded = useCallback(() => setIsExpanded(!isExpanded), [isExpanded]);
+  const toggleExpanded = useCallback(() => setIsExpanded(prev => !prev), []);
+
+  const stopPropagation = useCallback((e: React.MouseEvent) => {
+    e.stopPropagation();
+  }, []);
 
   return (
     <div className="relative mb-10 group/file">
       <div 
         className={cn(
-          "sticky top-36 z-30 flex items-center justify-between px-4 py-2.5 bg-zinc-900/95 backdrop-blur-sm border border-zinc-800/60 transition-all duration-300",
+          "sticky top-36 z-10 flex items-center justify-between px-4 py-2.5 bg-zinc-900/95 backdrop-blur-sm border border-zinc-800/60 transition-all duration-300 cursor-pointer select-none",
           isExpanded ? "rounded-t-xl border-b-zinc-800/30" : "rounded-xl"
         )}
+        onClick={toggleExpanded}
       >
-        <div 
-          className="flex items-center gap-3 min-w-0 cursor-pointer select-none"
-          onClick={toggleExpanded}
-        >
+        <div className="flex items-center gap-3 min-w-0">
           <div className={cn(
             "w-1.5 h-1.5 rounded-full shrink-0",
             file.status === 'modified' ? "bg-amber-500 shadow-[0_0_8px_rgba(245,158,11,0.5)]" :
@@ -439,7 +430,7 @@ const FileSection = memo(({ file }: { file: TransactionFile }) => {
           </div>
         </div>
         
-        <div className="flex items-center gap-1 ml-4">
+        <div className="flex items-center gap-1 ml-4" onClick={stopPropagation}>
           <button 
             onClick={toggleExpanded}
             className="p-1.5 text-zinc-500 hover:text-white hover:bg-zinc-800 rounded-md transition-all"

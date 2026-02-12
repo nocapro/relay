@@ -45,10 +45,10 @@ const LineRow = memo(({ line }: { line: DiffLine }) => {
   return (
     <div className={cn("flex w-full group/line hover:bg-white/5 transition-colors", bgClass)}>
       {/* Line Numbers */}
-      <div className={cn("w-10 md:w-12 flex-shrink-0 select-none text-right pr-2 md:pr-3 py-0.5 border-r border-white/5 font-mono opacity-40 group-hover/line:opacity-100 transition-opacity", gutterClass)}>
+      <div className={cn("w-6 md:w-8 flex-shrink-0 select-none text-right pr-1 py-0.5 border-r border-white/5 font-mono opacity-40 group-hover/line:opacity-100 transition-opacity", gutterClass)}>
         {line.oldLine || ' '}
       </div>
-      <div className={cn("w-10 md:w-12 flex-shrink-0 select-none text-right pr-2 md:pr-3 py-0.5 border-r border-white/5 font-mono opacity-40 group-hover/line:opacity-100 transition-opacity", gutterClass)}>
+      <div className={cn("w-6 md:w-8 flex-shrink-0 select-none text-right pr-1 py-0.5 border-r border-white/5 font-mono opacity-40 group-hover/line:opacity-100 transition-opacity", gutterClass)}>
         {line.newLine || ' '}
       </div>
       
@@ -59,7 +59,7 @@ const LineRow = memo(({ line }: { line: DiffLine }) => {
         ) : (
           <span className="relative">
              {/* Marker */}
-             <span className="absolute -left-3 select-none opacity-50">
+             <span className="absolute -left-2 select-none opacity-50">
                {line.type === 'add' ? '+' : line.type === 'remove' ? '-' : ' '}
              </span>
              
