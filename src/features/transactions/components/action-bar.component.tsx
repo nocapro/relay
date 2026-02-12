@@ -16,9 +16,9 @@ export const FloatingActionBar = () => {
             initial={{ y: 50, opacity: 0 }}
             animate={{ y: 0, opacity: 1 }}
             exit={{ y: 50, opacity: 0 }}
-            className="bg-zinc-900/90 backdrop-blur-xl border border-zinc-700/50 shadow-2xl shadow-black/50 rounded-2xl p-2 flex items-center justify-between px-3 md:px-4 ring-1 ring-white/10"
+            className="bg-zinc-900/90 backdrop-blur-xl border border-zinc-700/50 shadow-2xl shadow-black/50 rounded-2xl p-2 flex items-center px-3 md:px-4 ring-1 ring-white/10"
           >
-              <div className="hidden md:flex items-center gap-2 border-r border-zinc-700/50 mr-2">
+              <div className="hidden md:flex items-center gap-2 border-r border-zinc-700/50 pr-4">
               <div className="w-2 h-2 rounded-full bg-amber-500 animate-pulse" />
               <span className="text-xs font-semibold text-zinc-300">{pendingCount} Pending</span>
             </div>

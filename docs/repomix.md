@@ -2123,7 +2123,7 @@ export const TransactionCard = ({ tx, isNew = false }: TransactionCardProps) => 
             initial={{ height: 0, opacity: 0 }}
             animate={{ height: "auto", opacity: 1 }}
             exit={{ height: 0, opacity: 0 }}
-            className="border-t border-zinc-800/50 bg-zinc-950/30 relative z-10"
+            className="border-t border-zinc-800/50 bg-zinc-950/30 relative z-10 overflow-visible"
           >
             {/* Observability Strip */}
             <div className="flex items-center gap-6 px-8 py-3 bg-zinc-950 border-b border-zinc-900/50 overflow-x-auto scrollbar-hide">
@@ -2139,7 +2139,7 @@ export const TransactionCard = ({ tx, isNew = false }: TransactionCardProps) => 
             <div className="flex flex-col lg:flex-row gap-0 lg:gap-10 p-4 md:p-10 max-w-[1400px] mx-auto bg-zinc-950">
 
               {/* QUICK JUMP SIDEBAR (Desktop) */}
-              <div className="hidden lg:block w-64 shrink-0 self-start">
+              <div className="hidden lg:block w-64 shrink-0">
                 <div 
                   ref={outlineRef}
                   className="sticky top-36 space-y-6 max-h-[calc(100vh-10rem)] overflow-y-auto custom-scrollbar-thin flex flex-col"
