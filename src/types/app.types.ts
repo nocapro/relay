@@ -11,7 +11,7 @@ import {
   LucideIcon
 } from 'lucide-react';
 
-export type TransactionStatus = 'PENDING' | 'APPLIED' | 'COMMITTED' | 'REVERTED' | 'FAILED';
+export type TransactionStatus = 'PENDING' | 'APPLYING' | 'APPLIED' | 'COMMITTED' | 'REVERTED' | 'FAILED';
 
 export const STATUS_CONFIG: Record<TransactionStatus, { 
   icon: LucideIcon; 
@@ -19,7 +19,8 @@ export const STATUS_CONFIG: Record<TransactionStatus, {
   border: string; 
   animate?: boolean;
 }> = {
-  PENDING:   { icon: Loader2,     color: 'text-amber-500',   border: 'border-amber-500/20 bg-amber-500/5', animate: true },
+  PENDING:   { icon: Loader2,      color: 'text-amber-500',   border: 'border-amber-500/20 bg-amber-500/5', animate: true },
+  APPLYING:  { icon: RefreshCw,    color: 'text-indigo-400',  border: 'border-indigo-500/20 bg-indigo-500/10', animate: true },
   APPLIED:   { icon: CheckCircle2, color: 'text-emerald-500', border: 'border-emerald-500/20 bg-emerald-500/5' },
   COMMITTED: { icon: GitCommit,    color: 'text-blue-500',    border: 'border-blue-500/20 bg-blue-500/5' },
   REVERTED:  { icon: RotateCcw,    color: 'text-zinc-400',    border: 'border-zinc-500/20 bg-zinc-500/5' },

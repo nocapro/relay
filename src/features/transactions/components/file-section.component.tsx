@@ -7,7 +7,7 @@ import { DiffViewer } from "@/components/ui/diff-viewer.ui.tsx";
 import { getDiffStats } from "@/utils/diff.util";
 import { DiffStat } from "@/components/ui/diff-stat.ui";
 
-export const FileSection = memo(({ file }: { file: TransactionFile }) => {
+export const FileSection = memo(({ file, isApplying }: { file: TransactionFile; isApplying?: boolean }) => {
   const [isExpanded, setIsExpanded] = useState(true);
   const stats = useMemo(() => getDiffStats(file.diff), [file.diff]);
 
@@ -58,7 +58,7 @@ export const FileSection = memo(({ file }: { file: TransactionFile }) => {
             exit={{ height: 0, opacity: 0 }}
             className="relative z-0 overflow-hidden border-x border-b border-zinc-800/60 rounded-b-xl bg-zinc-950"
           >
-            <DiffViewer diff={file.diff} language={file.language} className="max-h-[600px]" />
+            <DiffViewer diff={file.diff} language={file.language} className="max-h-[600px]" isApplying={isApplying} />
           </motion.div>
         ) : (
           <motion.div

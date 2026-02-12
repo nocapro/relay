@@ -66,7 +66,7 @@ export const TransactionCard = memo(({
   const setExpandedId = useStore((state) => state.setExpandedId);
   const hoveredChainId = useStore((state) => state.hoveredChainId);
   const setHoveredChain = useStore((state) => state.setHoveredChain);
-  const approveTransaction = useStore((state) => state.approveTransaction);
+  const applyTransactionChanges = useStore((state) => state.applyTransactionChanges);
   const expanded = expandedId === id;
   
   // Build file info list with correct block indices for navigation
@@ -104,8 +104,8 @@ export const TransactionCard = memo(({
 
   const handleApprove = useCallback((e: React.MouseEvent) => {
     e.stopPropagation();
-    approveTransaction(id);
-  }, [id, approveTransaction]);
+    applyTransactionChanges(id);
+  }, [id, applyTransactionChanges]);
 
   const scrollToBlock = useCallback((blockIndex: number, fileIndex: number) => {
     const el = fileBlockRefs.current.get(blockIndex);
@@ -173,7 +173,8 @@ export const TransactionCard = memo(({
         expanded
           ? "bg-zinc-900/80 z-10 my-12 shadow-xl shadow-indigo-900/10 ring-1 ring-indigo-500/20"
           : "bg-zinc-900/40 hover:bg-zinc-900/60 shadow-sm",
-        isChainHovered && "chain-highlight ring-1 ring-indigo-500/40"
+        isChainHovered && "chain-highlight ring-1 ring-indigo-500/40",
+        status === 'APPLYING' && "ring-2 ring-indigo-500/50 shadow-[0_0_30px_rgba(99,102,241,0.2)]"
       )}
     >
       {/* Centered Thread Connector */}
@@ -218,7 +219,7 @@ export const TransactionCard = memo(({
                   "text-sm font-semibold truncate",
                   expanded ? "text-white" : "text-zinc-300"
                 )}>
-                  {description}
+                  {description.length > 60 ? `${description.substring(0, 60)}...` : description}
                 </h3>
                 {parentId && (
                   <div className="hidden md:flex items-center gap-1.5 px-2 py-0.5 rounded-full bg-zinc-800 text-[9px] font-bold text-zinc-500 uppercase tracking-tighter">
@@ -362,7 +363,7 @@ export const TransactionCard = memo(({
                         }}
                         data-file-index={fileIndex}
                       >
-                        <FileSection file={block.file} />
+                        <FileSection file={block.file} isApplying={status === 'APPLYING'} />
                       </div>
                     );
                   })
@@ -376,7 +377,7 @@ export const TransactionCard = memo(({
                       }}
                       data-file-index={info.fileIndex}
                     >
-                      <FileSection file={info.file} />
+                      <FileSection file={info.file} isApplying={status === 'APPLYING'} />
                     </div>
                   ))
                 ) : (

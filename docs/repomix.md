@@ -1890,32 +1890,82 @@ export const FloatingActionBar = () => {
 };
 ```
 
+## File: package.json
+```json
+{
+  "name": "relay",
+  "private": true,
+  "version": "1.0.0",
+  "type": "module",
+  "scripts": {
+    "dev": "react-router dev",
+    "build": "react-router build",
+    "preview": "react-router-serve ./build/server/index.js"
+  },
+  "dependencies": {
+    "@react-router/dev": "^7.13.0",
+    "@react-router/node": "^7.13.0",
+    "@react-router/serve": "^7.13.0",
+    "@tailwindcss/typography": "^0.5.19",
+    "clsx": "2.1.1",
+    "framer-motion": "^12.34.0",
+    "isbot": "^5",
+    "lucide-react": "^0.563.0",
+    "react": "19.2.3",
+    "react-dom": "19.2.3",
+    "react-markdown": "^10.0.0",
+    "react-router": "^7.13.0",
+    "remark-gfm": "^4.0.0",
+    "tailwind-merge": "3.4.0",
+    "zustand": "^5.0.0"
+  },
+  "devDependencies": {
+    "@tailwindcss/vite": "4.1.17",
+    "@types/node": "^22.0.0",
+    "@types/react": "19.2.7",
+    "@types/react-dom": "19.2.3",
+    "@vitejs/plugin-react-swc": "3.8.0",
+    "tailwindcss": "4.1.17",
+    "typescript": "5.9.3",
+    "vite": "6.2.0",
+    "vite-plugin-singlefile": "2.3.0"
+  }
+}
+```
+
 ## File: src/services/api.service.ts
 ```typescript
 import { Transaction, Prompt } from '@/types/app.types';
+import mockData from './mock-data.json';
 
-// Mock data generator or actual fetch logic
+// Service implementation using provided mock-data.json
 export const api = {
   transactions: {
     list: async (params?: { page?: number; limit?: number }): Promise<Transaction[]> => {
-      console.log('Fetching transactions with params:', params);
-      // In a real app, this would be: 
-      // fetch(`/api/transactions?page=${params?.page}&limit=${params?.limit}`)
+      const { page = 1, limit = 15 } = params || {};
       
-      // For now, we return an empty array or handle mock logic 
-      // to satisfy the type system and the UI's expectation.
-      return []; 
+      // Calculate start and end indices for pagination
+      const start = (page - 1) * limit;
+      const end = start + limit;
+      
+      // Return slice of the transactions array from mock-data.json
+      // We cast to any first to bypass complex block union types for the mock data
+      return (mockData.transactions as any[]).slice(start, end) as Transaction[];
     },
     prompts: {
-      list: async (): Promise<Prompt[]> => []
+      list: async (): Promise<Prompt[]> => {
+        return mockData.prompts as Prompt[];
+      }
     }
   },
   socket: {
     subscribe: (callback: (tx: Transaction) => void) => {
-      // Mock socket implementation
+      // Mock socket implementation for real-time updates
+      // This could be wired to a global window event for testing
+      (window as any).simulateIncomingTx = (tx: Transaction) => callback(tx);
     },
-    startEmitting: () => {},
-    stopEmitting: () => {}
+    startEmitting: () => console.log("Socket monitoring started"),
+    stopEmitting: () => console.log("Socket monitoring paused")
   }
 };
 ```
@@ -1987,7 +2037,7 @@ export const createTransactionSlice: StateCreator<RootState, [], [], Transaction
     set({ isLoading: true, page: 1, hasMore: true });
     try {
       // Pass pagination params to API
-      const data = await (api.transactions.list as any)({ page: 1, limit: 15 });
+      const data = await api.transactions.list({ page: 1, limit: 15 });
       const prompts = await api.transactions.prompts.list();
       set({ transactions: data, prompts, hasMore: data.length === 15 });
     } catch (error) {
@@ -2013,7 +2063,7 @@ export const createTransactionSlice: StateCreator<RootState, [], [], Transaction
     set({ isFetchingNextPage: true });
     try {
       const nextPage = page + 1;
-      const data = await (api.transactions.list as any)({ page: nextPage, limit: 15 });
+      const data = await api.transactions.list({ page: nextPage, limit: 15 });
       
       if (data.length > 0) {
         set({ 
@@ -2030,49 +2080,6 @@ export const createTransactionSlice: StateCreator<RootState, [], [], Transaction
     set({ isFetchingNextPage: false });
   },
 });
-```
-
-## File: package.json
-```json
-{
-  "name": "relay",
-  "private": true,
-  "version": "1.0.0",
-  "type": "module",
-  "scripts": {
-    "dev": "react-router dev",
-    "build": "react-router build",
-    "preview": "react-router-serve ./build/server/index.js"
-  },
-  "dependencies": {
-    "@react-router/dev": "^7.13.0",
-    "@react-router/node": "^7.13.0",
-    "@react-router/serve": "^7.13.0",
-    "@tailwindcss/typography": "^0.5.19",
-    "clsx": "2.1.1",
-    "framer-motion": "^12.34.0",
-    "isbot": "^5",
-    "lucide-react": "^0.563.0",
-    "react": "19.2.3",
-    "react-dom": "19.2.3",
-    "react-markdown": "^10.0.0",
-    "react-router": "^7.13.0",
-    "remark-gfm": "^4.0.0",
-    "tailwind-merge": "3.4.0",
-    "zustand": "^5.0.0"
-  },
-  "devDependencies": {
-    "@tailwindcss/vite": "4.1.17",
-    "@types/node": "^22.0.0",
-    "@types/react": "19.2.7",
-    "@types/react-dom": "19.2.3",
-    "@vitejs/plugin-react-swc": "3.8.0",
-    "tailwindcss": "4.1.17",
-    "typescript": "5.9.3",
-    "vite": "6.2.0",
-    "vite-plugin-singlefile": "2.3.0"
-  }
-}
 ```
 
 ## File: src/styles/main.style.css

@@ -35,7 +35,7 @@ we dont need transaction history page, change with prompt management page that p
 
 simulated backend with json mock data, logic , and services , real elysiajs server and client. monorepoed backend frontend structure. should be no backend logic at all in frontend
 
-===
+=== DONE
 
 transaction:
 1. lets change the data and naming convention shape, transaction card title = git commit message (truncated) 

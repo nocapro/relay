@@ -46,8 +46,8 @@
   "transactions": [
     {
       "id": "tx-infra-k8s",
-      "status": "PENDING",
-      "description": "Infra: K8s-native deployment with Helm and Monitoring",
+      "status": "APPLYING",
+      "description": "infra: migrate relaycode-web to k8s with helm charts",
       "timestamp": "Just now",
       "createdAt": "2026-02-12T12:30:00.000Z",
       "promptId": "prompt-cloud-infra",
@@ -143,7 +143,7 @@
       "id": "tx-auth-oidc",
       "status": "PENDING",
       "isChainRoot": true,
-      "description": "Security: Auth0 Integration & Middleware Hardening",
+      "description": "feat(auth): integrate auth0 and harden middleware",
       "timestamp": "15 mins ago",
       "createdAt": "2026-02-12T12:15:00.000Z",
       "promptId": "prompt-security-oidc",
@@ -239,7 +239,7 @@
         "id": "tx-auth-types-cleanup",
         "parentId": "tx-auth-oidc",
         "status": "PENDING",
-        "description": "Security: Legacy Session Type Cleanup",
+        "description": "chore(auth): remove deprecated internal session types",
         "timestamp": "10 mins ago",
         "createdAt": "2026-02-12T12:20:00.000Z",
         "promptId": "prompt-security-oidc",
@@ -267,9 +267,9 @@
         ]
       },
       {
-        "id": "tx-perf-redis",
-        "status": "APPLIED",
-      "description": "Performance: Redis Cache Layer & Query Optimization",
+          "id": "tx-perf-redis",
+          "status": "APPLIED",
+        "description": "perf: implement redis cache layer for dashboard stats",
       "timestamp": "1 hour ago",
       "createdAt": "2026-02-12T11:30:00.000Z",
       "promptId": "prompt-backend-perf",
@@ -364,7 +364,7 @@
     {
       "id": "tx-cicd-actions",
       "status": "COMMITTED",
-      "description": "DevOps: Establish CI/CD pipeline with GitHub Actions",
+      "description": "ci: setup github actions for build and k8s deploy",
       "timestamp": "4 hours ago",
       "createdAt": "2026-02-12T08:30:00.000Z",
       "promptId": "prompt-cicd",
@@ -446,7 +446,7 @@
     {
       "id": "tx-feature-comments",
       "status": "REVERTED",
-      "description": "Feature: Full-stack Transaction Commenting System",
+      "description": "feat: full-stack transaction commenting system",
       "timestamp": "8 hours ago",
       "createdAt": "2026-02-12T04:30:00.000Z",
       "promptId": "prompt-feature-comments",
@@ -528,7 +528,7 @@
     {
       "id": "tx-ui-redesign",
       "status": "APPLIED",
-      "description": "UI: Modern Dark Theme Dashboard Overhaul",
+      "description": "ui: modern dark theme overhaul with zinc palette",
       "timestamp": "1 day ago",
       "createdAt": "2026-02-11T12:00:00.000Z",
       "promptId": "prompt-ui-redesign",
@@ -610,7 +610,7 @@
     {
       "id": "tx-graphql-api",
       "status": "PENDING",
-      "description": "API: GraphQL Schema and Resolver Implementation",
+      "description": "feat(api): implement graphql schema and resolvers",
       "timestamp": "2 days ago",
       "createdAt": "2026-02-10T10:00:00.000Z",
       "promptId": "prompt-api-graphql",

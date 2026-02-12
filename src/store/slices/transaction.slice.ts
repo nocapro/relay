@@ -19,7 +19,7 @@ export interface TransactionSlice {
   fetchTransactions: () => Promise<void>;
   fetchNextPage: () => Promise<void>;
   addTransaction: (tx: Transaction) => void;
-  approveTransaction: (id: string) => void;
+  applyTransactionChanges: (id: string) => Promise<void>;
 }
 
 export const createTransactionSlice: StateCreator<RootState, [], [], TransactionSlice> = (set, get) => ({
@@ -51,13 +51,24 @@ export const createTransactionSlice: StateCreator<RootState, [], [], Transaction
     transactions: [tx, ...state.transactions] 
   })),
 
-  approveTransaction: (id) => set((state) => ({
-    transactions: state.transactions.map((t) => 
-      t.id === id 
-        ? { ...t, status: 'APPLIED' as const } 
-        : t
-    )
-  })),
+  applyTransactionChanges: async (id) => {
+    // 1. Transition to APPLYING
+    set((state) => ({
+      transactions: state.transactions.map((t) => 
+        t.id === id ? { ...t, status: 'APPLYING' as const } : t
+      )
+    }));
+
+    // 2. Simulate disk I/O / worker latency
+    await new Promise(resolve => setTimeout(resolve, 1800));
+
+    // 3. Finalize to APPLIED
+    set((state) => ({
+      transactions: state.transactions.map((t) => 
+        t.id === id ? { ...t, status: 'APPLIED' as const } : t
+      )
+    }));
+  },
 
   fetchTransactions: async () => {
     set({ isLoading: true, page: 1, hasMore: true });

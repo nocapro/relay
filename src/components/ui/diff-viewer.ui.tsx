@@ -6,23 +6,28 @@ interface DiffViewerProps {
   diff: string;
   language: string;
   className?: string;
+  isApplying?: boolean;
 }
 
-export const DiffViewer = memo(({ diff, className }: DiffViewerProps) => {
+export const DiffViewer = memo(({ diff, className, isApplying }: DiffViewerProps) => {
   const lines = useMemo(() => parseDiff(diff), [diff]);
   
   return (
-    <div className={cn("font-mono text-[11px] md:text-xs overflow-x-auto relative", className)}>
+    <div className={cn(
+      "font-mono text-[11px] md:text-xs overflow-x-auto relative transition-all duration-500", 
+      className,
+      isApplying && "writing-mode"
+    )}>
       <div className="min-w-full inline-block">
         {lines.map((line, i) => (
-          <LineRow key={i} line={line} />
+          <LineRow key={i} line={line} isApplying={isApplying} />
         ))}
       </div>
     </div>
   );
 });
 
-const LineRow = memo(({ line }: { line: DiffLine }) => {
+const LineRow = memo(({ line, isApplying }: { line: DiffLine, isApplying?: boolean }) => {
   const tokens = useMemo(() => tokenizeCode(line.content), [line.content]);
 
   // Styles based on line type
@@ -43,7 +48,11 @@ const LineRow = memo(({ line }: { line: DiffLine }) => {
     'text-zinc-700';
 
   return (
-    <div className={cn("flex w-full group/line hover:bg-white/5 transition-colors", bgClass)}>
+    <div className={cn(
+      "flex w-full group/line hover:bg-white/5 transition-colors", 
+      bgClass,
+      isApplying && line.type === 'add' && "line-scan"
+    )}>
       {/* Line Numbers */}
       <div className={cn("w-6 md:w-8 flex-shrink-0 select-none text-right pr-1 py-0.5 border-r border-white/5 font-mono opacity-40 group-hover/line:opacity-100 transition-opacity", gutterClass)}>
         {line.oldLine || ' '}
