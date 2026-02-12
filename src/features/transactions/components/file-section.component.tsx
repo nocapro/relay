@@ -2,22 +2,10 @@ import { memo, useState, useCallback, useMemo } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { ChevronDown, Copy } from 'lucide-react';
 import { cn } from "@/utils/cn.util";
-import { TransactionFile } from "@/types/app.types";
+import { TransactionFile, FILE_STATUS_CONFIG } from "@/types/app.types";
 import { DiffViewer } from "@/components/ui/diff-viewer.ui.tsx";
 import { getDiffStats } from "@/utils/diff.util";
 import { DiffStat } from "@/components/ui/diff-stat.ui";
-
-export const MetaItem = memo(({ icon: Icon, label, value, color }: any) => (
-  <div className="flex items-center gap-2 shrink-0">
-    <div className={cn("p-1.5 rounded bg-zinc-800/50 border border-zinc-700/50", color)}>
-      <Icon className="w-3 h-3" />
-    </div>
-    <div className="flex flex-col">
-      <span className="text-[9px] text-zinc-500 uppercase font-bold tracking-tighter leading-none mb-0.5">{label}</span>
-      <span className="text-[11px] font-mono text-zinc-300 leading-none">{value}</span>
-    </div>
-  </div>
-));
 
 export const FileSection = memo(({ file }: { file: TransactionFile }) => {
   const [isExpanded, setIsExpanded] = useState(true);
@@ -39,11 +27,7 @@ export const FileSection = memo(({ file }: { file: TransactionFile }) => {
         onClick={toggleExpanded}
       >
         <div className="flex items-center gap-3 min-w-0">
-          <div className={cn(
-            "w-1.5 h-1.5 rounded-full shrink-0",
-            file.status === 'modified' ? "bg-amber-500 shadow-[0_0_8px_rgba(245,158,11,0.5)]" :
-            file.status === 'created' ? "bg-emerald-500 shadow-[0_0_8px_rgba(16,185,129,0.5)]" : "bg-red-500"
-          )} />
+          <div className={cn("w-1.5 h-1.5 rounded-full shrink-0", FILE_STATUS_CONFIG[file.status].color)} />
           <span className="text-xs font-mono text-zinc-300 truncate">{file.path}</span>
           <DiffStat 
             adds={stats.adds} 

@@ -42,7 +42,9 @@
     "useGitignore": true,
     "useDotIgnore": true,
     "useDefaultPatterns": true,
-    "customPatterns": []
+    "customPatterns": [
+        "src/services"
+    ]
   },
   "security": {
     "enableSecurityCheck": false

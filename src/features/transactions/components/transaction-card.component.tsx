@@ -20,7 +20,9 @@ import { StatusBadge } from "@/components/ui/status-badge.ui";
 import { useStore } from "@/store/root.store";
 import { calculateTotalStats } from "@/utils/diff.util";
 import { DiffStat } from "@/components/ui/diff-stat.ui";
-import { FileSection, MetaItem } from "./file-section.component";
+import { FileSection } from "./file-section.component";
+import { Metric } from "@/components/ui/metric.ui";
+import { STATUS_CONFIG } from '@/types/app.types';
 
 interface TransactionCardProps {
   id: string;
@@ -144,17 +146,7 @@ export const TransactionCard = memo(({
     return () => observer.disconnect();
   }, [expanded, fileInfos.length]);
 
-  const statusBorderColors = {
-    PENDING:    'border-amber-500/40 hover:border-amber-500/60',
-    APPLIED:    'border-emerald-500/40 hover:border-emerald-500/60',
-    COMMITTED:  'border-blue-500/40 hover:border-blue-500/60',
-    REVERTED:   'border-zinc-500/30 hover:border-zinc-500/50',
-    FAILED:     'border-red-500/40 hover:border-red-500/60',
-  };
-
-  const stats = useMemo(() => 
-    calculateTotalStats(fileInfos.map(i => i.file)), 
-  [fileInfos]);
+  const stats = useMemo(() => calculateTotalStats(fileInfos.map(i => i.file)), [fileInfos]);
 
   return (
     <motion.div 
@@ -164,8 +156,7 @@ export const TransactionCard = memo(({
         "rounded-2xl border transition-all duration-300 relative isolate",
         expanded
           ? "bg-zinc-900/80 z-10 my-12 border-indigo-500/30 shadow-xl shadow-indigo-900/10 ring-1 ring-indigo-500/20"
-          : "bg-zinc-900/40 hover:bg-zinc-900/60 shadow-sm",
-        !expanded && statusBorderColors[status]
+          : cn("bg-zinc-900/40 hover:bg-zinc-900/60 shadow-sm", STATUS_CONFIG[status].border)
       )}
     >
       {expanded && <div className="absolute inset-0 bg-gradient-to-b from-indigo-500/5 to-transparent pointer-events-none" />}
@@ -255,9 +246,9 @@ export const TransactionCard = memo(({
           >
             {/* Observability Strip */}
             <div className="flex items-center gap-6 px-8 py-3 bg-zinc-950 border-b border-zinc-900/50 overflow-x-auto scrollbar-hide">
-               <MetaItem icon={Cpu} label="Engine" value={`${provider} / ${model}`} color="text-indigo-400" />
-               <MetaItem icon={Terminal} label="Context" value={`${tokens} tokens`} color="text-emerald-400" />
-               <MetaItem icon={Coins} label="Cost" value={cost} color="text-amber-400" />
+               <Metric icon={Cpu} label="Engine" value={`${provider} / ${model}`} color="text-indigo-400" />
+               <Metric icon={Terminal} label="Context" value={`${tokens} tokens`} color="text-emerald-400" />
+               <Metric icon={Coins} label="Cost" value={cost} color="text-amber-400" />
                <div className="ml-auto hidden md:flex items-center gap-2 text-[10px] text-zinc-500 font-mono">
                   <ExternalLink className="w-3 h-3" />
                   <span>Report v2.4</span>
@@ -311,7 +302,7 @@ export const TransactionCard = memo(({
 
               {/* MAIN CONTENT STREAM */}
               <div className="flex-1 space-y-12 min-w-0">
-                {(blocks || []).length > 0 ? (
+                {blocks && blocks.length > 0 ? (
                   // Render blocks with interleaved markdown and files
                   blocks.map((block, blockIdx) => {
                     if (block.type === 'markdown') {

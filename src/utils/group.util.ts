@@ -41,45 +41,20 @@ export function groupTransactions(
     new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
   );
 
+  const strategies: Record<GroupByStrategy, (tx: Transaction) => { key: string; label: string }> = {
+    prompt: (tx) => ({ key: tx.promptId, label: prompts.find(p => p.id === tx.promptId)?.title || 'Orphaned' }),
+    date:   (tx) => ({ key: getRelativeDate(tx.createdAt), label: getRelativeDate(tx.createdAt) }),
+    author: (tx) => ({ key: tx.author || '?', label: tx.author ? `@${tx.author}` : 'Unknown' }),
+    status: (tx) => ({ key: tx.status, label: tx.status.charAt(0) + tx.status.slice(1).toLowerCase() }),
+    files:  (tx) => ({ key: tx.files[0]?.path || '?', label: tx.files[0]?.path || 'No Files' }),
+    none:   () => ({ key: 'all', label: 'All' }),
+  };
+
   sorted.forEach(tx => {
-    let key = 'unknown';
-    let label = 'Unknown';
-
-    switch (strategy) {
-      case 'prompt': {
-        key = tx.promptId;
-        const prompt = prompts.find(p => p.id === tx.promptId);
-        label = prompt?.title || 'Orphaned Transactions';
-        break;
-      }
-      case 'date': {
-        key = getRelativeDate(tx.createdAt);
-        label = key;
-        break;
-      }
-      case 'author': {
-        key = tx.author || 'unknown';
-        label = tx.author ? `@${tx.author}` : 'Unknown Author';
-        break;
-      }
-      case 'status': {
-        key = tx.status;
-        label = tx.status.charAt(0) + tx.status.slice(1).toLowerCase();
-        break;
-      }
-      case 'files': {
-        // Group by the first file path or "No Files"
-        const firstFile = tx.files[0];
-        key = firstFile?.path || 'no-files';
-        label = firstFile?.path || 'No Files Attached';
-        break;
-      }
-    }
-
-    if (!groups.has(key)) {
-      groups.set(key, { label, transactions: [] });
-    }
-    groups.get(key)!.transactions.push(tx);
+    const { key, label } = strategies[strategy](tx);
+    const group = groups.get(key) || { label, transactions: [] };
+    group.transactions.push(tx);
+    groups.set(key, group);
   });
 
   // Convert map to array and calculate counts

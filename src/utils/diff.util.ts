@@ -1,5 +1,3 @@
-import { ClassValue } from "clsx";
-
 export interface DiffLine {
   type: 'hunk' | 'add' | 'remove' | 'context';
   content: string;
@@ -79,14 +77,7 @@ const KEYWORDS = [
 
 export function tokenizeCode(code: string): SyntaxToken[] {
   // Simple regex based tokenizer
-  // 1. Strings
-  // 2. Keywords
-  // 3. Comments
-  // 4. Numbers
-  // 5. Normal text
-  
   const tokens: SyntaxToken[] = [];
-  let remaining = code;
 
   // Very naive splitting by word boundary, space, or special chars
   // For a production app, use PrismJS or Shiki. This is a lightweight substitute.

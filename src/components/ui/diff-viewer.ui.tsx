@@ -8,7 +8,7 @@ interface DiffViewerProps {
   className?: string;
 }
 
-export const DiffViewer = memo(({ diff, language, className }: DiffViewerProps) => {
+export const DiffViewer = memo(({ diff, className }: DiffViewerProps) => {
   const lines = useMemo(() => parseDiff(diff), [diff]);
   
   return (
