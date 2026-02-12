@@ -29,12 +29,14 @@
   },
   "include": [
  //   "readme.md",
-    "src/",
+ //   "src/",
     "index.html",
     "package.json",
     "tsconfig.json",
     "vite.config.ts",
-    "docs/relay.md"
+    "src/features/transactions/components",
+    "src/styles"
+ //   "docs/relay.md"
   ],
   "ignore": {
     "useGitignore": true,

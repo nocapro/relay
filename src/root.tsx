@@ -6,7 +6,6 @@ import { useStore } from '@/store/root.store';
 import { CommandPalette } from '@/components/layout/command-palette.layout';
 import { Navigation } from '@/components/layout/navigation.layout';
 import { Header } from '@/components/layout/header.layout';
-import { FloatingActionBar } from '@/features/transactions/components/action-bar.component';
 import { useIsMobile } from '@/hooks/mobile.hook';
 
 import '@/styles/main.style.css';
@@ -37,16 +36,15 @@ export function Layout({ children }: { children: React.ReactNode }) {
         <Meta />
         <Links />
       </head>
-      <body className="antialiased">
-        <div className="min-h-screen bg-zinc-950 text-zinc-100 font-sans selection:bg-indigo-500/30 selection:text-indigo-200 overflow-x-hidden">
+      <body className="antialiased min-h-screen bg-zinc-950 text-zinc-100 font-sans selection:bg-indigo-500/30 selection:text-indigo-200">
+        <div className="min-h-screen">
           <CommandPalette />
           <Navigation />
-          <div className={cn("flex flex-col min-h-screen transition-all duration-300 isolate", isMobile ? "pb-20" : "pl-64")}>
+          <div className={cn("flex flex-col min-h-screen transition-all duration-300", isMobile ? "pb-20" : "pl-64")}>
             <Header />
-            <main className="flex-1 relative">
+            <main className="flex-1">
               {children}
             </main>
-            <FloatingActionBar />
           </div>
         </div>
         <ScrollRestoration />

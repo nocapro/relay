@@ -96,10 +96,9 @@ export const Dashboard = () => {
       
       {/* Hero Status Bar */}
       <div className="grid grid-cols-1 lg:grid-cols-4 gap-4 md:gap-6">
-        <motion.div 
-          layout
+        <div 
           className={cn(
-            "relative overflow-hidden rounded-2xl border border-zinc-800/60 bg-gradient-to-br from-zinc-900 to-zinc-950 shadow-2xl group transition-all duration-500",
+            "relative rounded-2xl border border-zinc-800/60 bg-gradient-to-br from-zinc-900 to-zinc-950 shadow-2xl group transition-all duration-500",
             hasTransactions ? "lg:col-span-3 p-6" : "lg:col-span-4 p-12 py-20"
           )}
         >
@@ -145,7 +144,7 @@ export const Dashboard = () => {
           
           {/* Decorative Elements */}
           <div className="absolute right-0 top-0 h-full w-2/3 bg-gradient-to-l from-indigo-500/5 to-transparent pointer-events-none" />
-        </motion.div>
+        </div>
 
         {/* Stats Card */}
         {hasTransactions && (
@@ -252,7 +251,6 @@ export const Dashboard = () => {
                           animate={{ height: 'auto', opacity: 1 }}
                           exit={{ height: 0, opacity: 0 }}
                           transition={{ duration: 0.2, ease: 'easeInOut' }}
-                          className="overflow-hidden"
                         >
                           <div className="space-y-3 pl-0 md:pl-2 border-l-0 md:border-l border-zinc-800/50 ml-3">
                             {group.transactions.map((tx) => (

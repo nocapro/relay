@@ -2,6 +2,42 @@
 @plugin "@tailwindcss/typography";
 
 @layer utilities {
+  /* Shimmer/Shine effect for selected cards */
+  .shimmer {
+    position: relative;
+    overflow: hidden;
+  }
+  
+  .shimmer::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: -100%;
+    width: 100%;
+    height: 100%;
+    background: linear-gradient(
+      90deg,
+      transparent,
+      rgba(255, 255, 255, 0.03),
+      rgba(255, 255, 255, 0.05),
+      rgba(255, 255, 255, 0.03),
+      transparent
+    );
+    animation: shimmer 3s infinite;
+    pointer-events: none;
+    z-index: 1;
+  }
+  
+  @keyframes shimmer {
+    0% {
+      left: -100%;
+    }
+    100% {
+      left: 100%;
+    }
+  }
+
+
   .custom-scrollbar::-webkit-scrollbar {
     width: 10px;
     height: 10px;
@@ -42,8 +78,6 @@
 
   body {
     min-height: 100%;
-    overflow-x: hidden;
-    overflow-y: auto;
   }
 
   .prose p { margin-bottom: 1.5em; line-height: 1.75; }
