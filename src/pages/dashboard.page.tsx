@@ -1,10 +1,10 @@
 import { useEffect, useState, useRef, useMemo } from 'react';
-import { Play, Pause, Activity, RefreshCw, Filter, Terminal, Command, Layers, Calendar, User, FileCode, CheckCircle2, ChevronDown, ChevronRight } from 'lucide-react';
+import { Play, Pause, Activity, RefreshCw, Filter, Terminal, Command, Layers, Calendar, User, FileCode, CheckCircle2 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useSearchParams } from 'react-router';
 import { cn } from "@/utils/cn.util";
 import { useStore } from "@/store/root.store";
-import { TransactionCard } from "@/features/transactions/components/transaction-card.component";
+import { TransactionGroup } from "@/features/transactions/components/transaction-group.component";
 import { groupTransactions } from "@/utils/group.util";
 import { GroupByStrategy } from "@/types/app.types";
 
@@ -224,61 +224,15 @@ export const Dashboard = () => {
         <div className="space-y-10 min-h-[300px] mt-8">
           <AnimatePresence mode='popLayout'>
             {hasTransactions ? (
-              groupedData.map((group) => {
-                const isCollapsed = collapsedGroups.has(group.id);
-                return (
-                  <div key={group.id} className="space-y-6">
-                    {/* Group Header - Clickable */}
-                    <button
-                      onClick={() => toggleGroupCollapse(group.id)}
-                      className="flex items-center gap-3 pt-12 first:pt-0 w-full group/header"
-                    >
-                      <div className="h-px flex-1 bg-zinc-800/50" />
-                      <div className="flex items-center gap-2 px-3 py-1 rounded-full bg-zinc-900 border border-zinc-800 hover:border-zinc-700 transition-colors">
-                        {isCollapsed ? (
-                          <ChevronRight className="w-3 h-3 text-zinc-500 group-hover/header:text-zinc-300 transition-colors" />
-                        ) : (
-                          <ChevronDown className="w-3 h-3 text-zinc-500 group-hover/header:text-zinc-300 transition-colors" />
-                        )}
-                        <span className="text-xs font-medium text-zinc-300">{group.label}</span>
-                        <span className="text-[10px] font-mono text-zinc-500 bg-zinc-800 px-1.5 py-0.5 rounded-full">{group.count}</span>
-                      </div>
-                      <div className="h-px flex-1 bg-zinc-800/50" />
-                    </button>
-                    
-                    {/* Group Items - Collapsible */}
-                    <AnimatePresence>
-                      {!isCollapsed && (
-                        <motion.div
-                          initial={{ height: 0, opacity: 0 }}
-                          animate={{ height: 'auto', opacity: 1 }}
-                          exit={{ height: 0, opacity: 0 }}
-                          transition={{ duration: 0.2, ease: 'easeInOut' }}
-                        >
-                          <div className="space-y-6 pl-0 md:pl-2 ml-3">
-                            {group.transactions.map((tx) => (
-                              <TransactionCard 
-                                key={tx.id} 
-                                id={tx.id}
-                                status={tx.status}
-                                description={tx.description}
-                                timestamp={tx.timestamp}
-                                provider={tx.provider}
-                                model={tx.model}
-                                tokens={tx.tokens}
-                                cost={tx.cost}
-                                blocks={tx.blocks}
-                                files={tx.files}
-                                isNew={!seenTransactionIds.has(tx.id)} 
-                              />
-                            ))}
-                          </div>
-                        </motion.div>
-                      )}
-                    </AnimatePresence>
-                  </div>
-                );
-              })
+              groupedData.map((group) => (
+                <TransactionGroup
+                  key={group.id}
+                  group={group}
+                  isCollapsed={collapsedGroups.has(group.id)}
+                  onToggle={toggleGroupCollapse}
+                  seenIds={seenTransactionIds}
+                />
+              ))
             ) : (
               <motion.div 
                 initial={{ opacity: 0 }}
