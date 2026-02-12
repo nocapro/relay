@@ -181,28 +181,39 @@ export const TransactionCard = memo(({
         <div className="thread-connector-v" />
       )}
       {expanded && <div className="absolute inset-0 bg-gradient-to-b from-indigo-500/5 to-transparent pointer-events-none" />}
+      
       {/* STICKY HEADER: Integrated Controls */}
       <div
         onClick={onToggle}
         className={cn(
           "z-20 transition-all duration-300 cursor-pointer select-none",
           expanded
-            ? "sticky top-16 bg-zinc-900 rounded-t-2xl backdrop-blur-md border-b border-zinc-800/80 px-6 py-4"
-            : "p-4"
+            ? "sticky top-16 bg-zinc-900 rounded-t-2xl backdrop-blur-md border-b border-zinc-800/80 px-4 md:px-6 py-4"
+            : "p-3 md:p-4"
         )}
       >
-        <div className="flex items-center gap-4">
+        <div className="grid grid-cols-[auto_1fr_auto] items-start md:items-center gap-3 md:gap-4">
+          {/* Collapse Icon */}
           <div className={cn(
-            "p-1 rounded-md transition-colors",
+            "p-1 rounded-md transition-colors mt-1 md:mt-0",
             expanded ? "bg-indigo-500/10 text-indigo-400" : "text-zinc-600"
           )}>
             <ChevronDown className={cn("w-4 h-4 transition-transform", expanded ? "rotate-0" : "-rotate-90")} />
           </div>
 
-          <div className="flex-1 flex items-center gap-4 min-w-0">
-            <StatusBadge status={status} />
+          {/* Core Info */}
+          <div className="flex flex-col md:flex-row md:items-center gap-2 md:gap-4 min-w-0">
+            <div className="flex items-center gap-2 flex-shrink-0">
+              <StatusBadge status={status} />
+              {parentId && (
+                <div className="md:hidden flex items-center gap-1.5 px-2 py-0.5 rounded-full bg-zinc-800 text-[9px] font-bold text-zinc-500 uppercase tracking-tighter">
+                  <Layers className="w-2.5 h-2.5" /> Follow-up
+                </div>
+              )}
+            </div>
+            
             <div className="flex-1 min-w-0">
-              <div className="flex items-center gap-2 mb-0.5">
+              <div className="flex items-center gap-2">
                 <h3 className={cn(
                   "text-sm font-semibold truncate",
                   expanded ? "text-white" : "text-zinc-300"
@@ -210,50 +221,46 @@ export const TransactionCard = memo(({
                   {description}
                 </h3>
                 {parentId && (
-                  <div className="flex items-center gap-1.5 px-2 py-0.5 rounded-full bg-zinc-800 text-[9px] font-bold text-zinc-500 uppercase tracking-tighter">
+                  <div className="hidden md:flex items-center gap-1.5 px-2 py-0.5 rounded-full bg-zinc-800 text-[9px] font-bold text-zinc-500 uppercase tracking-tighter">
                     <Layers className="w-2.5 h-2.5" /> Follow-up
                   </div>
                 )}
               </div>
-              <div className="flex items-center gap-2 mt-0.5 text-[10px] text-zinc-500 font-mono">
-                <History className="w-3 h-3" /> {timestamp}
-                <span>•</span>
+              
+              <div className="flex flex-wrap items-center gap-x-2 gap-y-1 mt-1 text-[10px] text-zinc-500 font-mono">
+                <div className="flex items-center gap-1">
+                  <History className="w-3 h-3" /> {timestamp}
+                </div>
+                <span className="text-zinc-800">•</span>
                 <span className="text-zinc-600">ID: {id.split('-').pop()}</span>
-                {/* Stats - Hidden on very small screens, visible on sm+ */}
+                
                 {hasFiles && (
                   <>
-                    <span className="hidden sm:inline text-zinc-700">•</span>
-                    <span className="hidden sm:inline-flex items-center gap-1 text-zinc-400">
-                      <FileCode className="w-3 h-3" />
-                      {stats.files}
-                    </span>
-                    <span className="hidden sm:inline text-zinc-700">•</span>
-                    <DiffStat adds={stats.adds} subs={stats.subs} className="hidden sm:flex" />
+                    <span className="hidden sm:inline text-zinc-800">•</span>
+                    <div className="flex items-center gap-2">
+                      <span className="flex items-center gap-1 text-zinc-400">
+                        <FileCode className="w-3 h-3" />
+                        {stats.files}
+                      </span>
+                      <DiffStat adds={stats.adds} subs={stats.subs} className="flex" />
+                    </div>
                   </>
                 )}
               </div>
             </div>
           </div>
 
-          <div className="flex items-center gap-2">
-            {!expanded && hasFiles && (
-              <div className="flex md:hidden items-center gap-2 px-2">
-                <span className="text-[10px] text-zinc-500 flex items-center gap-1">
-                  <FileCode className="w-3 h-3" /> {stats.files}
-                </span>
-                <DiffStat adds={stats.adds} subs={stats.subs} className="text-[10px]" />
-              </div>
-            )}
+          {/* Actions */}
+          <div className="flex items-center gap-1 md:gap-2">
             {status === 'PENDING' && (
               <button
                 onClick={handleApprove}
                 className={cn(
-                  "flex items-center gap-2 px-4 py-1.5 bg-emerald-600 hover:bg-emerald-500 text-white text-[11px] font-bold uppercase tracking-wider rounded-lg shadow-lg shadow-emerald-900/20 transition-all active:scale-95",
-                  !expanded && "hidden md:flex"
+                  "flex items-center gap-2 px-3 md:px-4 py-1.5 bg-emerald-600 hover:bg-emerald-500 text-white text-[10px] md:text-[11px] font-bold uppercase tracking-wider rounded-lg shadow-lg shadow-emerald-900/20 transition-all active:scale-95"
                 )}
               >
                 <CheckCircle2 className="w-3.5 h-3.5" />
-                Apply
+                <span className="hidden xs:inline">Apply</span>
               </button>
             )}
             <button className="p-2 text-zinc-600 hover:text-white transition-colors">

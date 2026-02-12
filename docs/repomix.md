@@ -28,6 +28,9 @@ src/
     dashboard.tsx
     history.tsx
     settings.tsx
+  services/
+    api.service.ts
+    mock-data.json
   store/
     slices/
       transaction.slice.ts
@@ -172,61 +175,6 @@ export const Metric = memo(({ icon: Icon, label, value, color, className }: Metr
     </div>
   </div>
 ));
-```
-
-## File: src/features/transactions/components/transaction-group.component.tsx
-```typescript
-import { motion, AnimatePresence } from 'framer-motion';
-import { ChevronDown, ChevronRight } from 'lucide-react';
-import { TransactionCard } from './transaction-card.component';
-import { GroupedData } from '@/utils/group.util';
-
-interface TransactionGroupProps {
-  group: GroupedData;
-  isCollapsed: boolean;
-  onToggle: (id: string) => void;
-  seenIds: Set<string>;
-}
-
-export const TransactionGroup = ({ group, isCollapsed, onToggle, seenIds }: TransactionGroupProps) => (
-  <div className="space-y-6">
-    <button
-      onClick={() => onToggle(group.id)}
-      className="flex items-center gap-3 pt-12 first:pt-0 w-full group/header"
-    >
-      <div className="h-px flex-1 bg-zinc-800/50" />
-      <div className="flex items-center gap-2 px-3 py-1 rounded-full bg-zinc-900 border border-zinc-800 hover:border-zinc-700 transition-colors">
-        {isCollapsed ? <ChevronRight className="w-3 h-3 text-zinc-500" /> : <ChevronDown className="w-3 h-3 text-zinc-500" />}
-        <span className="text-xs font-medium text-zinc-300">{group.label}</span>
-        <span className="text-[10px] font-mono text-zinc-500 bg-zinc-800 px-1.5 py-0.5 rounded-full">{group.count}</span>
-      </div>
-      <div className="h-px flex-1 bg-zinc-800/50" />
-    </button>
-    
-    <AnimatePresence>
-      {!isCollapsed && (
-        <motion.div
-          initial={{ height: 0, opacity: 0 }}
-          animate={{ height: 'auto', opacity: 1 }}
-          exit={{ height: 0, opacity: 0 }}
-          transition={{ duration: 0.2, ease: 'easeInOut' }}
-          className="overflow-visible"
-        >
-          <div className="space-y-6 pl-0 md:pl-2 ml-3 relative">
-            {group.transactions.map((tx) => (
-              <TransactionCard 
-                key={tx.id} 
-                {...tx}
-                isNew={!seenIds.has(tx.id)}
-                depth={tx.depth}
-              />
-            ))}
-          </div>
-        </motion.div>
-      )}
-    </AnimatePresence>
-  </div>
-);
 ```
 
 ## File: src/hooks/mobile.hook.ts
@@ -416,6 +364,61 @@ export const CommandPalette = () => {
 };
 ```
 
+## File: src/features/transactions/components/transaction-group.component.tsx
+```typescript
+import { motion, AnimatePresence } from 'framer-motion';
+import { ChevronDown, ChevronRight } from 'lucide-react';
+import { TransactionCard } from './transaction-card.component';
+import { GroupedData } from '@/utils/group.util';
+
+interface TransactionGroupProps {
+  group: GroupedData;
+  isCollapsed: boolean;
+  onToggle: (id: string) => void;
+  seenIds: Set<string>;
+}
+
+export const TransactionGroup = ({ group, isCollapsed, onToggle, seenIds }: TransactionGroupProps) => (
+  <div className="space-y-6">
+    <button
+      onClick={() => onToggle(group.id)}
+      className="flex items-center gap-3 pt-12 first:pt-0 w-full group/header"
+    >
+      <div className="h-px flex-1 bg-zinc-800/50" />
+      <div className="flex items-center gap-2 px-3 py-1 rounded-full bg-zinc-900 border border-zinc-800 hover:border-zinc-700 transition-colors">
+        {isCollapsed ? <ChevronRight className="w-3 h-3 text-zinc-500" /> : <ChevronDown className="w-3 h-3 text-zinc-500" />}
+        <span className="text-xs font-medium text-zinc-300">{group.label}</span>
+        <span className="text-[10px] font-mono text-zinc-500 bg-zinc-800 px-1.5 py-0.5 rounded-full">{group.count}</span>
+      </div>
+      <div className="h-px flex-1 bg-zinc-800/50" />
+    </button>
+    
+    <AnimatePresence>
+      {!isCollapsed && (
+        <motion.div
+          initial={{ height: 0, opacity: 0 }}
+          animate={{ height: 'auto', opacity: 1 }}
+          exit={{ height: 0, opacity: 0 }}
+          transition={{ duration: 0.2, ease: 'easeInOut' }}
+          className="overflow-visible"
+        >
+          <div className="space-y-6 pl-0 md:pl-2 ml-3 relative">
+            {group.transactions.map((tx) => (
+              <TransactionCard 
+                key={tx.id} 
+                {...tx}
+                isNew={!seenIds.has(tx.id)}
+                depth={tx.depth}
+              />
+            ))}
+          </div>
+        </motion.div>
+      )}
+    </AnimatePresence>
+  </div>
+);
+```
+
 ## File: src/routes/dashboard.tsx
 ```typescript
 import { Dashboard } from '@/pages/dashboard.page';
@@ -447,33 +450,6 @@ export const createUiSlice: StateCreator<RootState, [], [], UiSlice> = (set) => 
   setCmdOpen: (open) => set({ isCmdOpen: open }),
   toggleCmd: () => set((state) => ({ isCmdOpen: !state.isCmdOpen })),
 });
-```
-
-## File: src/store/root.store.ts
-```typescript
-import { create } from 'zustand';
-import { createUiSlice, UiSlice } from './slices/ui.slice';
-import { createTransactionSlice, TransactionSlice } from './slices/transaction.slice';
-
-export type RootState = UiSlice & TransactionSlice;
-
-export const useStore = create<RootState>()((...a) => ({
-  ...createUiSlice(...a),
-  ...createTransactionSlice(...a),
-}));
-
-// Export specialized selectors for cleaner global usage
-export const useUiActions = () => useStore((state) => ({
-  setCmdOpen: state.setCmdOpen,
-  toggleCmd: state.toggleCmd,
-}));
-
-export const useTransactionActions = () => useStore((state) => ({
-  setExpandedId: state.setExpandedId,
-  setHoveredChain: state.setHoveredChain,
-  toggleWatching: state.toggleWatching,
-  fetchTransactions: state.fetchTransactions,
-}));
 ```
 
 ## File: src/components/layout/navigation.layout.tsx
@@ -671,124 +647,741 @@ export const FileSection = memo(({ file }: { file: TransactionFile }) => {
 });
 ```
 
-## File: src/utils/group.util.ts
-```typescript
-import { Transaction, Prompt, GroupByStrategy } from '@/types/app.types';
-
-export interface GroupedTransaction extends Transaction {
-  depth: number;
-}
-
-export interface GroupedData {
-  id: string;
-  label: string;
-  count: number;
-  transactions: GroupedTransaction[];
-}
-
-// Helper to get relative date
-const getRelativeDate = (dateStr: string): string => {
-  const date = new Date(dateStr);
-  const now = new Date();
-  const diffDays = Math.floor((now.getTime() - date.getTime()) / (1000 * 60 * 60 * 24));
-
-  if (diffDays === 0) return 'Today';
-  if (diffDays === 1) return 'Yesterday';
-  if (diffDays < 7) return 'This Week';
-  if (diffDays < 30) return 'This Month';
-  return 'Older';
-};
-
-export function groupTransactions(
-  transactions: Transaction[],
-  prompts: Prompt[],
-  strategy: GroupByStrategy
-): GroupedData[] {
-  if (strategy === 'none' || !transactions.length) {
-    return [{
-      id: 'all',
-      label: 'All Transactions',
-      count: transactions.length,
-      transactions: transactions.map(tx => ({ ...tx, depth: 0 }))
-    }];
-  }
-
-  const groups = new Map<string, { label: string; transactions: Transaction[] }>();
-
-  // 1. Sort transactions by date first for consistent ordering
-  const sorted = [...transactions].sort((a, b) => 
-    new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
-  );
-
-  const strategies: Record<GroupByStrategy, (tx: Transaction) => { key: string; label: string }> = {
-    prompt: (tx) => ({ key: tx.promptId, label: prompts.find(p => p.id === tx.promptId)?.title || 'Orphaned' }),
-    date:   (tx) => ({ key: getRelativeDate(tx.createdAt), label: getRelativeDate(tx.createdAt) }),
-    author: (tx) => ({ key: tx.author || '?', label: tx.author ? `@${tx.author}` : 'Unknown' }),
-    status: (tx) => ({ key: tx.status, label: tx.status.charAt(0) + tx.status.slice(1).toLowerCase() }),
-    files:  (tx) => {
-      const firstFile = tx.files?.[0] || tx.blocks?.find(b => b.type === 'file')?.file;
-      return { key: firstFile?.path || '?', label: firstFile?.path || 'No Files' };
+## File: src/services/mock-data.json
+```json
+{
+  "prompts": [
+    {
+      "id": "prompt-cloud-infra",
+      "title": "Migrate to Kubernetes & Helm",
+      "content": "Transition the application from legacy VM deployment to a Kubernetes-native architecture using Helm charts for scalability and resilience.",
+      "timestamp": "12 mins ago"
     },
-    none:   () => ({ key: 'all', label: 'All' }),
-  };
-
-  sorted.forEach(tx => {
-    const { key, label } = strategies[strategy](tx);
-    const group = groups.get(key) || { label, transactions: [] };
-    group.transactions.push(tx);
-    groups.set(key, group);
-  });
-
-  // Convert map to array and calculate counts
-  return Array.from(groups.entries()).map(([id, data]) => {
-    // Threading Logic: Sort by chain and calculate depths
-    const threaded: GroupedTransaction[] = [];
-    const pool = [...data.transactions];
-    
-    const addToChain = (parentId: string | undefined, depth: number) => {
-      // Find children for this parent in the current pool
-      const children = pool.filter(tx => tx.parentId === parentId);
-      
-      children.forEach(child => {
-        const idx = pool.findIndex(t => t.id === child.id);
-        if (idx > -1) {
-          pool.splice(idx, 1);
-          threaded.push({ ...child, depth });
-          // Recursively add descendants
-          addToChain(child.id, depth + 1);
-        }
-      });
-    };
-
-    // 1. Identify "roots" for this group. A root has no parent, 
-    // or its parent is not present in this specific filtered group.
-    const rootCandidates = pool.filter(tx => 
-      !tx.parentId || !pool.some(p => p.id === tx.parentId)
-    );
-
-    rootCandidates.forEach(root => {
-      const idx = pool.findIndex(t => t.id === root.id);
-      if (idx > -1) {
-        pool.splice(idx, 1);
-        threaded.push({ ...root, depth: 0 });
-        addToChain(root.id, 1);
-      }
-    });
-
-    // 2. Safety: Handle any remaining orphans that might have missed the tree logic
-    while (pool.length > 0) {
-      const tx = pool.shift()!;
-      threaded.push({ ...tx, depth: 0 });
+    {
+      "id": "prompt-security-oidc",
+      "title": "Implement OIDC Authentication",
+      "content": "Replace the internal JWT logic with a robust OpenID Connect flow via a third-party provider like Auth0 for better enterprise security and SSO capabilities.",
+      "timestamp": "45 mins ago"
+    },
+    {
+      "id": "prompt-backend-perf",
+      "title": "Optimize Data Ingestion Layer",
+      "content": "Improve database write performance by implementing a batching strategy and adding Redis as a write-behind cache to handle high-throughput scenarios.",
+      "timestamp": "3 hours ago"
+    },
+    {
+      "id": "prompt-cicd",
+      "title": "Establish CI/CD Pipeline",
+      "content": "Automate the build, test, and deployment process using GitHub Actions to improve reliability and development velocity.",
+      "timestamp": "5 hours ago"
+    },
+    {
+      "id": "prompt-feature-comments",
+      "title": "Implement Transaction Commenting System",
+      "content": "Develop a full-stack commenting feature for transactions, allowing users to collaborate and discuss specific code changes.",
+      "timestamp": "1 day ago"
+    },
+    {
+      "id": "prompt-ui-redesign",
+      "title": "Modern Dashboard UI Overhaul",
+      "content": "Redesign the dashboard with a modern, dark-themed UI using Tailwind CSS, Framer Motion animations, and improved accessibility.",
+      "timestamp": "2 days ago"
+    },
+    {
+      "id": "prompt-api-graphql",
+      "title": "GraphQL API Migration",
+      "content": "Migrate REST endpoints to GraphQL to provide more flexible data fetching and reduce over-fetching issues.",
+      "timestamp": "3 days ago"
     }
-
-    return {
-      id,
-      label: data.label,
-      count: data.transactions.length,
-      transactions: threaded
-    };
-  });
+  ],
+  "transactions": [
+    {
+      "id": "tx-infra-k8s",
+      "status": "PENDING",
+      "description": "Infra: K8s-native deployment with Helm and Monitoring",
+      "timestamp": "Just now",
+      "createdAt": "2026-02-12T12:30:00.000Z",
+      "promptId": "prompt-cloud-infra",
+      "author": "ops-lead",
+      "provider": "Anthropic",
+      "model": "claude-3.5-sonnet",
+      "cost": "$0.142",
+      "tokens": "7,800",
+      "reasoning": "Legacy reasoning. See blocks for narrative.",
+      "files": [],
+      "blocks": [
+        {
+          "type": "markdown",
+          "content": "### Kubernetes Migration Strategy\n\nTo achieve higher availability and standardized deployments, I am migrating the `relaycode-web` service to Kubernetes. This begins with creating a multi-stage `Dockerfile` to produce a minimal, production-ready image."
+        },
+        {
+          "type": "file",
+          "file": {
+            "path": "Dockerfile",
+            "status": "created",
+            "language": "dockerfile",
+            "diff": "@@ -0,0 +1,15 @@\n+FROM node:20-alpine AS builder\n+WORKDIR /app\n+COPY package*.json ./\n+RUN npm ci\n+COPY . .\n+RUN npm run build\n+\n+FROM nginx:stable-alpine\n+COPY --from=builder /app/build /usr/share/nginx/html\n+EXPOSE 80\n+CMD [\"nginx\", \"-g\", \"daemon off;\"]"
+          }
+        },
+        {
+          "type": "markdown",
+          "content": "Now that we have the Dockerfile, let's create the Helm chart structure. The `Chart.yaml` defines the package metadata that Helm needs to manage this application."
+        },
+        {
+          "type": "file",
+          "file": {
+            "path": "charts/relay-app/Chart.yaml",
+            "status": "created",
+            "language": "yaml",
+            "diff": "@@ -0,0 +1,6 @@\n+apiVersion: v2\n+name: relay-web\n+description: Helm chart for relaycode-web\n+type: application\n+version: 1.0.0\n+appVersion: \"1.2.4\""
+          }
+        },
+        {
+          "type": "markdown",
+          "content": "Next, we need the `values.yaml` file which provides default configuration. This allows environment-specific overrides during deployment without modifying the chart itself."
+        },
+        {
+          "type": "file",
+          "file": {
+            "path": "charts/relay-app/values.yaml",
+            "status": "created",
+            "language": "yaml",
+            "diff": "@@ -0,0 +1,10 @@\n+replicaCount: 3\n+image:\n+  repository: relaycode/web\n+  tag: \"latest\"\n+service:\n+  type: ClusterIP\n+  port: 80\n+ingress:\n+  enabled: true\n+  host: app.relaycode.com"
+          }
+        },
+        {
+          "type": "markdown",
+          "content": "The core workload is defined in `deployment.yaml`. This template uses values from `values.yaml` to configure replicas, container images, and health probes. The liveness probe ensures Kubernetes can detect and restart unhealthy containers."
+        },
+        {
+          "type": "file",
+          "file": {
+            "path": "charts/relay-app/templates/deployment.yaml",
+            "status": "created",
+            "language": "yaml",
+            "diff": "@@ -0,0 +1,18 @@\n+apiVersion: apps/v1\n+kind: Deployment\n+metadata:\n+  name: {{ .Release.Name }}\n+spec:\n+  replicas: {{ .Values.replicaCount }}\n+  template:\n+    spec:\n+      containers:\n+        - name: web\n+          image: \"{{ .Values.image.repository }}:{{ .Values.image.tag }}\"\n+          ports:\n+            - containerPort: 80\n+          livenessProbe:\n+            httpGet:\n+              path: /healthz\n+              port: 80"
+          }
+        },
+        {
+          "type": "markdown",
+          "content": "We also need a Service resource to expose the deployment within the cluster. This creates a stable endpoint for other services to communicate with our application."
+        },
+        {
+          "type": "file",
+          "file": {
+            "path": "charts/relay-app/templates/service.yaml",
+            "status": "created",
+            "language": "yaml",
+            "diff": "@@ -0,0 +1,11 @@\n+apiVersion: v1\n+kind: Service\n+metadata:\n+  name: {{ .Release.Name }}-web\n+  labels:\n+    app: {{ .Release.Name }}\n+spec:\n+  type: {{ .Values.service.type }}\n+  ports:\n+    - port: {{ .Values.service.port }}\n+      targetPort: 80\n+  selector:\n+    app: {{ .Release.Name }}"
+          }
+        },
+        {
+          "type": "markdown",
+          "content": "Finally, a deployment script automates the process of building the Docker image, pushing it to a registry, and applying the Helm chart to the cluster."
+        },
+        {
+          "type": "file",
+          "file": {
+            "path": "scripts/k8s-deploy.sh",
+            "status": "created",
+            "language": "bash",
+            "diff": "@@ -0,0 +1,6 @@\n+#!/bin/bash\n+docker build -t relaycode/web:latest .\n+docker push relaycode/web:latest\n+helm upgrade --install relay-web ./charts/relay-app \\\n+  --set image.tag=$(git rev-parse --short HEAD) \\\n+  --namespace production"
+          }
+        }
+      ]
+    },
+    {
+      "id": "tx-auth-oidc",
+      "status": "PENDING",
+      "isChainRoot": true,
+      "description": "Security: Auth0 Integration & Middleware Hardening",
+      "timestamp": "15 mins ago",
+      "createdAt": "2026-02-12T12:15:00.000Z",
+      "promptId": "prompt-security-oidc",
+      "author": "security-bot",
+      "provider": "OpenRouter",
+      "model": "anthropic/claude-3-opus",
+      "cost": "$0.085",
+      "tokens": "4,120",
+      "reasoning": "Switching to Auth0 eliminates the risk of managing refresh token storage in our database.",
+      "files": [],
+      "blocks": [
+        {
+          "type": "markdown",
+          "content": "### Security Refactor: OIDC Transition\n\nI am replacing our internal JWT handling with the official Auth0 Next.js SDK. This starts with adding the necessary dependency to our `package.json`."
+        },
+        {
+          "type": "file",
+          "file": {
+            "path": "package.json",
+            "status": "modified",
+            "language": "json",
+            "diff": "@@ -15,4 +15,5 @@\n   \"dependencies\": {\n+    \"@auth0/nextjs-auth0\": \"^3.5.0\",\n     \"clsx\": \"2.1.1\",\n     \"framer-motion\": \"^12.34.0\""
+          }
+        },
+        {
+          "type": "markdown",
+          "content": "Next, I'm replacing our custom token verification middleware with the `withMiddlewareAuthRequired` helper from the Auth0 SDK. This standardizes route protection and handles session management automatically."
+        },
+        {
+          "type": "file",
+          "file": {
+            "path": "src/middleware.ts",
+            "status": "modified",
+            "language": "typescript",
+            "diff": "@@ -1,6 +1,5 @@\n-import { verifyToken } from './lib/auth';\n+import { withMiddlewareAuthRequired } from '@auth0/nextjs-auth0/edge';\n \\n-export function middleware(req: Request) {\n-  return verifyToken(req);\n-}\n+export default withMiddlewareAuthRequired();\n+\\n+export const config = { matcher: ['/dashboard/:path*', '/api/:path*'] };"
+          }
+        },
+        {
+          "type": "markdown",
+          "content": "The frontend user hook needs to be updated to use the client-side `useUser` from Auth0, which provides the user profile, loading state, and errors in a standardized way."
+        },
+        {
+          "type": "file",
+          "file": {
+            "path": "src/hooks/useUser.ts",
+            "status": "modified",
+            "language": "typescript",
+            "diff": "@@ -1,8 +1,10 @@\n-export const useUser = () => {\n-  const [user, setUser] = useState(null);\n-  useEffect(() => {\n-    fetch('/api/me').then(res => res.json()).then(setUser);\n-  }, []);\n-  return user;\n-};+import { useUser as useAuth0User } from '@auth0/nextjs-auth0/client';\n+\\n+export const useUser = () => {\n+  const { user, isLoading, error } = useAuth0User();\n+  return { user, isLoading, error };\n+};"
+          }
+        },
+        {
+          "type": "markdown",
+          "content": "To handle login, logout, and callback routes, I'm creating a dynamic API route that uses Auth0's `handleAuth` function. This creates all necessary authentication endpoints automatically."
+        },
+        {
+          "type": "file",
+          "file": {
+            "path": "src/app/api/auth/[auth0]/route.ts",
+            "status": "created",
+            "language": "typescript",
+            "diff": "@@ -0,0 +1,5 @@\n+import { handleAuth } from '@auth0/nextjs-auth0';\n+\\n+export const GET = handleAuth();"
+          }
+        },
+        {
+          "type": "markdown",
+          "content": "I'm updating our internal `User` type to include additional profile fields provided by the OIDC provider, such as profile picture and email verification status."
+        },
+        {
+          "type": "file",
+          "file": {
+            "path": "src/types/auth.ts",
+            "status": "modified",
+            "language": "typescript",
+            "diff": "@@ -1,4 +1,8 @@\n export interface User {\n   id: string;\n   email: string;\n+  picture?: string;\n+  nickname?: string;\n+  email_verified: boolean;\n+  updated_at: string;\n }"
+          }
+        },
+        {
+          "type": "markdown",
+          "content": "Finally, I'm creating an environment configuration template that includes all required Auth0 environment variables. This will help with local development setup."
+        },
+        {
+          "type": "file",
+          "file": {
+            "path": ".env.local.example",
+            "status": "created",
+            "language": "bash",
+            "diff": "@@ -0,0 +1,5 @@\n+# Auth0 Configuration\n+AUTH0_SECRET='use [openssl rand -hex 32] to generate a 32 bytes value'\n+AUTH0_BASE_URL='http://localhost:3000'\n+AUTH0_ISSUER_BASE_URL='https://YOUR_AUTH0_DOMAIN.auth0.com'\n+AUTH0_CLIENT_ID='YOUR_AUTH0_CLIENT_ID'\n+AUTH0_CLIENT_SECRET='YOUR_AUTH0_CLIENT_SECRET'"
+          }
+        }
+      ]
+    },
+    {
+        "id": "tx-auth-types-cleanup",
+        "parentId": "tx-auth-oidc",
+        "status": "PENDING",
+        "description": "Security: Legacy Session Type Cleanup",
+        "timestamp": "10 mins ago",
+        "createdAt": "2026-02-12T12:20:00.000Z",
+        "promptId": "prompt-security-oidc",
+        "author": "security-bot",
+        "provider": "OpenRouter",
+        "model": "anthropic/claude-3-opus",
+        "cost": "$0.005",
+        "tokens": "450",
+        "reasoning": "Removing deprecated session interfaces that are no longer compatible with OIDC providers.",
+        "files": [],
+        "blocks": [
+          {
+            "type": "markdown",
+            "content": "Now that we've switched to Auth0, the local `InternalSession` type is redundant and potentially confusing for developers. I'm removing it from the global types file."
+          },
+          {
+            "type": "file",
+            "file": {
+              "path": "src/types/auth.ts",
+              "status": "modified",
+              "language": "typescript",
+              "diff": "@@ -10,12 +10,4 @@\n   updated_at: string;\n }\n-\n-export interface InternalSession {\n-  sessionId: string;\n-  expires: number;\n-  userId: string;\n-}"
+            }
+          }
+        ]
+      },
+      {
+        "id": "tx-perf-redis",
+        "status": "APPLIED",
+      "description": "Performance: Redis Cache Layer & Query Optimization",
+      "timestamp": "1 hour ago",
+      "createdAt": "2026-02-12T11:30:00.000Z",
+      "promptId": "prompt-backend-perf",
+      "author": "db-wizard",
+      "provider": "Anthropic",
+      "model": "claude-3-5-sonnet",
+      "cost": "$0.032",
+      "tokens": "2,100",
+      "reasoning": "Adding a caching layer to the dashboard stats endpoint to reduce DB load.",
+      "files": [],
+      "blocks": [
+        {
+          "type": "markdown",
+          "content": "### Dashboard Latency Fix\n\nI've identified that dashboard aggregate queries are hitting the main PostgreSQL instance too frequently. To mitigate this, I'm first adding a composite index to the `Event` table in our Prisma schema."
+        },
+        {
+          "type": "file",
+          "file": {
+            "path": "prisma/schema.prisma",
+            "status": "modified",
+            "language": "prisma",
+            "diff": "@@ -22,5 +22,7 @@\n model Event {\n   id        String   @id @default(cuid())\n   userId    String\n   type      String\n   createdAt DateTime @default(now())\n+  @@index([userId, createdAt])\n }"
+          }
+        },
+        {
+          "type": "markdown",
+          "content": "Next, I'm introducing a Redis client to the application to serve as our caching layer for frequently accessed data."
+        },
+        {
+          "type": "file",
+          "file": {
+            "path": "src/lib/redis.ts",
+            "status": "created",
+            "language": "typescript",
+            "diff": "@@ -0,0 +1,8 @@\n+import { createClient } from 'redis';\n+\\n+const client = createClient({ url: process.env.REDIS_URL });\n+client.on('error', (err) => console.error('Redis Error', err));\n+\\n+export default client;"
+          }
+        },
+        {
+          "type": "markdown",
+          "content": "I'm now implementing the cache-aside pattern in the stats API route. It will first check Redis for cached data before falling back to a database query."
+        },
+        {
+          "type": "file",
+          "file": {
+            "path": "src/app/api/stats/route.ts",
+            "status": "modified",
+            "language": "typescript",
+            "diff": "@@ -4,6 +4,13 @@\n export async function GET() {\n+  const cached = await redis.get('stats:global');\n+  if (cached) return Response.json(JSON.parse(cached));\n+\\n   const stats = await db.event.groupBy({ ... });\n+  await redis.set('stats:global', JSON.stringify(stats), { EX: 300 });\n+\\n   return Response.json(stats);\n }"
+          }
+        },
+        {
+          "type": "markdown",
+          "content": "To support this new service, the `REDIS_URL` environment variable must be available. I've added it to the example environment file."
+        },
+        {
+          "type": "file",
+          "file": {
+            "path": ".env.example",
+            "status": "modified",
+            "language": "bash",
+            "diff": "@@ -2,3 +2,4 @@\n DATABASE_URL=\"postgresql://...\"\n+REDIS_URL=\"redis://localhost:6379\"\n AUTH0_SECRET=\"use-openssl-rand-hex-32\""
+          }
+        },
+        {
+          "type": "markdown",
+          "content": "I'm enabling Prisma's query logging in development to make it easier to debug database performance issues in the future."
+        },
+        {
+          "type": "file",
+          "file": {
+            "path": "src/lib/prisma.ts",
+            "status": "modified",
+            "language": "typescript",
+            "diff": "@@ -5,4 +5,4 @@\n-export const prisma = new PrismaClient();\n+export const prisma = new PrismaClient({ log: ['query', 'info'] });"
+          }
+        },
+        {
+          "type": "markdown",
+          "content": "Finally, I'm adding a cache invalidation utility that can be called when events are created to keep the stats up to date."
+        },
+        {
+          "type": "file",
+          "file": {
+            "path": "src/lib/cache.ts",
+            "status": "created",
+            "language": "typescript",
+            "diff": "@@ -0,0 +1,10 @@\n+import redis from './redis';\n+\\n+export const CACHE_KEYS = {\n+  GLOBAL_STATS: 'stats:global',\n+  USER_STATS: (userId: string) => `stats:user:${userId}`,\n+} as const;\n+\\n+export async function invalidateStats(userId?: string) {\n+  await redis.del(CACHE_KEYS.GLOBAL_STATS);\n+  if (userId) await redis.del(CACHE_KEYS.USER_STATS(userId));\n+}"
+          }
+        }
+      ]
+    },
+    {
+      "id": "tx-cicd-actions",
+      "status": "COMMITTED",
+      "description": "DevOps: Establish CI/CD pipeline with GitHub Actions",
+      "timestamp": "4 hours ago",
+      "createdAt": "2026-02-12T08:30:00.000Z",
+      "promptId": "prompt-cicd",
+      "author": "ops-lead",
+      "provider": "GitHub",
+      "model": "Copilot Enterprise",
+      "cost": "$0.000",
+      "tokens": "1,500",
+      "reasoning": "Automating deployments to reduce manual error and improve release cadence.",
+      "files": [],
+      "blocks": [
+        {
+          "type": "markdown",
+          "content": "### CI/CD Automation\n\nTo ensure code quality and streamline deployments, I'm setting up a GitHub Actions workflow. This workflow will trigger on pushes to the `main` branch and on pull requests."
+        },
+        {
+          "type": "file",
+          "file": {
+            "path": ".github/workflows/ci.yml",
+            "status": "created",
+            "language": "yaml",
+            "diff": "@@ -0,0 +1,25 @@\n+name: CI/CD Pipeline\n+on:\n+  push:\n+    branches: [ main ]\n+  pull_request:\n+    branches: [ main ]\n+jobs:\n+  build-and-test:\n+    runs-on: ubuntu-latest\n+    steps:\n+      - uses: actions/checkout@v4\n+      - name: Setup Node.js\n+        uses: actions/setup-node@v4\n+        with:\n+          node-version: 20\n+      - run: npm ci\n+      - run: npm run build\n+      - run: npm test\n+  deploy:\n+    needs: build-and-test\n+    if: github.ref == 'refs/heads/main'\n+    runs-on: ubuntu-latest\n+    steps:\n+      - uses: actions/checkout@v4\n+      - name: Deploy to Production\n+        run: ./scripts/k8s-deploy.sh"
+          }
+        },
+        {
+          "type": "markdown",
+          "content": "I'm adding a simple test script placeholder to `package.json` so the `npm test` step in the CI workflow passes successfully."
+        },
+        {
+          "type": "file",
+          "file": {
+            "path": "package.json",
+            "status": "modified",
+            "language": "json",
+            "diff": "@@ -7,6 +7,7 @@\n   \"scripts\": {\n     \"dev\": \"react-router dev\",\n     \"build\": \"react-router build\",\n+    \"test\": \"echo \\\"Error: no test specified\\\" && exit 0\",\n     \"preview\": \"react-router-serve ./build/server/index.js\"\n   },"
+          }
+        },
+        {
+          "type": "markdown",
+          "content": "Creating a separate workflow for running linting checks to ensure code quality standards are maintained."
+        },
+        {
+          "type": "file",
+          "file": {
+            "path": ".github/workflows/lint.yml",
+            "status": "created",
+            "language": "yaml",
+            "diff": "@@ -0,0 +1,20 @@\n+name: Lint\n+on:\n+  push:\n+    branches: [ main, develop ]\n+  pull_request:\n+    branches: [ main ]\n+jobs:\n+  lint:\n+    runs-on: ubuntu-latest\n+    steps:\n+      - uses: actions/checkout@v4\n+      - name: Setup Node.js\n+        uses: actions/setup-node@v4\n+        with:\n+          node-version: 20\n+          cache: 'npm'\n+      - run: npm ci\n+      - run: npm run lint\n+      - run: npm run typecheck"
+          }
+        },
+        {
+          "type": "markdown",
+          "content": "Adding a Dependabot configuration to keep dependencies updated automatically through pull requests."
+        },
+        {
+          "type": "file",
+          "file": {
+            "path": ".github/dependabot.yml",
+            "status": "created",
+            "language": "yaml",
+            "diff": "@@ -0,0 +1,11 @@\n+version: 2\n+updates:\n+  - package-ecosystem: \"npm\"\n+    directory: \"/\"\n+    schedule:\n+      interval: \"weekly\"\n+    open-pull-requests-limit: 10\n+    reviewers:\n+      - \"ops-lead\"\n+    labels:\n+      - \"dependencies\""
+          }
+        },
+        {
+          "type": "markdown",
+          "content": "Creating a deployment script that handles the actual deployment process to our staging environment."
+        },
+        {
+          "type": "file",
+          "file": {
+            "path": "scripts/deploy-staging.sh",
+            "status": "created",
+            "language": "bash",
+            "diff": "@@ -0,0 +1,12 @@\n+#!/bin/bash\n+set -e\n+\\n+echo \"Building Docker image...\"\n+docker build -t relaycode/web:staging .\n+\\n+echo \"Pushing to registry...\"\n+docker push relaycode/web:staging\n+\\n+echo \"Deploying to staging...\"\n+helm upgrade --install relay-web-staging ./charts/relay-app \\\n+  --namespace staging \\\n+  --set image.tag=staging \\\n+  --set ingress.host=staging.relaycode.com"
+          }
+        }
+      ]
+    },
+    {
+      "id": "tx-feature-comments",
+      "status": "REVERTED",
+      "description": "Feature: Full-stack Transaction Commenting System",
+      "timestamp": "8 hours ago",
+      "createdAt": "2026-02-12T04:30:00.000Z",
+      "promptId": "prompt-feature-comments",
+      "author": "dev-team",
+      "provider": "Anthropic",
+      "model": "claude-3.5-haiku",
+      "cost": "$0.015",
+      "tokens": "3,250",
+      "reasoning": "Reverting due to a bug in optimistic UI updates causing ghost comments. Will re-evaluate the state management approach.",
+      "files": [],
+      "blocks": [
+        {
+          "type": "markdown",
+          "content": "### Feature: Transaction Comments\n\nI'm adding a commenting system. First, the database schema needs a `Comment` model with relations to `User` and `Transaction`."
+        },
+        {
+          "type": "file",
+          "file": {
+            "path": "prisma/schema.prisma",
+            "status": "modified",
+            "language": "prisma",
+            "diff": "@@ -15,3 +15,12 @@\n model User {\n   id    String @id @default(cuid())\n   email String @unique\n+  comments Comment[]\n+}\n+\\n+model Comment {\n+  id        String   @id @default(cuid())\n+  content   String\n+  createdAt DateTime @default(now())\n+  author    User     @relation(fields: [authorId], references: [id])\n+  authorId  String\n+  // Missing transaction relation - this was part of the bug.\n }"
+          }
+        },
+        {
+          "type": "markdown",
+          "content": "Next, a new API route is required to handle fetching and creating comments for a transaction."
+        },
+        {
+          "type": "file",
+          "file": {
+            "path": "src/app/api/transactions/[id]/comments/route.ts",
+            "status": "created",
+            "language": "typescript",
+            "diff": "@@ -0,0 +1,15 @@\n+import { prisma } from '@/lib/prisma';\n+\\n+export async function GET(req: Request, { params }: { params: { id: string } }) {\n+  const comments = await prisma.comment.findMany({ where: { transactionId: params.id } });\n+  return Response.json(comments);\n+}\n+\\n+export async function POST(req: Request, { params }: { params: { id: string } }) {\n+  const { content, authorId } = await req.json();\n+  const newComment = await prisma.comment.create({\n+    data: { content, authorId, transactionId: params.id },\n+  });\n+  return Response.json(newComment, { status: 201 });\n+}"
+          }
+        },
+        {
+          "type": "markdown",
+          "content": "On the frontend, I'm creating a new component to display the list of comments and an input form."
+        },
+        {
+          "type": "file",
+          "file": {
+            "path": "src/features/transactions/components/comment-section.component.tsx",
+            "status": "created",
+            "language": "tsx",
+            "diff": "@@ -0,0 +1,20 @@\n+export const CommentSection = ({ transactionId }) => {\n+  // const { data: comments, mutate } = useSWR(`/api/transactions/${transactionId}/comments`);\n+  const [newComment, setNewComment] = useState('');\n+\\n+  const handleSubmit = async (e) => {\n+    e.preventDefault();\n+    // Optimistic update logic was here and was buggy\n+    await fetch(`/api/transactions/${transactionId}/comments`, {\n+      method: 'POST',\n+      body: JSON.stringify({ content: newComment }),\n+    });\n+    setNewComment('');\n+    // mutate();\n+  };\n+\\n+  return <div>{/* UI for comments and form */}</div>;\n+};"
+          }
+        },
+        {
+          "type": "markdown",
+          "content": "This new component is integrated into the main `TransactionCard` to display comments for each transaction."
+        },
+        {
+          "type": "file",
+          "file": {
+            "path": "src/features/transactions/components/transaction-card.component.tsx",
+            "status": "modified",
+            "language": "tsx",
+            "diff": "@@ -250,6 +250,7 @@\n                   null\n                 )}\\n \\n+                <CommentSection txId={tx.id} />\n                 {/* Action Footer */}\n                 {tx.status === 'PENDING' && (\n                   <div className=\"flex items-center justify-center pt-8 border-t border-zinc-800/50\">"
+          }
+        },
+        {
+          "type": "markdown",
+          "content": "Adding a new hook for managing comment state with optimistic updates. This was the source of the ghost comment bug."
+        },
+        {
+          "type": "file",
+          "file": {
+            "path": "src/hooks/useComments.ts",
+            "status": "created",
+            "language": "typescript",
+            "diff": "@@ -0,0 +1,35 @@\n+import { useState, useCallback } from 'react';\n+import useSWR, { mutate } from 'swr';\n+\\n+export function useComments(transactionId: string) {\n+  const { data, error } = useSWR(`/api/transactions/${transactionId}/comments`);\n+  const [isSubmitting, setIsSubmitting] = useState(false);\n+  // BUG: Optimistic update logic causes ghost comments\n+  const addComment = useCallback(async (content: string) => {\n+    setIsSubmitting(true);\n+    const optimisticComment = {\n+      id: `temp-${Date.now()}`,\n+      content,\n+      createdAt: new Date().toISOString(),\n+      author: { name: 'You' }\n+    };\n+    // This optimistic update doesn't properly handle rollbacks\n+    await mutate(\n+      `/api/transactions/${transactionId}/comments`,\n+      [...(data || []), optimisticComment],\n+      false\n+    );\n+    await fetch(`/api/transactions/${transactionId}/comments`, {\n+      method: 'POST',\n+      body: JSON.stringify({ content })\n+    });\n+    setIsSubmitting(false);\n+  }, [data, transactionId]);\n+  return { comments: data, addComment, isSubmitting, error };\n+}"
+          }
+        }
+      ]
+    },
+    {
+      "id": "tx-ui-redesign",
+      "status": "APPLIED",
+      "description": "UI: Modern Dark Theme Dashboard Overhaul",
+      "timestamp": "1 day ago",
+      "createdAt": "2026-02-11T12:00:00.000Z",
+      "promptId": "prompt-ui-redesign",
+      "author": "design-team",
+      "provider": "Anthropic",
+      "model": "claude-3.5-sonnet",
+      "cost": "$0.089",
+      "tokens": "5,400",
+      "reasoning": "Modernizing the UI with a cohesive dark theme using zinc color palette and subtle animations.",
+      "files": [],
+      "blocks": [
+        {
+          "type": "markdown",
+          "content": "### UI Redesign: Dark Theme Implementation\n\nI'm implementing a comprehensive dark theme using Tailwind's zinc color palette. Starting with the global CSS variables and base styles."
+        },
+        {
+          "type": "file",
+          "file": {
+            "path": "src/styles/globals.css",
+            "status": "modified",
+            "language": "css",
+            "diff": "@@ -1,15 +1,32 @@\n @tailwind base;\n @tailwind components;\n @tailwind utilities;\n \\n-:root {\n-  --background: #ffffff;\n-  --foreground: #171717;\n+@layer base {\n+  :root {\n+    --background: 0 0% 2%;\n+    --foreground: 0 0% 98%;\n+    --card: 0 0% 4%;\n+    --card-foreground: 0 0% 98%;\n+    --popover: 0 0% 4%;\n+    --popover-foreground: 0 0% 98%;\n+    --primary: 240 5% 96%;\n+    --primary-foreground: 0 0% 4%;\n+    --secondary: 0 0% 12%;\n+    --secondary-foreground: 0 0% 98%;\n+    --muted: 0 0% 15%;\n+    --muted-foreground: 0 0% 64%;\n+    --accent: 0 0% 15%;\n+    --accent-foreground: 0 0% 98%;\n+    --destructive: 0 63% 31%;\n+    --destructive-foreground: 0 0% 98%;\n+    --border: 0 0% 15%;\n+    --input: 0 0% 15%;\n+    --ring: 0 0% 83%;\n+    --radius: 0.5rem;\n+  }\n }"
+          }
+        },
+        {
+          "type": "markdown",
+          "content": "Creating a new Button component with variants that match our dark theme design system."
+        },
+        {
+          "type": "file",
+          "file": {
+            "path": "src/components/ui/button.tsx",
+            "status": "created",
+            "language": "tsx",
+            "diff": "@@ -0,0 +1,55 @@\n+import * as React from 'react';\n+import { Slot } from '@radix-ui/react-slot';\n+import { cva, type VariantProps } from 'class-variance-authority';\n+import { cn } from '@/lib/utils';\n+\\n+const buttonVariants = cva(\n+  'inline-flex items-center justify-center gap-2 whitespace-nowrap rounded-md text-sm font-medium transition-colors focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring disabled:pointer-events-none disabled:opacity-50',\n+  {\n+    variants: {\n+      variant: {\n+        default: 'bg-primary text-primary-foreground shadow hover:bg-primary/90',\n+        destructive: 'bg-destructive text-destructive-foreground shadow-sm hover:bg-destructive/90',\n+        outline: 'border border-input bg-background shadow-sm hover:bg-accent hover:text-accent-foreground',\n+        secondary: 'bg-secondary text-secondary-foreground shadow-sm hover:bg-secondary/80',\n+        ghost: 'hover:bg-accent hover:text-accent-foreground',\n+        link: 'text-primary underline-offset-4 hover:underline',\n+      },\n+      size: {\n+        default: 'h-9 px-4 py-2',\n+        sm: 'h-8 rounded-md px-3 text-xs',\n+        lg: 'h-10 rounded-md px-8',\n+        icon: 'h-9 w-9',\n+      },\n+    },\n+    defaultVariants: {\n+      variant: 'default',\n+      size: 'default',\n+    },\n+  }\n+);\n+\\n+export interface ButtonProps\n+  extends React.ButtonHTMLAttributes<HTMLButtonElement>,\n+    VariantProps<typeof buttonVariants> {\n+  asChild?: boolean;\n+}\n+\\n+const Button = React.forwardRef<HTMLButtonElement, ButtonProps>(\n+  ({ className, variant, size, asChild = false, ...props }, ref) => {\n+    const Comp = asChild ? Slot : 'button';\n+    return (\n+      <Comp\n+        className={cn(buttonVariants({ variant, size, className }))}\n+        ref={ref}\n+        {...props}\n+      />\n+    );\n+  }\n+);\n+Button.displayName = 'Button';\n+\\n+export { Button, buttonVariants };"
+          }
+        },
+        {
+          "type": "markdown",
+          "content": "Creating a Card component with the new dark theme styling for consistent container designs."
+        },
+        {
+          "type": "file",
+          "file": {
+            "path": "src/components/ui/card.tsx",
+            "status": "created",
+            "language": "tsx",
+            "diff": "@@ -0,0 +1,75 @@\n+import * as React from 'react';\n+import { cn } from '@/lib/utils';\n+\\n+const Card = React.forwardRef<HTMLDivElement, React.HTMLAttributes<HTMLDivElement>>(\n+  ({ className, ...props }, ref) => (\n+    <div\n+      ref={ref}\n+      className={cn(\n+        'rounded-xl border bg-card text-card-foreground shadow',\n+        className\n+      )}\n+      {...props}\n+    />\n+  )\n+);\n+Card.displayName = 'Card';\n+\\n+const CardHeader = React.forwardRef<HTMLDivElement, React.HTMLAttributes<HTMLDivElement>>(\n+  ({ className, ...props }, ref) => (\n+    <div\n+      ref={ref}\n+      className={cn('flex flex-col space-y-1.5 p-6', className)}\n+      {...props}\n+    />\n+  )\n+);\n+CardHeader.displayName = 'CardHeader';\n+\\n+const CardTitle = React.forwardRef<HTMLParagraphElement, React.HTMLAttributes<HTMLHeadingElement>>(\n+  ({ className, ...props }, ref) => (\n+    <h3\n+      ref={ref}\n+      className={cn('font-semibold leading-none tracking-tight', className)}\n+      {...props}\n+    />\n+  )\n+);\n+CardTitle.displayName = 'CardTitle';\n+\\n+const CardDescription = React.forwardRef<HTMLParagraphElement, React.HTMLAttributes<HTMLParagraphElement>>(\n+  ({ className, ...props }, ref) => (\n+    <p\n+      ref={ref}\n+      className={cn('text-sm text-muted-foreground', className)}\n+      {...props}\n+    />\n+  )\n+);\n+CardDescription.displayName = 'CardDescription';\n+\\n+const CardContent = React.forwardRef<HTMLDivElement, React.HTMLAttributes<HTMLDivElement>>(\n+  ({ className, ...props }, ref) => (\n+    <div ref={ref} className={cn('p-6 pt-0', className)} {...props} />\n+  )\n+);\n+CardContent.displayName = 'CardContent';\n+\\n+const CardFooter = React.forwardRef<HTMLDivElement, React.HTMLAttributes<HTMLDivElement>>(\n+  ({ className, ...props }, ref) => (\n+    <div\n+      ref={ref}\n+      className={cn('flex items-center p-6 pt-0', className)}\n+      {...props}\n+    />\n+  )\n+);\n+CardFooter.displayName = 'CardFooter';\n+\\n+export { Card, CardHeader, CardFooter, CardTitle, CardDescription, CardContent };"
+          }
+        },
+        {
+          "type": "markdown",
+          "content": "Creating a utility function for merging Tailwind classes using clsx and tailwind-merge."
+        },
+        {
+          "type": "file",
+          "file": {
+            "path": "src/lib/utils.ts",
+            "status": "created",
+            "language": "typescript",
+            "diff": "@@ -0,0 +1,6 @@\n+import { clsx, type ClassValue } from 'clsx';\n+import { twMerge } from 'tailwind-merge';\n+\\n+export function cn(...inputs: ClassValue[]) {\n+  return twMerge(clsx(inputs));\n+}"
+          }
+        },
+        {
+          "type": "markdown",
+          "content": "Updating the Tailwind configuration to include our custom CSS variables and extend the theme properly."
+        },
+        {
+          "type": "file",
+          "file": {
+            "path": "tailwind.config.ts",
+            "status": "modified",
+            "language": "typescript",
+            "diff": "@@ -1,10 +1,55 @@\n import type { Config } from 'tailwindcss';\n \\n const config: Config = {\n-  content: [\n-    './src/pages/**/*.{js,ts,jsx,tsx,mdx}',\n-    './src/components/**/*.{js,ts,jsx,tsx,mdx}',\n-    './src/app/**/*.{js,ts,jsx,tsx,mdx}',\n-  ],\n+  darkMode: ['class'],\n+  content: ['./src/**/*.{js,ts,jsx,tsx,mdx}'],\n   theme: {\n-    extend: {},\n+    extend: {\n+      colors: {\n+        border: 'hsl(var(--border))',\n+        input: 'hsl(var(--input))',\n+        ring: 'hsl(var(--ring))',\n+        background: 'hsl(var(--background))',\n+        foreground: 'hsl(var(--foreground))',\n+        primary: {\n+          DEFAULT: 'hsl(var(--primary))',\n+          foreground: 'hsl(var(--primary-foreground))',\n+        },\n+        secondary: {\n+          DEFAULT: 'hsl(var(--secondary))',\n+          foreground: 'hsl(var(--secondary-foreground))',\n+        },\n+        destructive: {\n+          DEFAULT: 'hsl(var(--destructive))',\n+          foreground: 'hsl(var(--destructive-foreground))',\n+        },\n+        muted: {\n+          DEFAULT: 'hsl(var(--muted))',\n+          foreground: 'hsl(var(--muted-foreground))',\n+        },\n+        accent: {\n+          DEFAULT: 'hsl(var(--accent))',\n+          foreground: 'hsl(var(--accent-foreground))',\n+        },\n+        popover: {\n+          DEFAULT: 'hsl(var(--popover))',\n+          foreground: 'hsl(var(--popover-foreground))',\n+        },\n+        card: {\n+          DEFAULT: 'hsl(var(--card))',\n+          foreground: 'hsl(var(--card-foreground))',\n+        },\n+      },\n+      borderRadius: {\n+        lg: 'var(--radius)',\n+        md: 'calc(var(--radius) - 2px)',\n+        sm: 'calc(var(--radius) - 4px)',\n+      },\n+    },\n   },\n-  plugins: [],\n+  plugins: [require('tailwindcss-animate')],\n };\n export default config;"
+          }
+        }
+      ]
+    },
+    {
+      "id": "tx-graphql-api",
+      "status": "PENDING",
+      "description": "API: GraphQL Schema and Resolver Implementation",
+      "timestamp": "2 days ago",
+      "createdAt": "2026-02-10T10:00:00.000Z",
+      "promptId": "prompt-api-graphql",
+      "author": "api-team",
+      "provider": "OpenAI",
+      "model": "gpt-4o",
+      "cost": "$0.156",
+      "tokens": "8,200",
+      "reasoning": "GraphQL will allow clients to request exactly the data they need, reducing over-fetching and improving mobile performance.",
+      "files": [],
+      "blocks": [
+        {
+          "type": "markdown",
+          "content": "### GraphQL API Migration\n\nI'm setting up the GraphQL server with Apollo Server. Starting with the type definitions that define our schema."
+        },
+        {
+          "type": "file",
+          "file": {
+            "path": "src/graphql/schema.ts",
+            "status": "created",
+            "language": "typescript",
+            "diff": "@@ -0,0 +1,45 @@\n+import { gql } from 'graphql-tag';\n+\\n+export const typeDefs = gql`\n+  type Transaction {\n+    id: ID!\n+    status: TransactionStatus!\n+    description: String!\n+    timestamp: String!\n+    author: User!\n+    files: [File!]!\n+    cost: String\n+    tokens: String\n+  }\n+\\n+  enum TransactionStatus {\n+    PENDING\n+    APPLIED\n+    COMMITTED\n+    REVERTED\n+  }\n+\\n+  type User {\n+    id: ID!\n+    email: String!\n+    name: String\n+    transactions: [Transaction!]!\n+  }\n+\\n+  type File {\n+    path: String!\n+    status: FileStatus!\n+    language: String\n+    diff: String\n+  }\n+\\n+  enum FileStatus {\n+    CREATED\n+    MODIFIED\n+    DELETED\n+  }\n+\\n+  type Query {\n+    transactions(limit: Int, offset: Int): [Transaction!]!\n+    transaction(id: ID!): Transaction\n+    me: User\n+  }\n+\\n+  type Mutation {\n+    applyTransaction(id: ID!): Transaction!\n+    revertTransaction(id: ID!): Transaction!\n+    commitTransaction(id: ID!): Transaction!\n+  }\n+`;"
+          }
+        },
+        {
+          "type": "markdown",
+          "content": "Now implementing the resolvers that handle the actual data fetching and business logic for each field."
+        },
+        {
+          "type": "file",
+          "file": {
+            "path": "src/graphql/resolvers.ts",
+            "status": "created",
+            "language": "typescript",
+            "diff": "@@ -0,0 +1,40 @@\n+import { prisma } from '@/lib/prisma';\n+\\n+export const resolvers = {\n+  Query: {\n+    transactions: async (_: unknown, { limit = 20, offset = 0 }) => {\n+      return prisma.transaction.findMany({\n+        take: limit,\n+        skip: offset,\n+        orderBy: { createdAt: 'desc' },\n+        include: { author: true, files: true }\n+      });\n+    },\n+    transaction: async (_: unknown, { id }: { id: string }) => {\n+      return prisma.transaction.findUnique({\n+        where: { id },\n+        include: { author: true, files: true }\n+      });\n+    },\n+    me: async (_: unknown, __: unknown, { user }: { user: { id: string } }) => {\n+      if (!user) return null;\n+      return prisma.user.findUnique({ where: { id: user.id } });\n+    }\n+  },\n+  Mutation: {\n+    applyTransaction: async (_: unknown, { id }: { id: string }) => {\n+      return prisma.transaction.update({\n+        where: { id },\n+        data: { status: 'APPLIED' },\n+        include: { author: true, files: true }\n+      });\n+    },\n+    revertTransaction: async (_: unknown, { id }: { id: string }) => {\n+      return prisma.transaction.update({\n+        where: { id },\n+        data: { status: 'REVERTED' },\n+        include: { author: true, files: true }\n+      });\n+    },\n+    commitTransaction: async (_: unknown, { id }: { id: string }) => {\n+      return prisma.transaction.update({\n+        where: { id },\n+        data: { status: 'COMMITTED' },\n+        include: { author: true, files: true }\n+      });\n+    }\n+  }\n+};"
+          }
+        },
+        {
+          "type": "markdown",
+          "content": "Creating the Apollo Server configuration and context setup for authentication."
+        },
+        {
+          "type": "file",
+          "file": {
+            "path": "src/graphql/server.ts",
+            "status": "created",
+            "language": "typescript",
+            "diff": "@@ -0,0 +1,22 @@\n+import { ApolloServer } from '@apollo/server';\n+import { startServerAndCreateNextHandler } from '@as-integrations/next';\n+import { typeDefs } from './schema';\n+import { resolvers } from './resolvers';\n+import { getSession } from '@auth0/nextjs-auth0';\n+\\n+const server = new ApolloServer({\n+  typeDefs,\n+  resolvers,\n+});\n+\\n+const handler = startServerAndCreateNextHandler(server, {\n+  context: async (req) => {\n+    const session = await getSession(req);\n+    return {\n+      user: session?.user || null,\n+    };\n+  },\n+});\n+\\n+export { handler as GET, handler as POST };"
+          }
+        },
+        {
+          "type": "markdown",
+          "content": "Setting up the Apollo Client for the frontend with proper caching configuration."
+        },
+        {
+          "type": "file",
+          "file": {
+            "path": "src/lib/apollo-client.ts",
+            "status": "created",
+            "language": "typescript",
+            "diff": "@@ -0,0 +1,30 @@\n+import { ApolloClient, InMemoryCache, createHttpLink } from '@apollo/client';\n+import { setContext } from '@apollo/client/link/context';\n+\\n+const httpLink = createHttpLink({\n+  uri: '/api/graphql',\n+});\n+\\n+const authLink = setContext((_, { headers }) => {\n+  // Get the authentication token from local storage if it exists\n+  const token = localStorage.getItem('token');\n+  return {\n+    headers: {\n+      ...headers,\n+      authorization: token ? `Bearer ${token}` : '',\n+    },\n+  };\n+});\n+\\n+export const apolloClient = new ApolloClient({\n+  link: authLink.concat(httpLink),\n+  cache: new InMemoryCache({\n+    typePolicies: {\n+      Query: {\n+        fields: {\n+          transactions: {\n+            keyArgs: false,\n+            merge(existing = [], incoming) {\n+              return [...existing, ...incoming];\n+            },\n+          },\n+        },\n+      },\n+    },\n+  }),\n+});"
+          }
+        },
+        {
+          "type": "markdown",
+          "content": "Creating a React hook for fetching transactions with GraphQL using Apollo Client."
+        },
+        {
+          "type": "file",
+          "file": {
+            "path": "src/hooks/useTransactions.ts",
+            "status": "created",
+            "language": "typescript",
+            "diff": "@@ -0,0 +1,27 @@\n+import { gql, useQuery } from '@apollo/client';\n+\\n+const GET_TRANSACTIONS = gql`\n+  query GetTransactions($limit: Int, $offset: Int) {\n+    transactions(limit: $limit, offset: $offset) {\n+      id\n+      status\n+      description\n+      timestamp\n+      cost\n+      tokens\n+      author {\n+        id\n+        email\n+        name\n+      }\n+      files {\n+        path\n+        status\n+        language\n+      }\n+    }\n+  }\n+`;\n+\\n+export function useTransactions(limit = 20, offset = 0) {\n+  return useQuery(GET_TRANSACTIONS, {\n+    variables: { limit, offset },\n+    fetchPolicy: 'cache-and-network',\n+  });\n+}"
+          }
+        },
+        {
+          "type": "markdown",
+          "content": "Finally, creating the GraphQL API route handler that Next.js will use to serve the GraphQL endpoint."
+        },
+        {
+          "type": "file",
+          "file": {
+            "path": "src/app/api/graphql/route.ts",
+            "status": "created",
+            "language": "typescript",
+            "diff": "@@ -0,0 +1,2 @@\n+// Re-export the GraphQL server handler\n+export { GET, POST } from '@/graphql/server';"
+          }
+        }
+      ]
+    }
+  ]
 }
+```
+
+## File: src/store/root.store.ts
+```typescript
+import { create } from 'zustand';
+import { createUiSlice, UiSlice } from './slices/ui.slice';
+import { createTransactionSlice, TransactionSlice } from './slices/transaction.slice';
+
+export type RootState = UiSlice & TransactionSlice;
+
+export const useStore = create<RootState>()((...a) => ({
+  ...createUiSlice(...a),
+  ...createTransactionSlice(...a),
+}));
+
+// Export specialized selectors for cleaner global usage
+export const useUiActions = () => useStore((state) => ({
+  setCmdOpen: state.setCmdOpen,
+  toggleCmd: state.toggleCmd,
+}));
+
+export const useTransactionActions = () => useStore((state) => ({
+  setExpandedId: state.setExpandedId,
+  setHoveredChain: state.setHoveredChain,
+  toggleWatching: state.toggleWatching,
+  fetchTransactions: state.fetchTransactions,
+}));
 ```
 
 ## File: src/root.tsx
@@ -872,83 +1465,6 @@ export default defineConfig({
     alias: {
       "@": path.resolve(__dirname, "src"),
     },
-  },
-});
-```
-
-## File: src/store/slices/transaction.slice.ts
-```typescript
-import { StateCreator } from 'zustand';
-import { Transaction, Prompt } from '@/types/app.types';
-import { api } from '@/services/api.service';
-import { RootState } from '../root.store';
-
-export interface TransactionSlice {
-  transactions: Transaction[];
-  prompts: Prompt[]; // Store prompts for lookup
-  isLoading: boolean;
-  expandedId: string | null;
-  hoveredChainId: string | null;
-  isWatching: boolean;
-  setExpandedId: (id: string | null) => void;
-  setHoveredChain: (id: string | null) => void;
-  toggleWatching: () => void;
-  fetchTransactions: () => Promise<void>;
-  addTransaction: (tx: Transaction) => void;
-  approveTransaction: (id: string) => void;
-}
-
-export const createTransactionSlice: StateCreator<RootState, [], [], TransactionSlice> = (set, get) => ({
-  transactions: [],
-  prompts: [],
-  isLoading: false,
-  expandedId: null,
-  hoveredChainId: null,
-  isWatching: false, // Default to false to show the "Start" state
-
-  setExpandedId: (id) => set({ expandedId: id }),
-  setHoveredChain: (id) => set({ hoveredChainId: id }),
-  
-  toggleWatching: () => {
-    const isNowWatching = !get().isWatching;
-    set({ isWatching: isNowWatching });
-    
-    if (isNowWatching) {
-      api.socket.startEmitting();
-    } else {
-      api.socket.stopEmitting();
-    }
-  },
-
-  addTransaction: (tx) => set((state) => ({ 
-    transactions: [tx, ...state.transactions] 
-  })),
-
-  approveTransaction: (id) => set((state) => ({
-    transactions: state.transactions.map((t) => 
-      t.id === id 
-        ? { ...t, status: 'APPLIED' as const } 
-        : t
-    )
-  })),
-
-  fetchTransactions: async () => {
-    set({ isLoading: true });
-    try {
-      const data = await api.transactions.list();
-      const prompts = await api.transactions.prompts.list();
-      set({ transactions: data, prompts });
-    } catch (error) {
-      console.error('Failed to fetch transactions', error);
-    }
-    set({ isLoading: false });
-
-    // Setup subscription
-    api.socket.subscribe((newTx) => {
-      if (get().isWatching) {
-        get().addTransaction(newTx);
-      }
-    });
   },
 });
 ```
@@ -1075,6 +1591,126 @@ export function tokenizeCode(code: string): SyntaxToken[] {
   }
 
   return tokens;
+}
+```
+
+## File: src/utils/group.util.ts
+```typescript
+import { Transaction, Prompt, GroupByStrategy } from '@/types/app.types';
+
+export interface GroupedTransaction extends Transaction {
+  depth: number;
+}
+
+export interface GroupedData {
+  id: string;
+  label: string;
+  count: number;
+  transactions: GroupedTransaction[];
+}
+
+// Helper to get relative date
+const getRelativeDate = (dateStr: string): string => {
+  const date = new Date(dateStr);
+  const now = new Date();
+  const diffDays = Math.floor((now.getTime() - date.getTime()) / (1000 * 60 * 60 * 24));
+
+  if (diffDays === 0) return 'Today';
+  if (diffDays === 1) return 'Yesterday';
+  if (diffDays < 7) return 'This Week';
+  if (diffDays < 30) return 'This Month';
+  return 'Older';
+};
+
+export function groupTransactions(
+  transactions: Transaction[],
+  prompts: Prompt[],
+  strategy: GroupByStrategy
+): GroupedData[] {
+  if (strategy === 'none' || !transactions.length) {
+    return [{
+      id: 'all',
+      label: 'All Transactions',
+      count: transactions.length,
+      transactions: transactions.map(tx => ({ ...tx, depth: 0 }))
+    }];
+  }
+
+  const groups = new Map<string, { label: string; transactions: Transaction[] }>();
+
+  // 1. Sort transactions by date first for consistent ordering
+  const sorted = [...transactions].sort((a, b) => 
+    new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
+  );
+
+  const strategies: Record<GroupByStrategy, (tx: Transaction) => { key: string; label: string }> = {
+    prompt: (tx) => ({ key: tx.promptId, label: prompts.find(p => p.id === tx.promptId)?.title || 'Orphaned' }),
+    date:   (tx) => ({ key: getRelativeDate(tx.createdAt), label: getRelativeDate(tx.createdAt) }),
+    author: (tx) => ({ key: tx.author || '?', label: tx.author ? `@${tx.author}` : 'Unknown' }),
+    status: (tx) => ({ key: tx.status, label: tx.status.charAt(0) + tx.status.slice(1).toLowerCase() }),
+    files:  (tx) => {
+      const firstFile = tx.files?.[0] || tx.blocks?.find(b => b.type === 'file')?.file;
+      return { key: firstFile?.path || '?', label: firstFile?.path || 'No Files' };
+    },
+    none:   () => ({ key: 'all', label: 'All' }),
+  };
+
+  sorted.forEach(tx => {
+    const { key, label } = strategies[strategy](tx);
+    const group = groups.get(key) || { label, transactions: [] };
+    group.transactions.push(tx);
+    groups.set(key, group);
+  });
+
+  // Convert map to array and calculate counts
+  return Array.from(groups.entries()).map(([id, data]) => {
+    // Threading Logic: Sort by chain and calculate depths
+    const threaded: GroupedTransaction[] = [];
+    const pool = [...data.transactions];
+    
+    const addToChain = (parentId: string | undefined, depth: number) => {
+      // Find children for this parent in the current pool
+      const children = pool.filter(tx => tx.parentId === parentId);
+      
+      children.forEach(child => {
+        const idx = pool.findIndex(t => t.id === child.id);
+        if (idx > -1) {
+          pool.splice(idx, 1);
+          threaded.push({ ...child, depth });
+          // Recursively add descendants
+          addToChain(child.id, depth + 1);
+        }
+      });
+    };
+
+    // 1. Identify "roots" for this group. A root has no parent, 
+    // or its parent is not present in this specific filtered group.
+    const rootCandidates = pool.filter(tx => 
+      !tx.parentId || !pool.some(p => p.id === tx.parentId)
+    );
+
+    rootCandidates.forEach(root => {
+      const idx = pool.findIndex(t => t.id === root.id);
+      if (idx > -1) {
+        pool.splice(idx, 1);
+        threaded.push({ ...root, depth: 0 });
+        addToChain(root.id, 1);
+      }
+    });
+
+    // 2. Safety: Handle any remaining orphans that might have missed the tree logic
+    while (pool.length > 0) {
+      const tx = pool.shift()!;
+      threaded.push({ ...tx, depth: 0 });
+    }
+
+    return {
+      id,
+      label: data.label,
+      count: data.transactions.length,
+      transactions: threaded
+    };
+  });
 }
 ```
 
@@ -1254,6 +1890,191 @@ export const FloatingActionBar = () => {
 };
 ```
 
+## File: src/services/api.service.ts
+```typescript
+import { Transaction, Prompt } from '@/types/app.types';
+
+// Mock data generator or actual fetch logic
+export const api = {
+  transactions: {
+    list: async (params?: { page?: number; limit?: number }): Promise<Transaction[]> => {
+      console.log('Fetching transactions with params:', params);
+      // In a real app, this would be: 
+      // fetch(`/api/transactions?page=${params?.page}&limit=${params?.limit}`)
+      
+      // For now, we return an empty array or handle mock logic 
+      // to satisfy the type system and the UI's expectation.
+      return []; 
+    },
+    prompts: {
+      list: async (): Promise<Prompt[]> => []
+    }
+  },
+  socket: {
+    subscribe: (callback: (tx: Transaction) => void) => {
+      // Mock socket implementation
+    },
+    startEmitting: () => {},
+    stopEmitting: () => {}
+  }
+};
+```
+
+## File: src/store/slices/transaction.slice.ts
+```typescript
+import { StateCreator } from 'zustand';
+import { Transaction, Prompt } from '@/types/app.types';
+import { api } from '@/services/api.service';
+import { RootState } from '../root.store';
+
+export interface TransactionSlice {
+  transactions: Transaction[];
+  prompts: Prompt[]; // Store prompts for lookup
+  isLoading: boolean;
+  isFetchingNextPage: boolean;
+  hasMore: boolean;
+  page: number;
+  expandedId: string | null;
+  hoveredChainId: string | null;
+  isWatching: boolean;
+  setExpandedId: (id: string | null) => void;
+  setHoveredChain: (id: string | null) => void;
+  toggleWatching: () => void;
+  fetchTransactions: () => Promise<void>;
+  fetchNextPage: () => Promise<void>;
+  addTransaction: (tx: Transaction) => void;
+  approveTransaction: (id: string) => void;
+}
+
+export const createTransactionSlice: StateCreator<RootState, [], [], TransactionSlice> = (set, get) => ({
+  transactions: [],
+  prompts: [],
+  isLoading: false,
+  isFetchingNextPage: false,
+  hasMore: true,
+  page: 1,
+  expandedId: null,
+  hoveredChainId: null,
+  isWatching: false, // Default to false to show the "Start" state
+
+  setExpandedId: (id) => set({ expandedId: id }),
+  setHoveredChain: (id) => set({ hoveredChainId: id }),
+  
+  toggleWatching: () => {
+    const isNowWatching = !get().isWatching;
+    set({ isWatching: isNowWatching });
+    
+    if (isNowWatching) {
+      api.socket.startEmitting();
+    } else {
+      api.socket.stopEmitting();
+    }
+  },
+
+  addTransaction: (tx) => set((state) => ({ 
+    transactions: [tx, ...state.transactions] 
+  })),
+
+  approveTransaction: (id) => set((state) => ({
+    transactions: state.transactions.map((t) => 
+      t.id === id 
+        ? { ...t, status: 'APPLIED' as const } 
+        : t
+    )
+  })),
+
+  fetchTransactions: async () => {
+    set({ isLoading: true, page: 1, hasMore: true });
+    try {
+      // Pass pagination params to API
+      const data = await (api.transactions.list as any)({ page: 1, limit: 15 });
+      const prompts = await api.transactions.prompts.list();
+      set({ transactions: data, prompts, hasMore: data.length === 15 });
+    } catch (error) {
+      console.error('Failed to fetch transactions', error);
+    }
+    set({ isLoading: false });
+
+    // Setup subscription (once)
+    if (!(window as any).__apiSubscribed) {
+      api.socket.subscribe((newTx) => {
+        if (get().isWatching) {
+          get().addTransaction(newTx);
+        }
+      });
+      (window as any).__apiSubscribed = true;
+    }
+  },
+
+  fetchNextPage: async () => {
+    const { page, hasMore, isFetchingNextPage, transactions } = get();
+    if (!hasMore || isFetchingNextPage) return;
+
+    set({ isFetchingNextPage: true });
+    try {
+      const nextPage = page + 1;
+      const data = await (api.transactions.list as any)({ page: nextPage, limit: 15 });
+      
+      if (data.length > 0) {
+        set({ 
+          transactions: [...transactions, ...data], 
+          page: nextPage,
+          hasMore: data.length === 15
+        });
+      } else {
+        set({ hasMore: false });
+      }
+    } catch (error) {
+      console.error('Failed to fetch next page', error);
+    }
+    set({ isFetchingNextPage: false });
+  },
+});
+```
+
+## File: package.json
+```json
+{
+  "name": "relay",
+  "private": true,
+  "version": "1.0.0",
+  "type": "module",
+  "scripts": {
+    "dev": "react-router dev",
+    "build": "react-router build",
+    "preview": "react-router-serve ./build/server/index.js"
+  },
+  "dependencies": {
+    "@react-router/dev": "^7.13.0",
+    "@react-router/node": "^7.13.0",
+    "@react-router/serve": "^7.13.0",
+    "@tailwindcss/typography": "^0.5.19",
+    "clsx": "2.1.1",
+    "framer-motion": "^12.34.0",
+    "isbot": "^5",
+    "lucide-react": "^0.563.0",
+    "react": "19.2.3",
+    "react-dom": "19.2.3",
+    "react-markdown": "^10.0.0",
+    "react-router": "^7.13.0",
+    "remark-gfm": "^4.0.0",
+    "tailwind-merge": "3.4.0",
+    "zustand": "^5.0.0"
+  },
+  "devDependencies": {
+    "@tailwindcss/vite": "4.1.17",
+    "@types/node": "^22.0.0",
+    "@types/react": "19.2.7",
+    "@types/react-dom": "19.2.3",
+    "@vitejs/plugin-react-swc": "3.8.0",
+    "tailwindcss": "4.1.17",
+    "typescript": "5.9.3",
+    "vite": "6.2.0",
+    "vite-plugin-singlefile": "2.3.0"
+  }
+}
+```
+
 ## File: src/styles/main.style.css
 ```css
 @import "tailwindcss";
@@ -1329,23 +2150,47 @@ export const FloatingActionBar = () => {
     padding-bottom: env(safe-area-inset-bottom);
   }
 
-  /* Hierarchical Vertical Connectors */
+  /* Hierarchical Vertical Connectors - The "Backbone" */
   .thread-connector-v {
     position: absolute;
     left: 50%;
-    top: -24px; /* Matches space-y-6 (1.5rem) */
     width: 2px;
-    height: 24px;
     background: linear-gradient(to bottom, var(--color-zinc-800), var(--color-zinc-700));
     transform: translateX(-50%);
     z-index: -1;
-    transition: all 0.3s ease;
+    transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+    
+    /* Default gap: matches parent space-y-6 (1.5rem / 24px) */
+    top: -24px;
+    height: 24px;
+  }
+
+  /* Stretching Logic: Adapts to expanded card margins (my-12 = 48px mt/mb) */
+  
+  /* 1. If the CURRENT card is expanded, it adds 48px top margin */
+  .transaction-card[data-expanded="true"] > .thread-connector-v {
+    top: -48px;
+    height: 48px;
+  }
+
+  /* 2. If the PREVIOUS sibling is expanded, it adds 48px bottom margin. 
+        Normal gap (24px) + Prev expansion (48px) = 72px total gap. */
+  .transaction-card[data-expanded="true"] + .transaction-card > .thread-connector-v {
+    top: -72px;
+    height: 72px;
+  }
+
+  /* 3. Both are expanded: Prev mb-12 (48px) + Current mt-12 (48px) = 96px total gap. */
+  .transaction-card[data-expanded="true"] + .transaction-card[data-expanded="true"] > .thread-connector-v {
+    top: -96px;
+    height: 96px;
   }
 
   .chain-highlight .thread-connector-v {
     background: var(--color-indigo-500);
-    box-shadow: 0 0 12px var(--color-indigo-500/60);
+    box-shadow: 0 0 15px var(--color-indigo-500);
     width: 3px;
+    opacity: 1;
   }
 
   html {
@@ -1398,49 +2243,6 @@ export const FloatingActionBar = () => {
 }
 .custom-scrollbar-thin::-webkit-scrollbar-thumb:hover {
   background: #3f3f46;
-}
-```
-
-## File: package.json
-```json
-{
-  "name": "relay",
-  "private": true,
-  "version": "1.0.0",
-  "type": "module",
-  "scripts": {
-    "dev": "react-router dev",
-    "build": "react-router build",
-    "preview": "react-router-serve ./build/server/index.js"
-  },
-  "dependencies": {
-    "@react-router/dev": "^7.13.0",
-    "@react-router/node": "^7.13.0",
-    "@react-router/serve": "^7.13.0",
-    "@tailwindcss/typography": "^0.5.19",
-    "clsx": "2.1.1",
-    "framer-motion": "^12.34.0",
-    "isbot": "^5",
-    "lucide-react": "^0.563.0",
-    "react": "19.2.3",
-    "react-dom": "19.2.3",
-    "react-markdown": "^10.0.0",
-    "react-router": "^7.13.0",
-    "remark-gfm": "^4.0.0",
-    "tailwind-merge": "3.4.0",
-    "zustand": "^5.0.0"
-  },
-  "devDependencies": {
-    "@tailwindcss/vite": "4.1.17",
-    "@types/node": "^22.0.0",
-    "@types/react": "19.2.7",
-    "@types/react-dom": "19.2.3",
-    "@vitejs/plugin-react-swc": "3.8.0",
-    "tailwindcss": "4.1.17",
-    "typescript": "5.9.3",
-    "vite": "6.2.0",
-    "vite-plugin-singlefile": "2.3.0"
-  }
 }
 ```
 
@@ -1612,6 +2414,29 @@ export const Dashboard = () => {
     [transactions, prompts, groupBy]
   );
 
+  // Lazy Loading / Infinite Scroll Logic
+  const fetchNextPage = useStore((state) => state.fetchNextPage);
+  const hasMore = useStore((state) => state.hasMore);
+  const isFetchingNextPage = useStore((state) => state.isFetchingNextPage);
+  const sentinelRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    const observer = new IntersectionObserver(
+      (entries) => {
+        if (entries[0].isIntersecting && hasMore && !isFetchingNextPage) {
+          fetchNextPage();
+        }
+      },
+      { threshold: 0.1, rootMargin: '200px' }
+    );
+
+    if (sentinelRef.current) {
+      observer.observe(sentinelRef.current);
+    }
+
+    return () => observer.disconnect();
+  }, [hasMore, isFetchingNextPage, fetchNextPage]);
+
   const groupOptions = useMemo(() => [
     { id: 'prompt' as const, icon: Layers, label: 'Prompt' },
     { id: 'date' as const, icon: Calendar, label: 'Date' },
@@ -1751,15 +2576,32 @@ export const Dashboard = () => {
         <div className="space-y-10 min-h-[300px] mt-8">
           <AnimatePresence mode='popLayout'>
             {hasTransactions ? (
-              groupedData.map((group) => (
-                <TransactionGroup
-                  key={group.id}
-                  group={group}
-                  isCollapsed={collapsedGroups.has(group.id)}
-                  onToggle={toggleGroupCollapse}
-                  seenIds={seenTransactionIds}
-                />
-              ))
+              <>
+                {groupedData.map((group) => (
+                  <TransactionGroup
+                    key={group.id}
+                    group={group}
+                    isCollapsed={collapsedGroups.has(group.id)}
+                    onToggle={toggleGroupCollapse}
+                    seenIds={seenTransactionIds}
+                  />
+                ))}
+                
+                {/* Scroll Sentinel for Lazy Loading */}
+                <div ref={sentinelRef} className="py-12 flex flex-col items-center justify-center gap-4">
+                  {isFetchingNextPage ? (
+                    <>
+                      <div className="w-8 h-8 border-2 border-indigo-500/20 border-t-indigo-500 rounded-full animate-spin" />
+                      <span className="text-xs font-medium text-zinc-500 animate-pulse">Loading more events...</span>
+                    </>
+                  ) : !hasMore && transactions.length > 0 ? (
+                    <div className="flex flex-col items-center gap-2 opacity-40">
+                      <div className="h-px w-24 bg-zinc-800" />
+                      <span className="text-[10px] uppercase font-bold tracking-widest text-zinc-600">End of Stream</span>
+                    </div>
+                  ) : null}
+                </div>
+              </>
             ) : (
               <motion.div 
                 initial={{ opacity: 0 }}
@@ -1959,8 +2801,9 @@ export const TransactionCard = memo(({
       animate={{ opacity: 1, y: 0 }}
       onMouseEnter={() => setHoveredChain(parentId || id)}
       onMouseLeave={() => setHoveredChain(null)}
+      data-expanded={expanded}
       className={cn(
-        "rounded-2xl border transition-all duration-300 relative isolate",
+        "transaction-card rounded-2xl border transition-all duration-300 relative isolate",
         STATUS_CONFIG[status].border,
         expanded
           ? "bg-zinc-900/80 z-10 my-12 shadow-xl shadow-indigo-900/10 ring-1 ring-indigo-500/20"
@@ -1969,32 +2812,43 @@ export const TransactionCard = memo(({
       )}
     >
       {/* Centered Thread Connector */}
-      {parentId && (
+      {parentId && depth > 0 && (
         <div className="thread-connector-v" />
       )}
       {expanded && <div className="absolute inset-0 bg-gradient-to-b from-indigo-500/5 to-transparent pointer-events-none" />}
+      
       {/* STICKY HEADER: Integrated Controls */}
       <div
         onClick={onToggle}
         className={cn(
           "z-20 transition-all duration-300 cursor-pointer select-none",
           expanded
-            ? "sticky top-16 bg-zinc-900 rounded-t-2xl backdrop-blur-md border-b border-zinc-800/80 px-6 py-4"
-            : "p-4"
+            ? "sticky top-16 bg-zinc-900 rounded-t-2xl backdrop-blur-md border-b border-zinc-800/80 px-4 md:px-6 py-4"
+            : "p-3 md:p-4"
         )}
       >
-        <div className="flex items-center gap-4">
+        <div className="grid grid-cols-[auto_1fr_auto] items-start md:items-center gap-3 md:gap-4">
+          {/* Collapse Icon */}
           <div className={cn(
-            "p-1 rounded-md transition-colors",
+            "p-1 rounded-md transition-colors mt-1 md:mt-0",
             expanded ? "bg-indigo-500/10 text-indigo-400" : "text-zinc-600"
           )}>
             <ChevronDown className={cn("w-4 h-4 transition-transform", expanded ? "rotate-0" : "-rotate-90")} />
           </div>
 
-          <div className="flex-1 flex items-center gap-4 min-w-0">
-            <StatusBadge status={status} />
+          {/* Core Info */}
+          <div className="flex flex-col md:flex-row md:items-center gap-2 md:gap-4 min-w-0">
+            <div className="flex items-center gap-2 flex-shrink-0">
+              <StatusBadge status={status} />
+              {parentId && (
+                <div className="md:hidden flex items-center gap-1.5 px-2 py-0.5 rounded-full bg-zinc-800 text-[9px] font-bold text-zinc-500 uppercase tracking-tighter">
+                  <Layers className="w-2.5 h-2.5" /> Follow-up
+                </div>
+              )}
+            </div>
+            
             <div className="flex-1 min-w-0">
-              <div className="flex items-center gap-2 mb-0.5">
+              <div className="flex items-center gap-2">
                 <h3 className={cn(
                   "text-sm font-semibold truncate",
                   expanded ? "text-white" : "text-zinc-300"
@@ -2002,50 +2856,46 @@ export const TransactionCard = memo(({
                   {description}
                 </h3>
                 {parentId && (
-                  <div className="flex items-center gap-1.5 px-2 py-0.5 rounded-full bg-zinc-800 text-[9px] font-bold text-zinc-500 uppercase tracking-tighter">
+                  <div className="hidden md:flex items-center gap-1.5 px-2 py-0.5 rounded-full bg-zinc-800 text-[9px] font-bold text-zinc-500 uppercase tracking-tighter">
                     <Layers className="w-2.5 h-2.5" /> Follow-up
                   </div>
                 )}
               </div>
-              <div className="flex items-center gap-2 mt-0.5 text-[10px] text-zinc-500 font-mono">
-                <History className="w-3 h-3" /> {timestamp}
-                <span>•</span>
+              
+              <div className="flex flex-wrap items-center gap-x-2 gap-y-1 mt-1 text-[10px] text-zinc-500 font-mono">
+                <div className="flex items-center gap-1">
+                  <History className="w-3 h-3" /> {timestamp}
+                </div>
+                <span className="text-zinc-800">•</span>
                 <span className="text-zinc-600">ID: {id.split('-').pop()}</span>
-                {/* Stats - Hidden on very small screens, visible on sm+ */}
+                
                 {hasFiles && (
                   <>
-                    <span className="hidden sm:inline text-zinc-700">•</span>
-                    <span className="hidden sm:inline-flex items-center gap-1 text-zinc-400">
-                      <FileCode className="w-3 h-3" />
-                      {stats.files}
-                    </span>
-                    <span className="hidden sm:inline text-zinc-700">•</span>
-                    <DiffStat adds={stats.adds} subs={stats.subs} className="hidden sm:flex" />
+                    <span className="hidden sm:inline text-zinc-800">•</span>
+                    <div className="flex items-center gap-2">
+                      <span className="flex items-center gap-1 text-zinc-400">
+                        <FileCode className="w-3 h-3" />
+                        {stats.files}
+                      </span>
+                      <DiffStat adds={stats.adds} subs={stats.subs} className="flex" />
+                    </div>
                   </>
                 )}
               </div>
             </div>
           </div>
 
-          <div className="flex items-center gap-2">
-            {!expanded && hasFiles && (
-              <div className="flex md:hidden items-center gap-2 px-2">
-                <span className="text-[10px] text-zinc-500 flex items-center gap-1">
-                  <FileCode className="w-3 h-3" /> {stats.files}
-                </span>
-                <DiffStat adds={stats.adds} subs={stats.subs} className="text-[10px]" />
-              </div>
-            )}
+          {/* Actions */}
+          <div className="flex items-center gap-1 md:gap-2">
             {status === 'PENDING' && (
               <button
                 onClick={handleApprove}
                 className={cn(
-                  "flex items-center gap-2 px-4 py-1.5 bg-emerald-600 hover:bg-emerald-500 text-white text-[11px] font-bold uppercase tracking-wider rounded-lg shadow-lg shadow-emerald-900/20 transition-all active:scale-95",
-                  !expanded && "hidden md:flex"
+                  "flex items-center gap-2 px-3 md:px-4 py-1.5 bg-emerald-600 hover:bg-emerald-500 text-white text-[10px] md:text-[11px] font-bold uppercase tracking-wider rounded-lg shadow-lg shadow-emerald-900/20 transition-all active:scale-95"
                 )}
               >
                 <CheckCircle2 className="w-3.5 h-3.5" />
-                Apply
+                <span className="hidden xs:inline">Apply</span>
               </button>
             )}
             <button className="p-2 text-zinc-600 hover:text-white transition-colors">

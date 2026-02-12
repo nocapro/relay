@@ -85,6 +85,29 @@ export const Dashboard = () => {
     [transactions, prompts, groupBy]
   );
 
+  // Lazy Loading / Infinite Scroll Logic
+  const fetchNextPage = useStore((state) => state.fetchNextPage);
+  const hasMore = useStore((state) => state.hasMore);
+  const isFetchingNextPage = useStore((state) => state.isFetchingNextPage);
+  const sentinelRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    const observer = new IntersectionObserver(
+      (entries) => {
+        if (entries[0].isIntersecting && hasMore && !isFetchingNextPage) {
+          fetchNextPage();
+        }
+      },
+      { threshold: 0.1, rootMargin: '200px' }
+    );
+
+    if (sentinelRef.current) {
+      observer.observe(sentinelRef.current);
+    }
+
+    return () => observer.disconnect();
+  }, [hasMore, isFetchingNextPage, fetchNextPage]);
+
   const groupOptions = useMemo(() => [
     { id: 'prompt' as const, icon: Layers, label: 'Prompt' },
     { id: 'date' as const, icon: Calendar, label: 'Date' },
@@ -224,15 +247,32 @@ export const Dashboard = () => {
         <div className="space-y-10 min-h-[300px] mt-8">
           <AnimatePresence mode='popLayout'>
             {hasTransactions ? (
-              groupedData.map((group) => (
-                <TransactionGroup
-                  key={group.id}
-                  group={group}
-                  isCollapsed={collapsedGroups.has(group.id)}
-                  onToggle={toggleGroupCollapse}
-                  seenIds={seenTransactionIds}
-                />
-              ))
+              <>
+                {groupedData.map((group) => (
+                  <TransactionGroup
+                    key={group.id}
+                    group={group}
+                    isCollapsed={collapsedGroups.has(group.id)}
+                    onToggle={toggleGroupCollapse}
+                    seenIds={seenTransactionIds}
+                  />
+                ))}
+                
+                {/* Scroll Sentinel for Lazy Loading */}
+                <div ref={sentinelRef} className="py-12 flex flex-col items-center justify-center gap-4">
+                  {isFetchingNextPage ? (
+                    <>
+                      <div className="w-8 h-8 border-2 border-indigo-500/20 border-t-indigo-500 rounded-full animate-spin" />
+                      <span className="text-xs font-medium text-zinc-500 animate-pulse">Loading more events...</span>
+                    </>
+                  ) : !hasMore && transactions.length > 0 ? (
+                    <div className="flex flex-col items-center gap-2 opacity-40">
+                      <div className="h-px w-24 bg-zinc-800" />
+                      <span className="text-[10px] uppercase font-bold tracking-widest text-zinc-600">End of Stream</span>
+                    </div>
+                  ) : null}
+                </div>
+              </>
             ) : (
               <motion.div 
                 initial={{ opacity: 0 }}

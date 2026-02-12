@@ -7,6 +7,9 @@ export interface TransactionSlice {
   transactions: Transaction[];
   prompts: Prompt[]; // Store prompts for lookup
   isLoading: boolean;
+  isFetchingNextPage: boolean;
+  hasMore: boolean;
+  page: number;
   expandedId: string | null;
   hoveredChainId: string | null;
   isWatching: boolean;
@@ -14,6 +17,7 @@ export interface TransactionSlice {
   setHoveredChain: (id: string | null) => void;
   toggleWatching: () => void;
   fetchTransactions: () => Promise<void>;
+  fetchNextPage: () => Promise<void>;
   addTransaction: (tx: Transaction) => void;
   approveTransaction: (id: string) => void;
 }
@@ -22,6 +26,9 @@ export const createTransactionSlice: StateCreator<RootState, [], [], Transaction
   transactions: [],
   prompts: [],
   isLoading: false,
+  isFetchingNextPage: false,
+  hasMore: true,
+  page: 1,
   expandedId: null,
   hoveredChainId: null,
   isWatching: false, // Default to false to show the "Start" state
@@ -53,21 +60,49 @@ export const createTransactionSlice: StateCreator<RootState, [], [], Transaction
   })),
 
   fetchTransactions: async () => {
-    set({ isLoading: true });
+    set({ isLoading: true, page: 1, hasMore: true });
     try {
-      const data = await api.transactions.list();
+      // Pass pagination params to API
+      const data = await api.transactions.list({ page: 1, limit: 15 });
       const prompts = await api.transactions.prompts.list();
-      set({ transactions: data, prompts });
+      set({ transactions: data, prompts, hasMore: data.length === 15 });
     } catch (error) {
       console.error('Failed to fetch transactions', error);
     }
     set({ isLoading: false });
 
-    // Setup subscription
-    api.socket.subscribe((newTx) => {
-      if (get().isWatching) {
-        get().addTransaction(newTx);
+    // Setup subscription (once)
+    if (!(window as any).__apiSubscribed) {
+      api.socket.subscribe((newTx) => {
+        if (get().isWatching) {
+          get().addTransaction(newTx);
+        }
+      });
+      (window as any).__apiSubscribed = true;
+    }
+  },
+
+  fetchNextPage: async () => {
+    const { page, hasMore, isFetchingNextPage, transactions } = get();
+    if (!hasMore || isFetchingNextPage) return;
+
+    set({ isFetchingNextPage: true });
+    try {
+      const nextPage = page + 1;
+      const data = await api.transactions.list({ page: nextPage, limit: 15 });
+      
+      if (data.length > 0) {
+        set({ 
+          transactions: [...transactions, ...data], 
+          page: nextPage,
+          hasMore: data.length === 15
+        });
+      } else {
+        set({ hasMore: false });
       }
-    });
+    } catch (error) {
+      console.error('Failed to fetch next page', error);
+    }
+    set({ isFetchingNextPage: false });
   },
 });

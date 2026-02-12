@@ -1,64 +1,33 @@
-import { Transaction, Prompt } from "@/types/app.types";
-import mockData from "./mock-data.json";
+import { Transaction, Prompt } from '@/types/app.types';
+import mockData from './mock-data.json';
 
-// --- Mock Data ---
-
-const MOCK_PROMPTS: Prompt[] = mockData.prompts as Prompt[];
-const MOCK_TRANSACTIONS: Transaction[] = mockData.transactions as Transaction[];
-
-// --- Event System for "Live" Simulation ---
-type TransactionCallback = (tx: Transaction) => void;
-
-class TransactionSocket {
-  private subscribers: TransactionCallback[] = [];
-  private interval: any;
-
-  subscribe(callback: TransactionCallback) {
-    this.subscribers.push(callback);
-    return () => {
-      this.subscribers = this.subscribers.filter(cb => cb !== callback);
-    };
-  }
-
-  // Simulates finding a new patch in the clipboard
-  startEmitting() {
-    if (this.interval) return;
-    const promptIds = MOCK_PROMPTS.map(p => p.id);
-    this.interval = setInterval(() => {
-      // In a real app, this would be data from the backend/clipboard
-      const randomTx = MOCK_TRANSACTIONS[Math.floor(Math.random() * MOCK_TRANSACTIONS.length)];
-      const newTx: Transaction = { 
-        ...randomTx, 
-        id: `tx-${Math.random().toString(36).substr(2, 6)}`, 
-        promptId: promptIds[Math.floor(Math.random() * promptIds.length)],
-        timestamp: 'Just now', 
-        createdAt: new Date().toISOString(),
-        status: 'PENDING' as const 
-      };
-      this.subscribers.forEach(cb => cb(newTx));
-    }, 8000); // New patch every 8 seconds
-  }
-
-  stopEmitting() {
-    clearInterval(this.interval);
-    this.interval = null;
-  }
-}
-
-// --- API Client ---
+// Service implementation using provided mock-data.json
 export const api = {
-  socket: new TransactionSocket(),
   transactions: {
-    list: async (): Promise<Transaction[]> => {
-      return MOCK_TRANSACTIONS;
+    list: async (params?: { page?: number; limit?: number }): Promise<Transaction[]> => {
+      const { page = 1, limit = 15 } = params || {};
+      
+      // Calculate start and end indices for pagination
+      const start = (page - 1) * limit;
+      const end = start + limit;
+      
+      // Return slice of the transactions array from mock-data.json
+      // We cast to any first to bypass complex block union types for the mock data
+      return (mockData.transactions as any[]).slice(start, end) as Transaction[];
     },
     prompts: {
-      list: async (): Promise<Prompt[]> => MOCK_PROMPTS,
-      get: async (id: string) => MOCK_PROMPTS.find(p => p.id === id)
-    },
-    updateStatus: async (id: string, status: Transaction['status']) => {
-      console.log(`[API] Updating transaction ${id} to ${status}`);
-      return { success: true };
+      list: async (): Promise<Prompt[]> => {
+        return mockData.prompts as Prompt[];
+      }
     }
+  },
+  socket: {
+    subscribe: (callback: (tx: Transaction) => void) => {
+      // Mock socket implementation for real-time updates
+      // This could be wired to a global window event for testing
+      (window as any).simulateIncomingTx = (tx: Transaction) => callback(tx);
+    },
+    startEmitting: () => console.log("Socket monitoring started"),
+    stopEmitting: () => console.log("Socket monitoring paused")
   }
 };

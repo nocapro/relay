@@ -30,7 +30,6 @@ we dont need transaction history page, change with prompt management page that p
 
 ===
 
-dashboard: implement lazy loading on bottom scroll 
 
 ===
 
@@ -39,9 +38,16 @@ simulated backend with json mock data, logic , and services , real elysiajs serv
 ===
 
 transaction:
-lets change the data and naming convention shape, card title = git commit message (truncated) 
+1. lets change the data and naming convention shape, transaction card title = git commit message (truncated) 
+2. add one more transaction status which is loading state (applying file changes)
 
-===
+=== DONE
+
+transaction card header so ugly at mobile view like got spaggetification
+dashboard: implement lazy loading on bottom scroll 
+
+
+=== DONE
 
 please think about amazing UI cohesive UX about each transaction sometimes has one parent transaction. so something like transaction chainning. of course in single prompt can having many chanis of transactions 
 
