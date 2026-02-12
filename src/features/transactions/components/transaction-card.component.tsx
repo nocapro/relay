@@ -102,7 +102,7 @@ export const TransactionCard = ({ tx, isNew = false }: TransactionCardProps) => 
       initial={isNew ? { opacity: 0, y: 20 } : false}
       animate={{ opacity: 1, y: 0 }}
       className={cn(
-        "rounded-2xl border transition-all duration-300 overflow-hidden relative",
+        "rounded-2xl border transition-all duration-300 relative",
         expanded
           ? "bg-zinc-900/80 z-10 my-12 border-indigo-500/30 shadow-xl shadow-indigo-900/10 ring-1 ring-indigo-500/20"
           : "bg-zinc-900/40 hover:bg-zinc-900/60 shadow-sm",
@@ -114,9 +114,9 @@ export const TransactionCard = ({ tx, isNew = false }: TransactionCardProps) => 
       <div
         onClick={onToggle}
         className={cn(
-          "z-40 transition-all duration-300 cursor-pointer select-none",
+          "z-20 transition-all duration-300 cursor-pointer select-none",
           expanded
-            ? "sticky top-0 bg-zinc-950/95 backdrop-blur-md border-b border-zinc-800/80 px-6 py-4"
+            ? "sticky top-16 bg-zinc-900 rounded-t-2xl backdrop-blur-md border-b border-zinc-800/80 px-6 py-4"
             : "p-4"
         )}
       >
@@ -172,7 +172,7 @@ export const TransactionCard = ({ tx, isNew = false }: TransactionCardProps) => 
             initial={{ height: 0, opacity: 0 }}
             animate={{ height: "auto", opacity: 1 }}
             exit={{ height: 0, opacity: 0 }}
-            className="border-t border-zinc-800/50 bg-zinc-950/30 relative z-10"
+            className="border-t border-zinc-800/50 bg-zinc-950/30 relative z-10 overflow-visible"
           >
             {/* Observability Strip */}
             <div className="flex items-center gap-6 px-8 py-3 bg-zinc-950 border-b border-zinc-900/50 overflow-x-auto scrollbar-hide">
@@ -188,10 +188,10 @@ export const TransactionCard = ({ tx, isNew = false }: TransactionCardProps) => 
             <div className="flex flex-col lg:flex-row gap-0 lg:gap-10 p-4 md:p-10 max-w-[1400px] mx-auto bg-zinc-950">
 
               {/* QUICK JUMP SIDEBAR (Desktop) */}
-              <div className="hidden lg:block w-64 shrink-0 self-start">
+              <div className="hidden lg:block w-64 shrink-0">
                 <div 
                   ref={outlineRef}
-                  className="sticky top-24 space-y-6 max-h-[calc(100vh-120px)] flex flex-col"
+                  className="sticky top-36 space-y-6 max-h-[calc(100vh-10rem)] overflow-y-auto custom-scrollbar-thin flex flex-col"
                 >
                   <div className="flex items-center gap-2 text-zinc-500 mb-2 shrink-0">
                     <ListTree className="w-4 h-4" />
@@ -295,7 +295,7 @@ const FileSection = ({ file }: { file: any }) => {
     <div className="mb-10 group/file">
       <div 
         className={cn(
-          "sticky top-[68px] z-30 flex items-center justify-between px-4 py-2.5 bg-zinc-900/95 backdrop-blur-sm border border-zinc-800/60 transition-all duration-300",
+          "sticky top-36 z-10 flex items-center justify-between px-4 py-2.5 bg-zinc-900/95 backdrop-blur-sm border border-zinc-800/60 transition-all duration-300",
           isExpanded ? "rounded-t-xl border-b-zinc-800/30" : "rounded-xl"
         )}
       >
