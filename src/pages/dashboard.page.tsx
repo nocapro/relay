@@ -255,7 +255,7 @@ export const Dashboard = () => {
                           exit={{ height: 0, opacity: 0 }}
                           transition={{ duration: 0.2, ease: 'easeInOut' }}
                         >
-                          <div className="space-y-3 pl-0 md:pl-2 border-l-0 md:border-l border-zinc-800/50 ml-3">
+                          <div className="space-y-3 pl-0 md:pl-2 ml-3">
                             {group.transactions.map((tx) => (
                               <TransactionCard 
                                 key={tx.id} 

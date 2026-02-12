@@ -164,400 +164,6 @@ export default function SettingsRoute() {
 }
 ```
 
-## File: src/services/mock-data.json
-```json
-{
-  "prompts": [
-    {
-      "id": "prompt-cloud-infra",
-      "title": "Migrate to Kubernetes & Helm",
-      "content": "Transition the application from legacy VM deployment to a Kubernetes-native architecture using Helm charts for scalability and resilience.",
-      "timestamp": "12 mins ago"
-    },
-    {
-      "id": "prompt-security-oidc",
-      "title": "Implement OIDC Authentication",
-      "content": "Replace the internal JWT logic with a robust OpenID Connect flow via a third-party provider like Auth0 for better enterprise security and SSO capabilities.",
-      "timestamp": "45 mins ago"
-    },
-    {
-      "id": "prompt-backend-perf",
-      "title": "Optimize Data Ingestion Layer",
-      "content": "Improve database write performance by implementing a batching strategy and adding Redis as a write-behind cache to handle high-throughput scenarios.",
-      "timestamp": "3 hours ago"
-    },
-    {
-      "id": "prompt-cicd",
-      "title": "Establish CI/CD Pipeline",
-      "content": "Automate the build, test, and deployment process using GitHub Actions to improve reliability and development velocity.",
-      "timestamp": "5 hours ago"
-    },
-    {
-      "id": "prompt-feature-comments",
-      "title": "Implement Transaction Commenting System",
-      "content": "Develop a full-stack commenting feature for transactions, allowing users to collaborate and discuss specific code changes.",
-      "timestamp": "1 day ago"
-    }
-  ],
-  "transactions": [
-    {
-      "id": "tx-infra-k8s",
-      "status": "PENDING",
-      "description": "Infra: K8s-native deployment with Helm and Monitoring",
-      "timestamp": "Just now",
-      "createdAt": "2026-02-12T12:30:00.000Z",
-      "promptId": "prompt-cloud-infra",
-      "author": "ops-lead",
-      "provider": "Anthropic",
-      "model": "claude-3.5-sonnet",
-      "cost": "$0.142",
-      "tokens": "7,800",
-      "reasoning": "Legacy reasoning. See blocks for narrative.",
-      "files": [],
-      "blocks": [
-        {
-          "type": "markdown",
-          "content": "### Kubernetes Migration Strategy\n\nTo achieve higher availability and standardized deployments, I am migrating the `relaycode-web` service to Kubernetes. This begins with creating a multi-stage `Dockerfile` to produce a minimal, production-ready image."
-        },
-        {
-          "type": "file",
-          "file": {
-            "path": "Dockerfile",
-            "status": "created",
-            "language": "dockerfile",
-            "diff": "@@ -0,0 +1,15 @@\n+FROM node:20-alpine AS builder\n+WORKDIR /app\n+COPY package*.json ./\n+RUN npm ci\n+COPY . .\n+RUN npm run build\n+\n+FROM nginx:stable-alpine\n+COPY --from=builder /app/build /usr/share/nginx/html\n+EXPOSE 80\n+CMD [\"nginx\", \"-g\", \"daemon off;\"]"
-          }
-        },
-        {
-          "type": "markdown",
-          "content": "Next, I am establishing the Helm chart structure. The `Chart.yaml` defines the package metadata, and `values.yaml` provides default configuration that can be overridden during deployment for different environments."
-        },
-        {
-          "type": "file",
-          "file": {
-            "path": "charts/relay-app/Chart.yaml",
-            "status": "created",
-            "language": "yaml",
-            "diff": "@@ -0,0 +1,6 @@\n+apiVersion: v2\n+name: relay-web\n+description: Helm chart for relaycode-web\n+type: application\n+version: 1.0.0\n+appVersion: \"1.2.4\""
-          }
-        },
-        {
-          "type": "file",
-          "file": {
-            "path": "charts/relay-app/values.yaml",
-            "status": "created",
-            "language": "yaml",
-            "diff": "@@ -0,0 +1,10 @@\n+replicaCount: 3\n+image:\n+  repository: relaycode/web\n+  tag: \"latest\"\n+service:\n+  type: ClusterIP\n+  port: 80\n+ingress:\n+  enabled: true\n+  host: app.relaycode.com"
-          }
-        },
-        {
-          "type": "markdown",
-          "content": "The core workload is defined in `deployment.yaml`, which uses values from `values.yaml` to configure the number of replicas, container image, and health probes."
-        },
-        {
-          "type": "file",
-          "file": {
-            "path": "charts/relay-app/templates/deployment.yaml",
-            "status": "created",
-            "language": "yaml",
-            "diff": "@@ -0,0 +1,18 @@\n+apiVersion: apps/v1\n+kind: Deployment\n+metadata:\n+  name: {{ .Release.Name }}\n+spec:\n+  replicas: {{ .Values.replicaCount }}\n+  template:\n+    spec:\n+      containers:\n+        - name: web\n+          image: \"{{ .Values.image.repository }}:{{ .Values.image.tag }}\"\n+          ports:\n+            - containerPort: 80\n+          livenessProbe:\n+            httpGet:\n+              path: /healthz\n+              port: 80"
-          }
-        },
-        {
-          "type": "markdown",
-          "content": "Finally, a deployment script automates the process of building the Docker image, pushing it to a registry, and applying the Helm chart."
-        },
-        {
-          "type": "file",
-          "file": {
-            "path": "scripts/k8s-deploy.sh",
-            "status": "created",
-            "language": "bash",
-            "diff": "@@ -0,0 +1,6 @@\n+#!/bin/bash\n+docker build -t relaycode/web:latest .\n+docker push relaycode/web:latest\n+helm upgrade --install relay-web ./charts/relay-app \\\n+  --set image.tag=$(git rev-parse --short HEAD) \\\n+  --namespace production"
-          }
-        }
-      ]
-    },
-    {
-      "id": "tx-auth-oidc",
-      "status": "PENDING",
-      "description": "Security: Auth0 Integration & Middleware Hardening",
-      "timestamp": "15 mins ago",
-      "createdAt": "2026-02-12T12:15:00.000Z",
-      "promptId": "prompt-security-oidc",
-      "author": "security-bot",
-      "provider": "OpenRouter",
-      "model": "anthropic/claude-3-opus",
-      "cost": "$0.085",
-      "tokens": "4,120",
-      "reasoning": "Switching to Auth0 eliminates the risk of managing refresh token storage in our database.",
-      "files": [],
-      "blocks": [
-        {
-          "type": "markdown",
-          "content": "### Security Refactor: OIDC Transition\n\nI am replacing our internal JWT handling with the official Auth0 Next.js SDK. This starts with adding the necessary dependency to our `package.json`."
-        },
-        {
-          "type": "file",
-          "file": {
-            "path": "package.json",
-            "status": "modified",
-            "language": "json",
-            "diff": "@@ -15,4 +15,5 @@\n   \"dependencies\": {\n+    \"@auth0/nextjs-auth0\": \"^3.5.0\",\n     \"clsx\": \"2.1.1\",\n     \"framer-motion\": \"^12.34.0\""
-          }
-        },
-        {
-          "type": "markdown",
-          "content": "Next, I'm replacing our custom token verification middleware with the `withMiddlewareAuthRequired` helper from the Auth0 SDK. This standardizes route protection and handles session management automatically."
-        },
-        {
-          "type": "file",
-          "file": {
-            "path": "src/middleware.ts",
-            "status": "modified",
-            "language": "typescript",
-            "diff": "@@ -1,6 +1,5 @@\n-import { verifyToken } from './lib/auth';\n+import { withMiddlewareAuthRequired } from '@auth0/nextjs-auth0/edge';\n \n-export function middleware(req: Request) {\n-  return verifyToken(req);\n-}\n+export default withMiddlewareAuthRequired();\n+\n+export const config = { matcher: ['/dashboard/:path*', '/api/:path*'] };"
-          }
-        },
-        {
-          "type": "markdown",
-          "content": "The frontend user hook is updated to use the client-side `useUser` from Auth0, which provides the user profile, loading state, and errors."
-        },
-        {
-          "type": "file",
-          "file": {
-            "path": "src/hooks/useUser.ts",
-            "status": "modified",
-            "language": "typescript",
-            "diff": "@@ -1,8 +1,10 @@\n-export const useUser = () => {\n-  const [user, setUser] = useState(null);\n-  useEffect(() => {\n-    fetch('/api/me').then(res => res.json()).then(setUser);\n-  }, []);\n-  return user;\n-};+import { useUser as useAuth0User } from '@auth0/nextjs-auth0/client';\n+\n+export const useUser = () => {\n+  const { user, isLoading, error } = useAuth0User();\n+  return { user, isLoading, error };\n+};"
-          }
-        },
-        {
-          "type": "markdown",
-          "content": "To handle login, logout, and callback routes, I'm creating a dynamic API route that uses Auth0's `handleAuth` function."
-        },
-        {
-          "type": "file",
-          "file": {
-            "path": "src/app/api/auth/[auth0]/route.ts",
-            "status": "created",
-            "language": "typescript",
-            "diff": "@@ -0,0 +1,5 @@\n+import { handleAuth } from '@auth0/nextjs-auth0';\n+\n+export const GET = handleAuth();"
-          }
-        },
-        {
-          "type": "markdown",
-          "content": "Finally, I'm updating our internal `User` type to include additional profile fields provided by the OIDC provider."
-        },
-        {
-          "type": "file",
-          "file": {
-            "path": "src/types/auth.ts",
-            "status": "modified",
-            "language": "typescript",
-            "diff": "@@ -1,4 +1,8 @@\n export interface User {\n   id: string;\n   email: string;\n+  picture?: string;\n+  nickname?: string;\n+  email_verified: boolean;\n+  updated_at: string;\n }"
-          }
-        }
-      ]
-    },
-    {
-      "id": "tx-perf-redis",
-      "status": "APPLIED",
-      "description": "Performance: Redis Cache Layer & Query Optimization",
-      "timestamp": "1 hour ago",
-      "createdAt": "2026-02-12T11:30:00.000Z",
-      "promptId": "prompt-backend-perf",
-      "author": "db-wizard",
-      "provider": "Anthropic",
-      "model": "claude-3-5-sonnet",
-      "cost": "$0.032",
-      "tokens": "2,100",
-      "reasoning": "Adding a caching layer to the dashboard stats endpoint to reduce DB load.",
-      "files": [],
-      "blocks": [
-        {
-          "type": "markdown",
-          "content": "### Dashboard Latency Fix\n\nI've identified that dashboard aggregate queries are hitting the main PostgreSQL instance too frequently. To mitigate this, I'm first adding a composite index to the `Event` table in our Prisma schema. This will speed up range scans on `userId` and `createdAt`."
-        },
-        {
-          "type": "file",
-          "file": {
-            "path": "prisma/schema.prisma",
-            "status": "modified",
-            "language": "prisma",
-            "diff": "@@ -22,5 +22,7 @@\n model Event {\n   id        String   @id @default(cuid())\n   userId    String\n   type      String\n   createdAt DateTime @default(now())\n+  @@index([userId, createdAt])\n }"
-          }
-        },
-        {
-          "type": "markdown",
-          "content": "Next, I'm introducing a Redis client to the application to serve as our caching layer."
-        },
-        {
-          "type": "file",
-          "file": {
-            "path": "src/lib/redis.ts",
-            "status": "created",
-            "language": "typescript",
-            "diff": "@@ -0,0 +1,8 @@\n+import { createClient } from 'redis';\n+\n+const client = createClient({ url: process.env.REDIS_URL });\n+client.on('error', (err) => console.error('Redis Error', err));\n+\n+export default client;"
-          }
-        },
-        {
-          "type": "markdown",
-          "content": "I am now implementing the cache-aside pattern in the stats API route. It will first check Redis for cached data before falling back to a database query. The results are then stored in Redis with a 5-minute (300 seconds) TTL."
-        },
-        {
-          "type": "file",
-          "file": {
-            "path": "src/app/api/stats/route.ts",
-            "status": "modified",
-            "language": "typescript",
-            "diff": "@@ -4,6 +4,13 @@\n export async function GET() {\n+  const cached = await redis.get('stats:global');\n+  if (cached) return Response.json(JSON.parse(cached));\n+\n   const stats = await db.event.groupBy({ ... });\n+  await redis.set('stats:global', JSON.stringify(stats), { EX: 300 });\n+\n   return Response.json(stats);\n }"
-          }
-        },
-        {
-          "type": "markdown",
-          "content": "To support this new service, the `REDIS_URL` environment variable must be available. I've added it to the example environment file."
-        },
-        {
-          "type": "file",
-          "file": {
-            "path": ".env.example",
-            "status": "modified",
-            "language": "bash",
-            "diff": "@@ -2,3 +2,4 @@\n DATABASE_URL=\"postgresql://...\"\n+REDIS_URL=\"redis://localhost:6379\"\n AUTH0_SECRET=\"use-openssl-rand-hex-32\""
-          }
-        },
-        {
-          "type": "markdown",
-          "content": "Finally, I'm enabling Prisma's query logging in development to make it easier to debug database performance issues in the future."
-        },
-        {
-          "type": "file",
-          "file": {
-            "path": "src/lib/prisma.ts",
-            "status": "modified",
-            "language": "typescript",
-            "diff": "@@ -5,4 +5,4 @@\n-export const prisma = new PrismaClient();\n+export const prisma = new PrismaClient({ log: ['query', 'info'] });"
-          }
-        }
-      ]
-    },
-    {
-      "id": "tx-cicd-actions",
-      "status": "COMMITTED",
-      "description": "DevOps: Establish CI/CD pipeline with GitHub Actions",
-      "timestamp": "4 hours ago",
-      "createdAt": "2026-02-12T08:30:00.000Z",
-      "promptId": "prompt-cicd",
-      "author": "ops-lead",
-      "provider": "GitHub",
-      "model": "Copilot Enterprise",
-      "cost": "$0.000",
-      "tokens": "1,500",
-      "reasoning": "Automating deployments to reduce manual error and improve release cadence.",
-      "files": [],
-      "blocks": [
-        {
-          "type": "markdown",
-          "content": "### CI/CD Automation\n\nTo ensure code quality and streamline deployments, I'm setting up a GitHub Actions workflow. This workflow will trigger on pushes to the `main` branch and on pull requests."
-        },
-        {
-          "type": "file",
-          "file": {
-            "path": ".github/workflows/ci.yml",
-            "status": "created",
-            "language": "yaml",
-            "diff": "@@ -0,0 +1,25 @@\n+name: CI/CD Pipeline\n+on:\n+  push:\n+    branches: [ main ]\n+  pull_request:\n+    branches: [ main ]\n+jobs:\n+  build-and-test:\n+    runs-on: ubuntu-latest\n+    steps:\n+      - uses: actions/checkout@v4\n+      - name: Setup Node.js\n+        uses: actions/setup-node@v4\n+        with:\n+          node-version: 20\n+      - run: npm ci\n+      - run: npm run build\n+      - run: npm test\n+  deploy:\n+    needs: build-and-test\n+    if: github.ref == 'refs/heads/main'\n+    runs-on: ubuntu-latest\n+    steps:\n+      - uses: actions/checkout@v4\n+      - name: Deploy to Production\n+        run: ./scripts/k8s-deploy.sh"
-          }
-        },
-        {
-          "type": "markdown",
-          "content": "I'm also adding a simple test script placeholder to `package.json` so the `npm test` step in the CI workflow passes."
-        },
-        {
-          "type": "file",
-          "file": {
-            "path": "package.json",
-            "status": "modified",
-            "language": "json",
-            "diff": "@@ -7,6 +7,7 @@\n   \"scripts\": {\n     \"dev\": \"react-router dev\",\n     \"build\": \"react-router build\",\n+    \"test\": \"echo \\\"Error: no test specified\\\" && exit 0\",\n     \"preview\": \"react-router-serve ./build/server/index.js\"\n   },"
-          }
-        }
-      ]
-    },
-    {
-      "id": "tx-feature-comments",
-      "status": "REVERTED",
-      "description": "Feature: Full-stack Transaction Commenting System",
-      "timestamp": "8 hours ago",
-      "createdAt": "2026-02-12T04:30:00.000Z",
-      "promptId": "prompt-feature-comments",
-      "author": "dev-team",
-      "provider": "Anthropic",
-      "model": "claude-3.5-haiku",
-      "cost": "$0.015",
-      "tokens": "3,250",
-      "reasoning": "Reverting due to a bug in optimistic UI updates causing ghost comments. Will re-evaluate the state management approach.",
-      "files": [],
-      "blocks": [
-        {
-          "type": "markdown",
-          "content": "### Feature: Transaction Comments\n\nI'm adding a commenting system. First, the database schema needs a `Comment` model with relations to `User` and `Transaction`."
-        },
-        {
-          "type": "file",
-          "file": {
-            "path": "prisma/schema.prisma",
-            "status": "modified",
-            "language": "prisma",
-            "diff": "@@ -15,3 +15,12 @@\n model User {\n   id    String @id @default(cuid())\n   email String @unique\n+  comments Comment[]\n+}\n+\n+model Comment {\n+  id        String   @id @default(cuid())\n+  content   String\n+  createdAt DateTime @default(now())\n+  author    User     @relation(fields: [authorId], references: [id])\n+  authorId  String\n+  // Missing transaction relation - this was part of the bug.\n }"
-          }
-        },
-        {
-          "type": "markdown",
-          "content": "Next, a new API route is required to handle fetching and creating comments for a transaction."
-        },
-        {
-          "type": "file",
-          "file": {
-            "path": "src/app/api/transactions/[id]/comments/route.ts",
-            "status": "created",
-            "language": "typescript",
-            "diff": "@@ -0,0 +1,15 @@\n+import { prisma } from '@/lib/prisma';\n+\n+export async function GET(req: Request, { params }: { params: { id: string } }) {\n+  const comments = await prisma.comment.findMany({ where: { transactionId: params.id } });\n+  return Response.json(comments);\n+}\n+\n+export async function POST(req: Request, { params }: { params: { id: string } }) {\n+  const { content, authorId } = await req.json();\n+  const newComment = await prisma.comment.create({\n+    data: { content, authorId, transactionId: params.id },\n+  });\n+  return Response.json(newComment, { status: 201 });\n+}"
-          }
-        },
-        {
-          "type": "markdown",
-          "content": "On the frontend, I'm creating a new component to display the list of comments and an input form."
-        },
-        {
-          "type": "file",
-          "file": {
-            "path": "src/features/transactions/components/comment-section.component.tsx",
-            "status": "created",
-            "language": "tsx",
-            "diff": "@@ -0,0 +1,20 @@\n+export const CommentSection = ({ transactionId }) => {\n+  // const { data: comments, mutate } = useSWR(`/api/transactions/${transactionId}/comments`);\n+  const [newComment, setNewComment] = useState('');\n+\n+  const handleSubmit = async (e) => {\n+    e.preventDefault();\n+    // Optimistic update logic was here and was buggy\n+    await fetch(`/api/transactions/${transactionId}/comments`, {\n+      method: 'POST',\n+      body: JSON.stringify({ content: newComment }),\n+    });\n+    setNewComment('');\n+    // mutate();\n+  };\n+\n+  return <div>{/* UI for comments and form */}</div>;\n+};"
-          }
-        },
-        {
-          "type": "markdown",
-          "content": "Finally, this new component is integrated into the main `TransactionCard`."
-        },
-        {
-          "type": "file",
-          "file": {
-            "path": "src/features/transactions/components/transaction-card.component.tsx",
-            "status": "modified",
-            "language": "tsx",
-            "diff": "@@ -250,6 +250,7 @@\n                   null\n                 )}\n \n+                <CommentSection txId={tx.id} />\n                 {/* Action Footer */}\n                 {tx.status === 'PENDING' && (\n                   <div className=\"flex items-center justify-center pt-8 border-t border-zinc-800/50\">"
-          }
-        }
-      ]
-    }
-  ]
-}
-```
-
 ## File: src/utils/cn.util.ts
 ```typescript
 import { clsx, type ClassValue } from "clsx";
@@ -803,104 +409,6 @@ export const CommandPalette = () => {
 };
 ```
 
-## File: src/components/layout/navigation.layout.tsx
-```typescript
-import { Activity, Settings, Clock, Terminal } from 'lucide-react';
-import { motion } from 'framer-motion';
-import { Link, useLocation } from 'react-router';
-import { cn } from "@/utils/cn.util";
-import { useIsMobile } from "@/hooks/mobile.hook";
-
-const navItems = [
-  { path: '/', icon: Activity, label: 'Stream' },
-  { path: '/history', icon: Clock, label: 'History' },
-  { path: '/settings', icon: Settings, label: 'Settings' },
-] as const;
-
-export const Navigation = () => {
-  const location = useLocation();
-  const isMobile = useIsMobile();
-
-  if (isMobile) {
-    return (
-      <div className="fixed bottom-0 left-0 right-0 z-40 bg-zinc-950/90 backdrop-blur-xl border-t border-zinc-800 pb-safe">
-        <div className="flex justify-around items-center p-2">
-          {navItems.map((item) => {
-            const isActive = location.pathname === item.path;
-            return (
-              <Link
-                key={item.path}
-                to={item.path}
-                className={cn(
-                  "flex flex-col items-center gap-1 p-2 rounded-xl transition-all w-20",
-                  isActive ? "text-indigo-400" : "text-zinc-500 hover:text-zinc-300"
-                )}
-              >
-                <div className={cn("p-1.5 rounded-full transition-all", isActive ? "bg-indigo-500/10" : "bg-transparent")}>
-                  <item.icon className="w-5 h-5" />
-                </div>
-                <span className="text-[10px] font-medium">{item.label}</span>
-              </Link>
-            );
-          })}
-        </div>
-      </div>
-    );
-  }
-
-  return (
-    <div className="w-64 border-r border-zinc-800/60 bg-zinc-950 flex flex-col h-screen fixed left-0 top-0 z-20">
-      <div className="p-6 flex items-center gap-3">
-        <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-indigo-500 via-purple-500 to-indigo-600 flex items-center justify-center shadow-lg shadow-indigo-500/20 ring-1 ring-white/10">
-          <Terminal className="w-5 h-5 text-white" />
-        </div>
-        <span className="font-bold text-lg tracking-tight text-white">Relaycode</span>
-      </div>
-
-      <div className="px-4 py-2">
-        <div className="text-xs font-semibold text-zinc-500 uppercase tracking-wider mb-2 px-2">Menu</div>
-        <nav className="space-y-1">
-          {navItems.map((item) => {
-            const isActive = location.pathname === item.path;
-            return (
-              <Link
-                key={item.path}
-                to={item.path}
-                className={cn(
-                  "w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-all duration-200 group relative",
-                  isActive 
-                    ? "bg-zinc-900 text-white shadow-inner shadow-black/20" 
-                    : "text-zinc-400 hover:text-zinc-200 hover:bg-zinc-900/50"
-                )}
-              >
-                {isActive && (
-                  <motion.div layoutId="activeNav" className="absolute left-0 w-1 h-5 bg-indigo-500 rounded-r-full" />
-                )}
-                <item.icon className={cn("w-4 h-4 transition-colors", isActive ? "text-indigo-400" : "text-zinc-500 group-hover:text-zinc-300")} />
-                {item.label}
-              </Link>
-            );
-          })}
-        </nav>
-      </div>
-
-      <div className="mt-auto p-4 border-t border-zinc-800/60">
-        <div className="bg-gradient-to-br from-zinc-900 to-zinc-900/50 rounded-lg p-3 border border-zinc-800 shadow-sm">
-          <div className="flex items-center gap-2 mb-2">
-            <div className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse shadow-[0_0_8px_rgba(16,185,129,0.5)]" />
-            <span className="text-xs font-medium text-zinc-300">System Online</span>
-          </div>
-          <div className="flex justify-between items-center text-xs text-zinc-500 font-mono">
-            <span>v1.2.4</span>
-            <span className="bg-zinc-800 px-1.5 py-0.5 rounded text-zinc-400">Stable</span>
-          </div>
-        </div>
-      </div>
-    </div>
-  );
-};
-```
-
 ## File: src/components/ui/status-badge.ui.tsx
 ```typescript
 import { 
@@ -958,6 +466,684 @@ export default function DashboardRoute() {
       <FloatingActionBar />
     </>
   );
+}
+```
+
+## File: src/services/mock-data.json
+```json
+{
+  "prompts": [
+    {
+      "id": "prompt-cloud-infra",
+      "title": "Migrate to Kubernetes & Helm",
+      "content": "Transition the application from legacy VM deployment to a Kubernetes-native architecture using Helm charts for scalability and resilience.",
+      "timestamp": "12 mins ago"
+    },
+    {
+      "id": "prompt-security-oidc",
+      "title": "Implement OIDC Authentication",
+      "content": "Replace the internal JWT logic with a robust OpenID Connect flow via a third-party provider like Auth0 for better enterprise security and SSO capabilities.",
+      "timestamp": "45 mins ago"
+    },
+    {
+      "id": "prompt-backend-perf",
+      "title": "Optimize Data Ingestion Layer",
+      "content": "Improve database write performance by implementing a batching strategy and adding Redis as a write-behind cache to handle high-throughput scenarios.",
+      "timestamp": "3 hours ago"
+    },
+    {
+      "id": "prompt-cicd",
+      "title": "Establish CI/CD Pipeline",
+      "content": "Automate the build, test, and deployment process using GitHub Actions to improve reliability and development velocity.",
+      "timestamp": "5 hours ago"
+    },
+    {
+      "id": "prompt-feature-comments",
+      "title": "Implement Transaction Commenting System",
+      "content": "Develop a full-stack commenting feature for transactions, allowing users to collaborate and discuss specific code changes.",
+      "timestamp": "1 day ago"
+    },
+    {
+      "id": "prompt-ui-redesign",
+      "title": "Modern Dashboard UI Overhaul",
+      "content": "Redesign the dashboard with a modern, dark-themed UI using Tailwind CSS, Framer Motion animations, and improved accessibility.",
+      "timestamp": "2 days ago"
+    },
+    {
+      "id": "prompt-api-graphql",
+      "title": "GraphQL API Migration",
+      "content": "Migrate REST endpoints to GraphQL to provide more flexible data fetching and reduce over-fetching issues.",
+      "timestamp": "3 days ago"
+    }
+  ],
+  "transactions": [
+    {
+      "id": "tx-infra-k8s",
+      "status": "PENDING",
+      "description": "Infra: K8s-native deployment with Helm and Monitoring",
+      "timestamp": "Just now",
+      "createdAt": "2026-02-12T12:30:00.000Z",
+      "promptId": "prompt-cloud-infra",
+      "author": "ops-lead",
+      "provider": "Anthropic",
+      "model": "claude-3.5-sonnet",
+      "cost": "$0.142",
+      "tokens": "7,800",
+      "reasoning": "Legacy reasoning. See blocks for narrative.",
+      "files": [],
+      "blocks": [
+        {
+          "type": "markdown",
+          "content": "### Kubernetes Migration Strategy\n\nTo achieve higher availability and standardized deployments, I am migrating the `relaycode-web` service to Kubernetes. This begins with creating a multi-stage `Dockerfile` to produce a minimal, production-ready image."
+        },
+        {
+          "type": "file",
+          "file": {
+            "path": "Dockerfile",
+            "status": "created",
+            "language": "dockerfile",
+            "diff": "@@ -0,0 +1,15 @@\n+FROM node:20-alpine AS builder\n+WORKDIR /app\n+COPY package*.json ./\n+RUN npm ci\n+COPY . .\n+RUN npm run build\n+\n+FROM nginx:stable-alpine\n+COPY --from=builder /app/build /usr/share/nginx/html\n+EXPOSE 80\n+CMD [\"nginx\", \"-g\", \"daemon off;\"]"
+          }
+        },
+        {
+          "type": "markdown",
+          "content": "Now that we have the Dockerfile, let's create the Helm chart structure. The `Chart.yaml` defines the package metadata that Helm needs to manage this application."
+        },
+        {
+          "type": "file",
+          "file": {
+            "path": "charts/relay-app/Chart.yaml",
+            "status": "created",
+            "language": "yaml",
+            "diff": "@@ -0,0 +1,6 @@\n+apiVersion: v2\n+name: relay-web\n+description: Helm chart for relaycode-web\n+type: application\n+version: 1.0.0\n+appVersion: \"1.2.4\""
+          }
+        },
+        {
+          "type": "markdown",
+          "content": "Next, we need the `values.yaml` file which provides default configuration. This allows environment-specific overrides during deployment without modifying the chart itself."
+        },
+        {
+          "type": "file",
+          "file": {
+            "path": "charts/relay-app/values.yaml",
+            "status": "created",
+            "language": "yaml",
+            "diff": "@@ -0,0 +1,10 @@\n+replicaCount: 3\n+image:\n+  repository: relaycode/web\n+  tag: \"latest\"\n+service:\n+  type: ClusterIP\n+  port: 80\n+ingress:\n+  enabled: true\n+  host: app.relaycode.com"
+          }
+        },
+        {
+          "type": "markdown",
+          "content": "The core workload is defined in `deployment.yaml`. This template uses values from `values.yaml` to configure replicas, container images, and health probes. The liveness probe ensures Kubernetes can detect and restart unhealthy containers."
+        },
+        {
+          "type": "file",
+          "file": {
+            "path": "charts/relay-app/templates/deployment.yaml",
+            "status": "created",
+            "language": "yaml",
+            "diff": "@@ -0,0 +1,18 @@\n+apiVersion: apps/v1\n+kind: Deployment\n+metadata:\n+  name: {{ .Release.Name }}\n+spec:\n+  replicas: {{ .Values.replicaCount }}\n+  template:\n+    spec:\n+      containers:\n+        - name: web\n+          image: \"{{ .Values.image.repository }}:{{ .Values.image.tag }}\"\n+          ports:\n+            - containerPort: 80\n+          livenessProbe:\n+            httpGet:\n+              path: /healthz\n+              port: 80"
+          }
+        },
+        {
+          "type": "markdown",
+          "content": "We also need a Service resource to expose the deployment within the cluster. This creates a stable endpoint for other services to communicate with our application."
+        },
+        {
+          "type": "file",
+          "file": {
+            "path": "charts/relay-app/templates/service.yaml",
+            "status": "created",
+            "language": "yaml",
+            "diff": "@@ -0,0 +1,11 @@\n+apiVersion: v1\n+kind: Service\n+metadata:\n+  name: {{ .Release.Name }}-web\n+  labels:\n+    app: {{ .Release.Name }}\n+spec:\n+  type: {{ .Values.service.type }}\n+  ports:\n+    - port: {{ .Values.service.port }}\n+      targetPort: 80\n+  selector:\n+    app: {{ .Release.Name }}"
+          }
+        },
+        {
+          "type": "markdown",
+          "content": "Finally, a deployment script automates the process of building the Docker image, pushing it to a registry, and applying the Helm chart to the cluster."
+        },
+        {
+          "type": "file",
+          "file": {
+            "path": "scripts/k8s-deploy.sh",
+            "status": "created",
+            "language": "bash",
+            "diff": "@@ -0,0 +1,6 @@\n+#!/bin/bash\n+docker build -t relaycode/web:latest .\n+docker push relaycode/web:latest\n+helm upgrade --install relay-web ./charts/relay-app \\\n+  --set image.tag=$(git rev-parse --short HEAD) \\\n+  --namespace production"
+          }
+        }
+      ]
+    },
+    {
+      "id": "tx-auth-oidc",
+      "status": "PENDING",
+      "description": "Security: Auth0 Integration & Middleware Hardening",
+      "timestamp": "15 mins ago",
+      "createdAt": "2026-02-12T12:15:00.000Z",
+      "promptId": "prompt-security-oidc",
+      "author": "security-bot",
+      "provider": "OpenRouter",
+      "model": "anthropic/claude-3-opus",
+      "cost": "$0.085",
+      "tokens": "4,120",
+      "reasoning": "Switching to Auth0 eliminates the risk of managing refresh token storage in our database.",
+      "files": [],
+      "blocks": [
+        {
+          "type": "markdown",
+          "content": "### Security Refactor: OIDC Transition\n\nI am replacing our internal JWT handling with the official Auth0 Next.js SDK. This starts with adding the necessary dependency to our `package.json`."
+        },
+        {
+          "type": "file",
+          "file": {
+            "path": "package.json",
+            "status": "modified",
+            "language": "json",
+            "diff": "@@ -15,4 +15,5 @@\n   \"dependencies\": {\n+    \"@auth0/nextjs-auth0\": \"^3.5.0\",\n     \"clsx\": \"2.1.1\",\n     \"framer-motion\": \"^12.34.0\""
+          }
+        },
+        {
+          "type": "markdown",
+          "content": "Next, I'm replacing our custom token verification middleware with the `withMiddlewareAuthRequired` helper from the Auth0 SDK. This standardizes route protection and handles session management automatically."
+        },
+        {
+          "type": "file",
+          "file": {
+            "path": "src/middleware.ts",
+            "status": "modified",
+            "language": "typescript",
+            "diff": "@@ -1,6 +1,5 @@\n-import { verifyToken } from './lib/auth';\n+import { withMiddlewareAuthRequired } from '@auth0/nextjs-auth0/edge';\n \\n-export function middleware(req: Request) {\n-  return verifyToken(req);\n-}\n+export default withMiddlewareAuthRequired();\n+\\n+export const config = { matcher: ['/dashboard/:path*', '/api/:path*'] };"
+          }
+        },
+        {
+          "type": "markdown",
+          "content": "The frontend user hook needs to be updated to use the client-side `useUser` from Auth0, which provides the user profile, loading state, and errors in a standardized way."
+        },
+        {
+          "type": "file",
+          "file": {
+            "path": "src/hooks/useUser.ts",
+            "status": "modified",
+            "language": "typescript",
+            "diff": "@@ -1,8 +1,10 @@\n-export const useUser = () => {\n-  const [user, setUser] = useState(null);\n-  useEffect(() => {\n-    fetch('/api/me').then(res => res.json()).then(setUser);\n-  }, []);\n-  return user;\n-};+import { useUser as useAuth0User } from '@auth0/nextjs-auth0/client';\n+\\n+export const useUser = () => {\n+  const { user, isLoading, error } = useAuth0User();\n+  return { user, isLoading, error };\n+};"
+          }
+        },
+        {
+          "type": "markdown",
+          "content": "To handle login, logout, and callback routes, I'm creating a dynamic API route that uses Auth0's `handleAuth` function. This creates all necessary authentication endpoints automatically."
+        },
+        {
+          "type": "file",
+          "file": {
+            "path": "src/app/api/auth/[auth0]/route.ts",
+            "status": "created",
+            "language": "typescript",
+            "diff": "@@ -0,0 +1,5 @@\n+import { handleAuth } from '@auth0/nextjs-auth0';\n+\\n+export const GET = handleAuth();"
+          }
+        },
+        {
+          "type": "markdown",
+          "content": "I'm updating our internal `User` type to include additional profile fields provided by the OIDC provider, such as profile picture and email verification status."
+        },
+        {
+          "type": "file",
+          "file": {
+            "path": "src/types/auth.ts",
+            "status": "modified",
+            "language": "typescript",
+            "diff": "@@ -1,4 +1,8 @@\n export interface User {\n   id: string;\n   email: string;\n+  picture?: string;\n+  nickname?: string;\n+  email_verified: boolean;\n+  updated_at: string;\n }"
+          }
+        },
+        {
+          "type": "markdown",
+          "content": "Finally, I'm creating an environment configuration template that includes all required Auth0 environment variables. This will help with local development setup."
+        },
+        {
+          "type": "file",
+          "file": {
+            "path": ".env.local.example",
+            "status": "created",
+            "language": "bash",
+            "diff": "@@ -0,0 +1,5 @@\n+# Auth0 Configuration\n+AUTH0_SECRET='use [openssl rand -hex 32] to generate a 32 bytes value'\n+AUTH0_BASE_URL='http://localhost:3000'\n+AUTH0_ISSUER_BASE_URL='https://YOUR_AUTH0_DOMAIN.auth0.com'\n+AUTH0_CLIENT_ID='YOUR_AUTH0_CLIENT_ID'\n+AUTH0_CLIENT_SECRET='YOUR_AUTH0_CLIENT_SECRET'"
+          }
+        }
+      ]
+    },
+    {
+      "id": "tx-perf-redis",
+      "status": "APPLIED",
+      "description": "Performance: Redis Cache Layer & Query Optimization",
+      "timestamp": "1 hour ago",
+      "createdAt": "2026-02-12T11:30:00.000Z",
+      "promptId": "prompt-backend-perf",
+      "author": "db-wizard",
+      "provider": "Anthropic",
+      "model": "claude-3-5-sonnet",
+      "cost": "$0.032",
+      "tokens": "2,100",
+      "reasoning": "Adding a caching layer to the dashboard stats endpoint to reduce DB load.",
+      "files": [],
+      "blocks": [
+        {
+          "type": "markdown",
+          "content": "### Dashboard Latency Fix\n\nI've identified that dashboard aggregate queries are hitting the main PostgreSQL instance too frequently. To mitigate this, I'm first adding a composite index to the `Event` table in our Prisma schema."
+        },
+        {
+          "type": "file",
+          "file": {
+            "path": "prisma/schema.prisma",
+            "status": "modified",
+            "language": "prisma",
+            "diff": "@@ -22,5 +22,7 @@\n model Event {\n   id        String   @id @default(cuid())\n   userId    String\n   type      String\n   createdAt DateTime @default(now())\n+  @@index([userId, createdAt])\n }"
+          }
+        },
+        {
+          "type": "markdown",
+          "content": "Next, I'm introducing a Redis client to the application to serve as our caching layer for frequently accessed data."
+        },
+        {
+          "type": "file",
+          "file": {
+            "path": "src/lib/redis.ts",
+            "status": "created",
+            "language": "typescript",
+            "diff": "@@ -0,0 +1,8 @@\n+import { createClient } from 'redis';\n+\\n+const client = createClient({ url: process.env.REDIS_URL });\n+client.on('error', (err) => console.error('Redis Error', err));\n+\\n+export default client;"
+          }
+        },
+        {
+          "type": "markdown",
+          "content": "I'm now implementing the cache-aside pattern in the stats API route. It will first check Redis for cached data before falling back to a database query."
+        },
+        {
+          "type": "file",
+          "file": {
+            "path": "src/app/api/stats/route.ts",
+            "status": "modified",
+            "language": "typescript",
+            "diff": "@@ -4,6 +4,13 @@\n export async function GET() {\n+  const cached = await redis.get('stats:global');\n+  if (cached) return Response.json(JSON.parse(cached));\n+\\n   const stats = await db.event.groupBy({ ... });\n+  await redis.set('stats:global', JSON.stringify(stats), { EX: 300 });\n+\\n   return Response.json(stats);\n }"
+          }
+        },
+        {
+          "type": "markdown",
+          "content": "To support this new service, the `REDIS_URL` environment variable must be available. I've added it to the example environment file."
+        },
+        {
+          "type": "file",
+          "file": {
+            "path": ".env.example",
+            "status": "modified",
+            "language": "bash",
+            "diff": "@@ -2,3 +2,4 @@\n DATABASE_URL=\"postgresql://...\"\n+REDIS_URL=\"redis://localhost:6379\"\n AUTH0_SECRET=\"use-openssl-rand-hex-32\""
+          }
+        },
+        {
+          "type": "markdown",
+          "content": "I'm enabling Prisma's query logging in development to make it easier to debug database performance issues in the future."
+        },
+        {
+          "type": "file",
+          "file": {
+            "path": "src/lib/prisma.ts",
+            "status": "modified",
+            "language": "typescript",
+            "diff": "@@ -5,4 +5,4 @@\n-export const prisma = new PrismaClient();\n+export const prisma = new PrismaClient({ log: ['query', 'info'] });"
+          }
+        },
+        {
+          "type": "markdown",
+          "content": "Finally, I'm adding a cache invalidation utility that can be called when events are created to keep the stats up to date."
+        },
+        {
+          "type": "file",
+          "file": {
+            "path": "src/lib/cache.ts",
+            "status": "created",
+            "language": "typescript",
+            "diff": "@@ -0,0 +1,10 @@\n+import redis from './redis';\n+\\n+export const CACHE_KEYS = {\n+  GLOBAL_STATS: 'stats:global',\n+  USER_STATS: (userId: string) => `stats:user:${userId}`,\n+} as const;\n+\\n+export async function invalidateStats(userId?: string) {\n+  await redis.del(CACHE_KEYS.GLOBAL_STATS);\n+  if (userId) await redis.del(CACHE_KEYS.USER_STATS(userId));\n+}"
+          }
+        }
+      ]
+    },
+    {
+      "id": "tx-cicd-actions",
+      "status": "COMMITTED",
+      "description": "DevOps: Establish CI/CD pipeline with GitHub Actions",
+      "timestamp": "4 hours ago",
+      "createdAt": "2026-02-12T08:30:00.000Z",
+      "promptId": "prompt-cicd",
+      "author": "ops-lead",
+      "provider": "GitHub",
+      "model": "Copilot Enterprise",
+      "cost": "$0.000",
+      "tokens": "1,500",
+      "reasoning": "Automating deployments to reduce manual error and improve release cadence.",
+      "files": [],
+      "blocks": [
+        {
+          "type": "markdown",
+          "content": "### CI/CD Automation\n\nTo ensure code quality and streamline deployments, I'm setting up a GitHub Actions workflow. This workflow will trigger on pushes to the `main` branch and on pull requests."
+        },
+        {
+          "type": "file",
+          "file": {
+            "path": ".github/workflows/ci.yml",
+            "status": "created",
+            "language": "yaml",
+            "diff": "@@ -0,0 +1,25 @@\n+name: CI/CD Pipeline\n+on:\n+  push:\n+    branches: [ main ]\n+  pull_request:\n+    branches: [ main ]\n+jobs:\n+  build-and-test:\n+    runs-on: ubuntu-latest\n+    steps:\n+      - uses: actions/checkout@v4\n+      - name: Setup Node.js\n+        uses: actions/setup-node@v4\n+        with:\n+          node-version: 20\n+      - run: npm ci\n+      - run: npm run build\n+      - run: npm test\n+  deploy:\n+    needs: build-and-test\n+    if: github.ref == 'refs/heads/main'\n+    runs-on: ubuntu-latest\n+    steps:\n+      - uses: actions/checkout@v4\n+      - name: Deploy to Production\n+        run: ./scripts/k8s-deploy.sh"
+          }
+        },
+        {
+          "type": "markdown",
+          "content": "I'm adding a simple test script placeholder to `package.json` so the `npm test` step in the CI workflow passes successfully."
+        },
+        {
+          "type": "file",
+          "file": {
+            "path": "package.json",
+            "status": "modified",
+            "language": "json",
+            "diff": "@@ -7,6 +7,7 @@\n   \"scripts\": {\n     \"dev\": \"react-router dev\",\n     \"build\": \"react-router build\",\n+    \"test\": \"echo \\\"Error: no test specified\\\" && exit 0\",\n     \"preview\": \"react-router-serve ./build/server/index.js\"\n   },"
+          }
+        },
+        {
+          "type": "markdown",
+          "content": "Creating a separate workflow for running linting checks to ensure code quality standards are maintained."
+        },
+        {
+          "type": "file",
+          "file": {
+            "path": ".github/workflows/lint.yml",
+            "status": "created",
+            "language": "yaml",
+            "diff": "@@ -0,0 +1,20 @@\n+name: Lint\n+on:\n+  push:\n+    branches: [ main, develop ]\n+  pull_request:\n+    branches: [ main ]\n+jobs:\n+  lint:\n+    runs-on: ubuntu-latest\n+    steps:\n+      - uses: actions/checkout@v4\n+      - name: Setup Node.js\n+        uses: actions/setup-node@v4\n+        with:\n+          node-version: 20\n+          cache: 'npm'\n+      - run: npm ci\n+      - run: npm run lint\n+      - run: npm run typecheck"
+          }
+        },
+        {
+          "type": "markdown",
+          "content": "Adding a Dependabot configuration to keep dependencies updated automatically through pull requests."
+        },
+        {
+          "type": "file",
+          "file": {
+            "path": ".github/dependabot.yml",
+            "status": "created",
+            "language": "yaml",
+            "diff": "@@ -0,0 +1,11 @@\n+version: 2\n+updates:\n+  - package-ecosystem: \"npm\"\n+    directory: \"/\"\n+    schedule:\n+      interval: \"weekly\"\n+    open-pull-requests-limit: 10\n+    reviewers:\n+      - \"ops-lead\"\n+    labels:\n+      - \"dependencies\""
+          }
+        },
+        {
+          "type": "markdown",
+          "content": "Creating a deployment script that handles the actual deployment process to our staging environment."
+        },
+        {
+          "type": "file",
+          "file": {
+            "path": "scripts/deploy-staging.sh",
+            "status": "created",
+            "language": "bash",
+            "diff": "@@ -0,0 +1,12 @@\n+#!/bin/bash\n+set -e\n+\\n+echo \"Building Docker image...\"\n+docker build -t relaycode/web:staging .\n+\\n+echo \"Pushing to registry...\"\n+docker push relaycode/web:staging\n+\\n+echo \"Deploying to staging...\"\n+helm upgrade --install relay-web-staging ./charts/relay-app \\\n+  --namespace staging \\\n+  --set image.tag=staging \\\n+  --set ingress.host=staging.relaycode.com"
+          }
+        }
+      ]
+    },
+    {
+      "id": "tx-feature-comments",
+      "status": "REVERTED",
+      "description": "Feature: Full-stack Transaction Commenting System",
+      "timestamp": "8 hours ago",
+      "createdAt": "2026-02-12T04:30:00.000Z",
+      "promptId": "prompt-feature-comments",
+      "author": "dev-team",
+      "provider": "Anthropic",
+      "model": "claude-3.5-haiku",
+      "cost": "$0.015",
+      "tokens": "3,250",
+      "reasoning": "Reverting due to a bug in optimistic UI updates causing ghost comments. Will re-evaluate the state management approach.",
+      "files": [],
+      "blocks": [
+        {
+          "type": "markdown",
+          "content": "### Feature: Transaction Comments\n\nI'm adding a commenting system. First, the database schema needs a `Comment` model with relations to `User` and `Transaction`."
+        },
+        {
+          "type": "file",
+          "file": {
+            "path": "prisma/schema.prisma",
+            "status": "modified",
+            "language": "prisma",
+            "diff": "@@ -15,3 +15,12 @@\n model User {\n   id    String @id @default(cuid())\n   email String @unique\n+  comments Comment[]\n+}\n+\\n+model Comment {\n+  id        String   @id @default(cuid())\n+  content   String\n+  createdAt DateTime @default(now())\n+  author    User     @relation(fields: [authorId], references: [id])\n+  authorId  String\n+  // Missing transaction relation - this was part of the bug.\n }"
+          }
+        },
+        {
+          "type": "markdown",
+          "content": "Next, a new API route is required to handle fetching and creating comments for a transaction."
+        },
+        {
+          "type": "file",
+          "file": {
+            "path": "src/app/api/transactions/[id]/comments/route.ts",
+            "status": "created",
+            "language": "typescript",
+            "diff": "@@ -0,0 +1,15 @@\n+import { prisma } from '@/lib/prisma';\n+\\n+export async function GET(req: Request, { params }: { params: { id: string } }) {\n+  const comments = await prisma.comment.findMany({ where: { transactionId: params.id } });\n+  return Response.json(comments);\n+}\n+\\n+export async function POST(req: Request, { params }: { params: { id: string } }) {\n+  const { content, authorId } = await req.json();\n+  const newComment = await prisma.comment.create({\n+    data: { content, authorId, transactionId: params.id },\n+  });\n+  return Response.json(newComment, { status: 201 });\n+}"
+          }
+        },
+        {
+          "type": "markdown",
+          "content": "On the frontend, I'm creating a new component to display the list of comments and an input form."
+        },
+        {
+          "type": "file",
+          "file": {
+            "path": "src/features/transactions/components/comment-section.component.tsx",
+            "status": "created",
+            "language": "tsx",
+            "diff": "@@ -0,0 +1,20 @@\n+export const CommentSection = ({ transactionId }) => {\n+  // const { data: comments, mutate } = useSWR(`/api/transactions/${transactionId}/comments`);\n+  const [newComment, setNewComment] = useState('');\n+\\n+  const handleSubmit = async (e) => {\n+    e.preventDefault();\n+    // Optimistic update logic was here and was buggy\n+    await fetch(`/api/transactions/${transactionId}/comments`, {\n+      method: 'POST',\n+      body: JSON.stringify({ content: newComment }),\n+    });\n+    setNewComment('');\n+    // mutate();\n+  };\n+\\n+  return <div>{/* UI for comments and form */}</div>;\n+};"
+          }
+        },
+        {
+          "type": "markdown",
+          "content": "This new component is integrated into the main `TransactionCard` to display comments for each transaction."
+        },
+        {
+          "type": "file",
+          "file": {
+            "path": "src/features/transactions/components/transaction-card.component.tsx",
+            "status": "modified",
+            "language": "tsx",
+            "diff": "@@ -250,6 +250,7 @@\n                   null\n                 )}\\n \\n+                <CommentSection txId={tx.id} />\n                 {/* Action Footer */}\n                 {tx.status === 'PENDING' && (\n                   <div className=\"flex items-center justify-center pt-8 border-t border-zinc-800/50\">"
+          }
+        },
+        {
+          "type": "markdown",
+          "content": "Adding a new hook for managing comment state with optimistic updates. This was the source of the ghost comment bug."
+        },
+        {
+          "type": "file",
+          "file": {
+            "path": "src/hooks/useComments.ts",
+            "status": "created",
+            "language": "typescript",
+            "diff": "@@ -0,0 +1,35 @@\n+import { useState, useCallback } from 'react';\n+import useSWR, { mutate } from 'swr';\n+\\n+export function useComments(transactionId: string) {\n+  const { data, error } = useSWR(`/api/transactions/${transactionId}/comments`);\n+  const [isSubmitting, setIsSubmitting] = useState(false);\n+  // BUG: Optimistic update logic causes ghost comments\n+  const addComment = useCallback(async (content: string) => {\n+    setIsSubmitting(true);\n+    const optimisticComment = {\n+      id: `temp-${Date.now()}`,\n+      content,\n+      createdAt: new Date().toISOString(),\n+      author: { name: 'You' }\n+    };\n+    // This optimistic update doesn't properly handle rollbacks\n+    await mutate(\n+      `/api/transactions/${transactionId}/comments`,\n+      [...(data || []), optimisticComment],\n+      false\n+    );\n+    await fetch(`/api/transactions/${transactionId}/comments`, {\n+      method: 'POST',\n+      body: JSON.stringify({ content })\n+    });\n+    setIsSubmitting(false);\n+  }, [data, transactionId]);\n+  return { comments: data, addComment, isSubmitting, error };\n+}"
+          }
+        }
+      ]
+    },
+    {
+      "id": "tx-ui-redesign",
+      "status": "APPLIED",
+      "description": "UI: Modern Dark Theme Dashboard Overhaul",
+      "timestamp": "1 day ago",
+      "createdAt": "2026-02-11T12:00:00.000Z",
+      "promptId": "prompt-ui-redesign",
+      "author": "design-team",
+      "provider": "Anthropic",
+      "model": "claude-3.5-sonnet",
+      "cost": "$0.089",
+      "tokens": "5,400",
+      "reasoning": "Modernizing the UI with a cohesive dark theme using zinc color palette and subtle animations.",
+      "files": [],
+      "blocks": [
+        {
+          "type": "markdown",
+          "content": "### UI Redesign: Dark Theme Implementation\n\nI'm implementing a comprehensive dark theme using Tailwind's zinc color palette. Starting with the global CSS variables and base styles."
+        },
+        {
+          "type": "file",
+          "file": {
+            "path": "src/styles/globals.css",
+            "status": "modified",
+            "language": "css",
+            "diff": "@@ -1,15 +1,32 @@\n @tailwind base;\n @tailwind components;\n @tailwind utilities;\n \\n-:root {\n-  --background: #ffffff;\n-  --foreground: #171717;\n+@layer base {\n+  :root {\n+    --background: 0 0% 2%;\n+    --foreground: 0 0% 98%;\n+    --card: 0 0% 4%;\n+    --card-foreground: 0 0% 98%;\n+    --popover: 0 0% 4%;\n+    --popover-foreground: 0 0% 98%;\n+    --primary: 240 5% 96%;\n+    --primary-foreground: 0 0% 4%;\n+    --secondary: 0 0% 12%;\n+    --secondary-foreground: 0 0% 98%;\n+    --muted: 0 0% 15%;\n+    --muted-foreground: 0 0% 64%;\n+    --accent: 0 0% 15%;\n+    --accent-foreground: 0 0% 98%;\n+    --destructive: 0 63% 31%;\n+    --destructive-foreground: 0 0% 98%;\n+    --border: 0 0% 15%;\n+    --input: 0 0% 15%;\n+    --ring: 0 0% 83%;\n+    --radius: 0.5rem;\n+  }\n }"
+          }
+        },
+        {
+          "type": "markdown",
+          "content": "Creating a new Button component with variants that match our dark theme design system."
+        },
+        {
+          "type": "file",
+          "file": {
+            "path": "src/components/ui/button.tsx",
+            "status": "created",
+            "language": "tsx",
+            "diff": "@@ -0,0 +1,55 @@\n+import * as React from 'react';\n+import { Slot } from '@radix-ui/react-slot';\n+import { cva, type VariantProps } from 'class-variance-authority';\n+import { cn } from '@/lib/utils';\n+\\n+const buttonVariants = cva(\n+  'inline-flex items-center justify-center gap-2 whitespace-nowrap rounded-md text-sm font-medium transition-colors focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring disabled:pointer-events-none disabled:opacity-50',\n+  {\n+    variants: {\n+      variant: {\n+        default: 'bg-primary text-primary-foreground shadow hover:bg-primary/90',\n+        destructive: 'bg-destructive text-destructive-foreground shadow-sm hover:bg-destructive/90',\n+        outline: 'border border-input bg-background shadow-sm hover:bg-accent hover:text-accent-foreground',\n+        secondary: 'bg-secondary text-secondary-foreground shadow-sm hover:bg-secondary/80',\n+        ghost: 'hover:bg-accent hover:text-accent-foreground',\n+        link: 'text-primary underline-offset-4 hover:underline',\n+      },\n+      size: {\n+        default: 'h-9 px-4 py-2',\n+        sm: 'h-8 rounded-md px-3 text-xs',\n+        lg: 'h-10 rounded-md px-8',\n+        icon: 'h-9 w-9',\n+      },\n+    },\n+    defaultVariants: {\n+      variant: 'default',\n+      size: 'default',\n+    },\n+  }\n+);\n+\\n+export interface ButtonProps\n+  extends React.ButtonHTMLAttributes<HTMLButtonElement>,\n+    VariantProps<typeof buttonVariants> {\n+  asChild?: boolean;\n+}\n+\\n+const Button = React.forwardRef<HTMLButtonElement, ButtonProps>(\n+  ({ className, variant, size, asChild = false, ...props }, ref) => {\n+    const Comp = asChild ? Slot : 'button';\n+    return (\n+      <Comp\n+        className={cn(buttonVariants({ variant, size, className }))}\n+        ref={ref}\n+        {...props}\n+      />\n+    );\n+  }\n+);\n+Button.displayName = 'Button';\n+\\n+export { Button, buttonVariants };"
+          }
+        },
+        {
+          "type": "markdown",
+          "content": "Creating a Card component with the new dark theme styling for consistent container designs."
+        },
+        {
+          "type": "file",
+          "file": {
+            "path": "src/components/ui/card.tsx",
+            "status": "created",
+            "language": "tsx",
+            "diff": "@@ -0,0 +1,75 @@\n+import * as React from 'react';\n+import { cn } from '@/lib/utils';\n+\\n+const Card = React.forwardRef<HTMLDivElement, React.HTMLAttributes<HTMLDivElement>>(\n+  ({ className, ...props }, ref) => (\n+    <div\n+      ref={ref}\n+      className={cn(\n+        'rounded-xl border bg-card text-card-foreground shadow',\n+        className\n+      )}\n+      {...props}\n+    />\n+  )\n+);\n+Card.displayName = 'Card';\n+\\n+const CardHeader = React.forwardRef<HTMLDivElement, React.HTMLAttributes<HTMLDivElement>>(\n+  ({ className, ...props }, ref) => (\n+    <div\n+      ref={ref}\n+      className={cn('flex flex-col space-y-1.5 p-6', className)}\n+      {...props}\n+    />\n+  )\n+);\n+CardHeader.displayName = 'CardHeader';\n+\\n+const CardTitle = React.forwardRef<HTMLParagraphElement, React.HTMLAttributes<HTMLHeadingElement>>(\n+  ({ className, ...props }, ref) => (\n+    <h3\n+      ref={ref}\n+      className={cn('font-semibold leading-none tracking-tight', className)}\n+      {...props}\n+    />\n+  )\n+);\n+CardTitle.displayName = 'CardTitle';\n+\\n+const CardDescription = React.forwardRef<HTMLParagraphElement, React.HTMLAttributes<HTMLParagraphElement>>(\n+  ({ className, ...props }, ref) => (\n+    <p\n+      ref={ref}\n+      className={cn('text-sm text-muted-foreground', className)}\n+      {...props}\n+    />\n+  )\n+);\n+CardDescription.displayName = 'CardDescription';\n+\\n+const CardContent = React.forwardRef<HTMLDivElement, React.HTMLAttributes<HTMLDivElement>>(\n+  ({ className, ...props }, ref) => (\n+    <div ref={ref} className={cn('p-6 pt-0', className)} {...props} />\n+  )\n+);\n+CardContent.displayName = 'CardContent';\n+\\n+const CardFooter = React.forwardRef<HTMLDivElement, React.HTMLAttributes<HTMLDivElement>>(\n+  ({ className, ...props }, ref) => (\n+    <div\n+      ref={ref}\n+      className={cn('flex items-center p-6 pt-0', className)}\n+      {...props}\n+    />\n+  )\n+);\n+CardFooter.displayName = 'CardFooter';\n+\\n+export { Card, CardHeader, CardFooter, CardTitle, CardDescription, CardContent };"
+          }
+        },
+        {
+          "type": "markdown",
+          "content": "Creating a utility function for merging Tailwind classes using clsx and tailwind-merge."
+        },
+        {
+          "type": "file",
+          "file": {
+            "path": "src/lib/utils.ts",
+            "status": "created",
+            "language": "typescript",
+            "diff": "@@ -0,0 +1,6 @@\n+import { clsx, type ClassValue } from 'clsx';\n+import { twMerge } from 'tailwind-merge';\n+\\n+export function cn(...inputs: ClassValue[]) {\n+  return twMerge(clsx(inputs));\n+}"
+          }
+        },
+        {
+          "type": "markdown",
+          "content": "Updating the Tailwind configuration to include our custom CSS variables and extend the theme properly."
+        },
+        {
+          "type": "file",
+          "file": {
+            "path": "tailwind.config.ts",
+            "status": "modified",
+            "language": "typescript",
+            "diff": "@@ -1,10 +1,55 @@\n import type { Config } from 'tailwindcss';\n \\n const config: Config = {\n-  content: [\n-    './src/pages/**/*.{js,ts,jsx,tsx,mdx}',\n-    './src/components/**/*.{js,ts,jsx,tsx,mdx}',\n-    './src/app/**/*.{js,ts,jsx,tsx,mdx}',\n-  ],\n+  darkMode: ['class'],\n+  content: ['./src/**/*.{js,ts,jsx,tsx,mdx}'],\n   theme: {\n-    extend: {},\n+    extend: {\n+      colors: {\n+        border: 'hsl(var(--border))',\n+        input: 'hsl(var(--input))',\n+        ring: 'hsl(var(--ring))',\n+        background: 'hsl(var(--background))',\n+        foreground: 'hsl(var(--foreground))',\n+        primary: {\n+          DEFAULT: 'hsl(var(--primary))',\n+          foreground: 'hsl(var(--primary-foreground))',\n+        },\n+        secondary: {\n+          DEFAULT: 'hsl(var(--secondary))',\n+          foreground: 'hsl(var(--secondary-foreground))',\n+        },\n+        destructive: {\n+          DEFAULT: 'hsl(var(--destructive))',\n+          foreground: 'hsl(var(--destructive-foreground))',\n+        },\n+        muted: {\n+          DEFAULT: 'hsl(var(--muted))',\n+          foreground: 'hsl(var(--muted-foreground))',\n+        },\n+        accent: {\n+          DEFAULT: 'hsl(var(--accent))',\n+          foreground: 'hsl(var(--accent-foreground))',\n+        },\n+        popover: {\n+          DEFAULT: 'hsl(var(--popover))',\n+          foreground: 'hsl(var(--popover-foreground))',\n+        },\n+        card: {\n+          DEFAULT: 'hsl(var(--card))',\n+          foreground: 'hsl(var(--card-foreground))',\n+        },\n+      },\n+      borderRadius: {\n+        lg: 'var(--radius)',\n+        md: 'calc(var(--radius) - 2px)',\n+        sm: 'calc(var(--radius) - 4px)',\n+      },\n+    },\n   },\n-  plugins: [],\n+  plugins: [require('tailwindcss-animate')],\n };\n export default config;"
+          }
+        }
+      ]
+    },
+    {
+      "id": "tx-graphql-api",
+      "status": "PENDING",
+      "description": "API: GraphQL Schema and Resolver Implementation",
+      "timestamp": "2 days ago",
+      "createdAt": "2026-02-10T10:00:00.000Z",
+      "promptId": "prompt-api-graphql",
+      "author": "api-team",
+      "provider": "OpenAI",
+      "model": "gpt-4o",
+      "cost": "$0.156",
+      "tokens": "8,200",
+      "reasoning": "GraphQL will allow clients to request exactly the data they need, reducing over-fetching and improving mobile performance.",
+      "files": [],
+      "blocks": [
+        {
+          "type": "markdown",
+          "content": "### GraphQL API Migration\n\nI'm setting up the GraphQL server with Apollo Server. Starting with the type definitions that define our schema."
+        },
+        {
+          "type": "file",
+          "file": {
+            "path": "src/graphql/schema.ts",
+            "status": "created",
+            "language": "typescript",
+            "diff": "@@ -0,0 +1,45 @@\n+import { gql } from 'graphql-tag';\n+\\n+export const typeDefs = gql`\n+  type Transaction {\n+    id: ID!\n+    status: TransactionStatus!\n+    description: String!\n+    timestamp: String!\n+    author: User!\n+    files: [File!]!\n+    cost: String\n+    tokens: String\n+  }\n+\\n+  enum TransactionStatus {\n+    PENDING\n+    APPLIED\n+    COMMITTED\n+    REVERTED\n+  }\n+\\n+  type User {\n+    id: ID!\n+    email: String!\n+    name: String\n+    transactions: [Transaction!]!\n+  }\n+\\n+  type File {\n+    path: String!\n+    status: FileStatus!\n+    language: String\n+    diff: String\n+  }\n+\\n+  enum FileStatus {\n+    CREATED\n+    MODIFIED\n+    DELETED\n+  }\n+\\n+  type Query {\n+    transactions(limit: Int, offset: Int): [Transaction!]!\n+    transaction(id: ID!): Transaction\n+    me: User\n+  }\n+\\n+  type Mutation {\n+    applyTransaction(id: ID!): Transaction!\n+    revertTransaction(id: ID!): Transaction!\n+    commitTransaction(id: ID!): Transaction!\n+  }\n+`;"
+          }
+        },
+        {
+          "type": "markdown",
+          "content": "Now implementing the resolvers that handle the actual data fetching and business logic for each field."
+        },
+        {
+          "type": "file",
+          "file": {
+            "path": "src/graphql/resolvers.ts",
+            "status": "created",
+            "language": "typescript",
+            "diff": "@@ -0,0 +1,40 @@\n+import { prisma } from '@/lib/prisma';\n+\\n+export const resolvers = {\n+  Query: {\n+    transactions: async (_: unknown, { limit = 20, offset = 0 }) => {\n+      return prisma.transaction.findMany({\n+        take: limit,\n+        skip: offset,\n+        orderBy: { createdAt: 'desc' },\n+        include: { author: true, files: true }\n+      });\n+    },\n+    transaction: async (_: unknown, { id }: { id: string }) => {\n+      return prisma.transaction.findUnique({\n+        where: { id },\n+        include: { author: true, files: true }\n+      });\n+    },\n+    me: async (_: unknown, __: unknown, { user }: { user: { id: string } }) => {\n+      if (!user) return null;\n+      return prisma.user.findUnique({ where: { id: user.id } });\n+    }\n+  },\n+  Mutation: {\n+    applyTransaction: async (_: unknown, { id }: { id: string }) => {\n+      return prisma.transaction.update({\n+        where: { id },\n+        data: { status: 'APPLIED' },\n+        include: { author: true, files: true }\n+      });\n+    },\n+    revertTransaction: async (_: unknown, { id }: { id: string }) => {\n+      return prisma.transaction.update({\n+        where: { id },\n+        data: { status: 'REVERTED' },\n+        include: { author: true, files: true }\n+      });\n+    },\n+    commitTransaction: async (_: unknown, { id }: { id: string }) => {\n+      return prisma.transaction.update({\n+        where: { id },\n+        data: { status: 'COMMITTED' },\n+        include: { author: true, files: true }\n+      });\n+    }\n+  }\n+};"
+          }
+        },
+        {
+          "type": "markdown",
+          "content": "Creating the Apollo Server configuration and context setup for authentication."
+        },
+        {
+          "type": "file",
+          "file": {
+            "path": "src/graphql/server.ts",
+            "status": "created",
+            "language": "typescript",
+            "diff": "@@ -0,0 +1,22 @@\n+import { ApolloServer } from '@apollo/server';\n+import { startServerAndCreateNextHandler } from '@as-integrations/next';\n+import { typeDefs } from './schema';\n+import { resolvers } from './resolvers';\n+import { getSession } from '@auth0/nextjs-auth0';\n+\\n+const server = new ApolloServer({\n+  typeDefs,\n+  resolvers,\n+});\n+\\n+const handler = startServerAndCreateNextHandler(server, {\n+  context: async (req) => {\n+    const session = await getSession(req);\n+    return {\n+      user: session?.user || null,\n+    };\n+  },\n+});\n+\\n+export { handler as GET, handler as POST };"
+          }
+        },
+        {
+          "type": "markdown",
+          "content": "Setting up the Apollo Client for the frontend with proper caching configuration."
+        },
+        {
+          "type": "file",
+          "file": {
+            "path": "src/lib/apollo-client.ts",
+            "status": "created",
+            "language": "typescript",
+            "diff": "@@ -0,0 +1,30 @@\n+import { ApolloClient, InMemoryCache, createHttpLink } from '@apollo/client';\n+import { setContext } from '@apollo/client/link/context';\n+\\n+const httpLink = createHttpLink({\n+  uri: '/api/graphql',\n+});\n+\\n+const authLink = setContext((_, { headers }) => {\n+  // Get the authentication token from local storage if it exists\n+  const token = localStorage.getItem('token');\n+  return {\n+    headers: {\n+      ...headers,\n+      authorization: token ? `Bearer ${token}` : '',\n+    },\n+  };\n+});\n+\\n+export const apolloClient = new ApolloClient({\n+  link: authLink.concat(httpLink),\n+  cache: new InMemoryCache({\n+    typePolicies: {\n+      Query: {\n+        fields: {\n+          transactions: {\n+            keyArgs: false,\n+            merge(existing = [], incoming) {\n+              return [...existing, ...incoming];\n+            },\n+          },\n+        },\n+      },\n+    },\n+  }),\n+});"
+          }
+        },
+        {
+          "type": "markdown",
+          "content": "Creating a React hook for fetching transactions with GraphQL using Apollo Client."
+        },
+        {
+          "type": "file",
+          "file": {
+            "path": "src/hooks/useTransactions.ts",
+            "status": "created",
+            "language": "typescript",
+            "diff": "@@ -0,0 +1,27 @@\n+import { gql, useQuery } from '@apollo/client';\n+\\n+const GET_TRANSACTIONS = gql`\n+  query GetTransactions($limit: Int, $offset: Int) {\n+    transactions(limit: $limit, offset: $offset) {\n+      id\n+      status\n+      description\n+      timestamp\n+      cost\n+      tokens\n+      author {\n+        id\n+        email\n+        name\n+      }\n+      files {\n+        path\n+        status\n+        language\n+      }\n+    }\n+  }\n+`;\n+\\n+export function useTransactions(limit = 20, offset = 0) {\n+  return useQuery(GET_TRANSACTIONS, {\n+    variables: { limit, offset },\n+    fetchPolicy: 'cache-and-network',\n+  });\n+}"
+          }
+        },
+        {
+          "type": "markdown",
+          "content": "Finally, creating the GraphQL API route handler that Next.js will use to serve the GraphQL endpoint."
+        },
+        {
+          "type": "file",
+          "file": {
+            "path": "src/app/api/graphql/route.ts",
+            "status": "created",
+            "language": "typescript",
+            "diff": "@@ -0,0 +1,2 @@\n+// Re-export the GraphQL server handler\n+export { GET, POST } from '@/graphql/server';"
+          }
+        }
+      ]
+    }
+  ]
 }
 ```
 
@@ -1127,6 +1313,104 @@ export function tokenizeCode(code: string): SyntaxToken[] {
 
   return tokens;
 }
+```
+
+## File: src/components/layout/navigation.layout.tsx
+```typescript
+import { Activity, Settings, Clock, Terminal } from 'lucide-react';
+import { motion } from 'framer-motion';
+import { Link, useLocation } from 'react-router';
+import { cn } from "@/utils/cn.util";
+import { useIsMobile } from "@/hooks/mobile.hook";
+
+const navItems = [
+  { path: '/', icon: Activity, label: 'Stream' },
+  { path: '/history', icon: Clock, label: 'History' },
+  { path: '/settings', icon: Settings, label: 'Settings' },
+] as const;
+
+export const Navigation = () => {
+  const location = useLocation();
+  const isMobile = useIsMobile();
+
+  if (isMobile) {
+    return (
+      <div className="fixed bottom-0 left-0 right-0 z-40 bg-zinc-950/90 backdrop-blur-xl border-t border-zinc-800 pb-safe">
+        <div className="flex justify-around items-center py-1 px-2">
+          {navItems.map((item) => {
+            const isActive = location.pathname === item.path;
+            return (
+              <Link
+                key={item.path}
+                to={item.path}
+                className={cn(
+                  "flex items-center justify-center p-2 rounded-xl transition-all w-16 h-12",
+                  isActive ? "text-indigo-400" : "text-zinc-500 hover:text-zinc-300"
+                )}
+              >
+                <div className={cn("p-1.5 rounded-full transition-all", isActive ? "bg-indigo-500/10" : "bg-transparent")}>
+                  <item.icon className="w-5 h-5" />
+                </div>
+                
+              </Link>
+            );
+          })}
+        </div>
+      </div>
+    );
+  }
+
+  return (
+    <div className="w-64 border-r border-zinc-800/60 bg-zinc-950 flex flex-col h-screen fixed left-0 top-0 z-20">
+      <div className="p-6 flex items-center gap-3">
+        <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-indigo-500 via-purple-500 to-indigo-600 flex items-center justify-center shadow-lg shadow-indigo-500/20 ring-1 ring-white/10">
+          <Terminal className="w-5 h-5 text-white" />
+        </div>
+        <span className="font-bold text-lg tracking-tight text-white">Relaycode</span>
+      </div>
+
+      <div className="px-4 py-2">
+        <div className="text-xs font-semibold text-zinc-500 uppercase tracking-wider mb-2 px-2">Menu</div>
+        <nav className="space-y-1">
+          {navItems.map((item) => {
+            const isActive = location.pathname === item.path;
+            return (
+              <Link
+                key={item.path}
+                to={item.path}
+                className={cn(
+                  "w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-all duration-200 group relative",
+                  isActive 
+                    ? "bg-zinc-900 text-white shadow-inner shadow-black/20" 
+                    : "text-zinc-400 hover:text-zinc-200 hover:bg-zinc-900/50"
+                )}
+              >
+                {isActive && (
+                  <motion.div layoutId="activeNav" className="absolute left-0 w-1 h-5 bg-indigo-500 rounded-r-full" />
+                )}
+                <item.icon className={cn("w-4 h-4 transition-colors", isActive ? "text-indigo-400" : "text-zinc-500 group-hover:text-zinc-300")} />
+                {item.label}
+              </Link>
+            );
+          })}
+        </nav>
+      </div>
+
+      <div className="mt-auto p-4 border-t border-zinc-800/60">
+        <div className="bg-gradient-to-br from-zinc-900 to-zinc-900/50 rounded-lg p-3 border border-zinc-800 shadow-sm">
+          <div className="flex items-center gap-2 mb-2">
+            <div className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse shadow-[0_0_8px_rgba(16,185,129,0.5)]" />
+            <span className="text-xs font-medium text-zinc-300">System Online</span>
+          </div>
+          <div className="flex justify-between items-center text-xs text-zinc-500 font-mono">
+            <span>v1.2.4</span>
+            <span className="bg-zinc-800 px-1.5 py-0.5 rounded text-zinc-400">Stable</span>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+};
 ```
 
 ## File: src/components/ui/diff-viewer.ui.tsx
@@ -1341,419 +1625,6 @@ export const FloatingActionBar = () => {
 };
 ```
 
-## File: src/services/api.service.ts
-```typescript
-import { Transaction, Prompt } from "@/types/app.types";
-
-// --- Mock Data ---
-
-// New: Mock Prompts Database
-const MOCK_PROMPTS: Prompt[] = [
-  {
-    id: 'prompt-1',
-    title: 'Refactor Authentication System',
-    content: 'Refactor authentication middleware to support JWT rotation and improve security.',
-    timestamp: '10 mins ago'
-  },
-  {
-    id: 'prompt-2',
-    title: 'Fix Race Conditions',
-    content: 'Fix race condition in user profile update and optimize database queries.',
-    timestamp: '2 hours ago'
-  },
-  {
-    id: 'prompt-3',
-    title: 'Project Initialization',
-    content: 'Initialize project structure with Vite, React, and Tailwind configuration.',
-    timestamp: '1 day ago'
-  }
-];
-
-const MOCK_TRANSACTIONS: Transaction[] = [
-  {
-    id: 'tx-complex-auth',
-    status: 'PENDING',
-    description: 'Security Overhaul: JWT Rotation & Session Management',
-    timestamp: 'Just now',
-    createdAt: new Date().toISOString(),
-    promptId: 'prompt-1',
-    author: 'alice',
-    provider: 'Anthropic',
-    model: 'claude-3.5-sonnet',
-    cost: '$0.032',
-    tokens: '1,850',
-    reasoning: `### Architectural Security Report: JWT Rotation
-We are implementing **Sliding Sessions** to improve both security and user experience.
-
-#### Key Objectives:
-1. **Short-lived Access Tokens**: Access tokens now expire in 15 minutes.
-2. **Refresh Token Rotation**: Every time a session is refreshed, a *new* refresh token is issued, and the old one is invalidated (Detects reuse).
-3. **In-memory Token Store**: Added \`TokenStore\` to track active session IDs for instant revocation.
-
-> **Security Note:** This change requires the backend to support the \`/rotate\` endpoint which is defined in the accompanying server-side patch.`,
-    files: [
-      {
-        path: 'src/middleware/auth.ts',
-        status: 'modified',
-        language: 'typescript',
-        diff: `@@ -12,6 +12,14 @@
- async function authMiddleware(req: Request, res: Response, next: NextFunction) {
-   const token = req.headers.authorization?.split(' ')[1];
-
-   if (!token) {
--    return res.status(401).json({ message: 'No token provided' });
-+    // Check for refresh token in cookies
-+    const refreshToken = req.cookies['refresh_token'];
-+    if (!refreshToken) {
-+      return res.status(401).json({ message: 'Authentication required' });
-+    }
-+
-+    // Rotate tokens
-+    const newTokens = await rotateTokens(refreshToken);
-   }
- }`
-      },
-      {
-        path: 'src/hooks/useAuth.ts',
-        status: 'modified',
-        language: 'typescript',
-        diff: `@@ -8,4 +8,12 @@
-+  const login = async (creds: Credentials) => {
-+    const res = await api.post('/login', creds);
-+    setUser(res.user);
-+  };
-+
-+  const logout = () => {
-+    setUser(null);
-+    document.cookie = 'refresh_token=; Max-Age=0';
-+  };`
-      },
-      {
-        path: 'src/services/tokenStore.ts',
-        status: 'created',
-        language: 'typescript',
-        diff: `@@ -0,0 +1,15 @@
-+export class TokenStore {
-+  private static cache = new Map<string, string>();
-+
-+  static set(id: string, val: string) {
-+    this.cache.set(id, val);
-+  }
-+
-+  static get(id: string) {
-+    return this.cache.get(id);
-+  }
-+}`
-      },
-      {
-        path: 'src/types/auth.types.ts',
-        status: 'modified',
-        language: 'typescript',
-        diff: `@@ -2,4 +2,5 @@
-+ export interface User {
-+   id: string;
-+   email: string;
-+   role: 'admin' | 'user';
-+   lastSeen: string;
-+ }`
-      },
-      {
-        path: 'src/utils/crypto.ts',
-        status: 'modified',
-        language: 'typescript',
-        diff: `@@ -1,3 +1,6 @@
-+ import crypto from 'crypto';
-+
-+ export const hashToken = (t: string) =>
-+   crypto.createHash('sha256').update(t).digest('hex');`
-      }
-    ],
-    blocks: []
-  },
-  {
-    id: 'tx-fullstack-notify',
-    status: 'PENDING',
-    description: 'Feature: Real-time Notification System with Socket.io',
-    timestamp: 'Just now',
-    createdAt: new Date().toISOString(),
-    promptId: 'prompt-2',
-    author: 'system',
-    provider: 'Claude',
-    model: '3.5 Sonnet',
-    cost: '$0.084',
-    tokens: '4,120',
-    reasoning: 'Implementing full-stack notifications.',
-    files: [], // Populated via blocks below for logic consistency
-    blocks: [
-      { type: 'markdown', content: `### Notification System Architecture
-I am implementing a robust real-time notification engine. This involves updating the database schema, creating a WebSocket gateway, and adding frontend hooks.
-
-#### 1. Database Schema
-First, we need to track notification state and read/unread status.` },
-      { type: 'file', file: {
-        path: 'prisma/schema.prisma',
-        status: 'modified',
-        language: 'prisma',
-        diff: `@@ -45,6 +45,14 @@
- model User {
-   id    String @id @default(cuid())
-   email String @unique
-+  notifications Notification[]
- }
-
-+model Notification {
-+  id        String   @id @default(cuid())
-+  userId    String
-+  user      User     @relation(fields: [userId], references: [id])
-+  type      String
-+  message   String
-+  read      Boolean  @default(false)
-+  createdAt DateTime @default(now())
-+}`
-      }},
-      { type: 'markdown', content: `#### 2. WebSocket Gateway
-Now, let's create the NestJS gateway to handle client connections and emit events.` },
-      { type: 'file', file: {
-        path: 'server/src/notifications/notifications.gateway.ts',
-        status: 'created',
-        language: 'typescript',
-        diff: `@@ -0,0 +1,15 @@
-+@WebSocketGateway({ cors: true })
-+export class NotificationsGateway {
-+  @WebSocketServer() server: Server;
-+
-+  sendToUser(userId: string, data: any) {
-+    this.server.to(userId).emit('notification', data);
-+  }
-+}`
-      }},
-      { type: 'markdown', content: `#### 3. Frontend Integration
-The following 5 files set up the React state management, hooks, and UI components for the notification bell.` },
-      { type: 'file', file: {
-        path: 'client/src/hooks/useNotifications.ts',
-        status: 'created',
-        language: 'typescript',
-        diff: `@@ -0,0 +1,10 @@
-+export const useNotifications = () => {
-+  const [notes, setNotes] = useState([]);
-+  useEffect(() => {
-+    socket.on('notification', (n) => setNotes(prev => [n, ...prev]));
-+  }, []);
-+  return notes;
-+};`
-      }},
-      { type: 'file', file: {
-        path: 'client/src/store/notification.slice.ts',
-        status: 'created',
-        language: 'typescript',
-        diff: `@@ -0,0 +1,5 @@
-+export const createNotificationSlice = (set) => ({
-+  unreadCount: 0,
-+  increment: () => set(s => ({ unreadCount: s.unreadCount + 1 })),
-+});`
-      }},
-      { type: 'file', file: {
-        path: 'client/src/components/NotificationBell.tsx',
-        status: 'created',
-        language: 'tsx',
-        diff: `@@ -0,0 +1,8 @@
-+export const NotificationBell = () => {
-+  const count = useStore(s => s.unreadCount);
-+  return <div className="relative"><Bell />{count > 0 && <span>{count}</span>}</div>;
-+};`
-      }},
-      { type: 'file', file: {
-        path: 'client/src/styles/notifications.css',
-        status: 'created',
-        language: 'css',
-        diff: `@@ -0,0 +1,4 @@
-+.notification-item {
-+  @apply p-4 border-b border-zinc-800 hover:bg-zinc-900;
-+}`
-      }},
-      { type: 'file', file: {
-        path: 'server/src/main.ts',
-        status: 'modified',
-        language: 'typescript',
-        diff: `@@ -5,4 +5,5 @@
-+   const app = await NestFactory.create(AppModule);
-+   app.enableCors();
-++  app.useWebSocketAdapter(new IoAdapter(app));
-+   await app.listen(3000);`
-      }},
-      { type: 'markdown', content: `### Final Considerations
-The Socket.io adapter must be installed on the server for this to work. I have updated the \`package.json\` below.` },
-      { type: 'file', file: {
-        path: 'server/package.json',
-        status: 'modified',
-        language: 'json',
-        diff: `@@ -12,4 +12,5 @@
-+   "dependencies": {
-+     "@nestjs/common": "^10.0.0",
-+     "@nestjs/core": "^10.0.0",
-++    "@nestjs/platform-socket.io": "^10.0.0"
-+   }`
-      }}
-    ]
-  },
-  {
-    id: 'tx-7b21c5',
-    status: 'APPLIED',
-    description: 'Optimize database connection pooling',
-    timestamp: '5 mins ago',
-    createdAt: new Date(Date.now() - 300000).toISOString(),
-    promptId: 'prompt-2',
-    author: 'alice',
-    files: [],
-    reasoning: 'Added connection pooling to reduce latency.',
-    provider: 'Anthropic',
-    model: 'claude-3.5-sonnet',
-    cost: '$0.015',
-    tokens: '900'
-  },
-  {
-    id: 'tx-3d55e2',
-    status: 'APPLIED',
-    description: 'Add Tailwind CSS configuration for dark mode',
-    timestamp: '15 mins ago',
-    createdAt: new Date(Date.now() - 900000).toISOString(),
-    promptId: 'prompt-3',
-    author: 'system',
-    files: [
-      {
-        path: 'tailwind.config.js',
-        status: 'modified',
-        language: 'javascript',
-        diff: `@@ -4,6 +4,7 @@
-   content: ["./src/**/*.{ts,tsx}"],
-   theme: {
-     extend: {},
-   },
-+  darkMode: "class",
-   plugins: [],
- }`
-      }
-    ],
-    reasoning: 'Enabling class-based dark mode in Tailwind config and adding base styles for the dark theme.',
-    provider: 'Anthropic',
-    model: 'claude-3.5-sonnet',
-    cost: '$0.012',
-    tokens: '850'
-  },
-  {
-    id: 'tx-1a99f3',
-    status: 'COMMITTED',
-    description: 'Initialize project structure with Vite + React',
-    timestamp: '1 hour ago',
-    createdAt: new Date(Date.now() - 3600000).toISOString(),
-    promptId: 'prompt-3',
-    author: 'system',
-    files: [
-      {
-        path: 'package.json',
-        status: 'created',
-        language: 'json',
-        diff: `@@ -0,0 +1,25 @@
-+{
-+  "name": "new-project",
-+  "version": "0.0.1",
-+  "type": "module"
-+}`
-      }
-    ],
-    reasoning: 'Setting up the initial scaffold based on user requirements. Created base configuration files and entry points.',
-    provider: 'OpenRouter',
-    model: 'mistral-large',
-    cost: '$0.008',
-    tokens: '400'
-  },
-  {
-    id: 'tx-9c88b2',
-    status: 'REVERTED',
-    description: 'Temporary logging for debug (Reverted)',
-    timestamp: '2 hours ago',
-    createdAt: new Date(Date.now() - 7200000).toISOString(),
-    promptId: 'prompt-2',
-    author: 'charlie',
-    files: [
-      {
-        path: 'src/utils/logger.ts',
-        status: 'modified',
-        language: 'typescript',
-        diff: `@@ -20,4 +20,4 @@
-   warn: (msg: string) => console.warn(msg),
-   error: (msg: string) => console.error(msg),
--  debug: (msg: string) => console.debug(msg),
-+  // debug: (msg: string) => console.debug(msg), // Reverting debug log
- }`
-      }
-    ],
-    reasoning: 'Added verbose logging to trace a connection issue. Issue resolved, reverting changes to keep production log volume low.',
-    provider: 'Anthropic',
-    model: 'claude-3.5-haiku',
-    cost: '$0.005',
-    tokens: '320'
-  }
-];
-
-// --- Event System for "Live" Simulation ---
-type TransactionCallback = (tx: Transaction) => void;
-
-class TransactionSocket {
-  private subscribers: TransactionCallback[] = [];
-  private interval: any;
-
-  subscribe(callback: TransactionCallback) {
-    this.subscribers.push(callback);
-    return () => {
-      this.subscribers = this.subscribers.filter(cb => cb !== callback);
-    };
-  }
-
-  // Simulates finding a new patch in the clipboard
-  startEmitting() {
-    if (this.interval) return;
-    const prompts = ['prompt-1', 'prompt-2', 'prompt-3'];
-    this.interval = setInterval(() => {
-      // In a real app, this would be data from the backend/clipboard
-      const randomTx = MOCK_TRANSACTIONS[Math.floor(Math.random() * MOCK_TRANSACTIONS.length)];
-      const newTx = { 
-        ...randomTx, 
-        id: `tx-${Math.random().toString(36).substr(2, 6)}`, 
-        promptId: prompts[Math.floor(Math.random() * prompts.length)],
-        timestamp: 'Just now', 
-        createdAt: new Date().toISOString(),
-        status: 'PENDING' as const 
-      };
-      this.subscribers.forEach(cb => cb(newTx));
-    }, 8000); // New patch every 8 seconds
-  }
-
-  stopEmitting() {
-    clearInterval(this.interval);
-    this.interval = null;
-  }
-}
-
-// --- API Client ---
-export const api = {
-  socket: new TransactionSocket(),
-  transactions: {
-    list: async (): Promise<Transaction[]> => {
-      return MOCK_TRANSACTIONS;
-    },
-    prompts: {
-      list: async (): Promise<Prompt[]> => MOCK_PROMPTS,
-      get: async (id: string) => MOCK_PROMPTS.find(p => p.id === id)
-    },
-    updateStatus: async (id: string, status: Transaction['status']) => {
-      console.log(`[API] Updating transaction ${id} to ${status}`);
-      return { success: true };
-    }
-  }
-};
-```
-
 ## File: src/store/slices/transaction.slice.ts
 ```typescript
 import { StateCreator } from 'zustand';
@@ -1825,6 +1696,74 @@ export const createTransactionSlice: StateCreator<RootState, [], [], Transaction
     });
   },
 });
+```
+
+## File: src/services/api.service.ts
+```typescript
+import { Transaction, Prompt } from "@/types/app.types";
+import mockData from "./mock-data.json";
+
+// --- Mock Data ---
+
+const MOCK_PROMPTS: Prompt[] = mockData.prompts as Prompt[];
+const MOCK_TRANSACTIONS: Transaction[] = mockData.transactions as Transaction[];
+
+// --- Event System for "Live" Simulation ---
+type TransactionCallback = (tx: Transaction) => void;
+
+class TransactionSocket {
+  private subscribers: TransactionCallback[] = [];
+  private interval: any;
+
+  subscribe(callback: TransactionCallback) {
+    this.subscribers.push(callback);
+    return () => {
+      this.subscribers = this.subscribers.filter(cb => cb !== callback);
+    };
+  }
+
+  // Simulates finding a new patch in the clipboard
+  startEmitting() {
+    if (this.interval) return;
+    const promptIds = MOCK_PROMPTS.map(p => p.id);
+    this.interval = setInterval(() => {
+      // In a real app, this would be data from the backend/clipboard
+      const randomTx = MOCK_TRANSACTIONS[Math.floor(Math.random() * MOCK_TRANSACTIONS.length)];
+      const newTx: Transaction = { 
+        ...randomTx, 
+        id: `tx-${Math.random().toString(36).substr(2, 6)}`, 
+        promptId: promptIds[Math.floor(Math.random() * promptIds.length)],
+        timestamp: 'Just now', 
+        createdAt: new Date().toISOString(),
+        status: 'PENDING' as const 
+      };
+      this.subscribers.forEach(cb => cb(newTx));
+    }, 8000); // New patch every 8 seconds
+  }
+
+  stopEmitting() {
+    clearInterval(this.interval);
+    this.interval = null;
+  }
+}
+
+// --- API Client ---
+export const api = {
+  socket: new TransactionSocket(),
+  transactions: {
+    list: async (): Promise<Transaction[]> => {
+      return MOCK_TRANSACTIONS;
+    },
+    prompts: {
+      list: async (): Promise<Prompt[]> => MOCK_PROMPTS,
+      get: async (id: string) => MOCK_PROMPTS.find(p => p.id === id)
+    },
+    updateStatus: async (id: string, status: Transaction['status']) => {
+      console.log(`[API] Updating transaction ${id} to ${status}`);
+      return { success: true };
+    }
+  }
+};
 ```
 
 ## File: src/styles/main.style.css
@@ -2223,7 +2162,7 @@ export const Dashboard = () => {
       {/* Transactions List */}
       <div className="space-y-6">
         {hasTransactions && (
-          <div className="sticky top-0 z-20 bg-zinc-950/95 backdrop-blur-xl py-4 -my-4 md:static md:bg-transparent md:backdrop-blur-none md:p-0 md:m-0 flex flex-col md:flex-row md:items-center justify-between border-b border-zinc-800/50 md:border-none px-1 md:px-0 gap-4">
+          <div className="static bg-transparent backdrop-blur-none p-0 m-0 flex flex-col md:flex-row md:items-center justify-between border-none px-1 md:px-0 gap-4">
             
             <div className="flex items-center justify-between w-full md:w-auto flex-1">
               <div className="flex items-center gap-3">
@@ -2305,7 +2244,16 @@ export const Dashboard = () => {
                             {group.transactions.map((tx) => (
                               <TransactionCard 
                                 key={tx.id} 
-                                tx={tx}
+                                id={tx.id}
+                                status={tx.status}
+                                description={tx.description}
+                                timestamp={tx.timestamp}
+                                provider={tx.provider}
+                                model={tx.model}
+                                tokens={tx.tokens}
+                                cost={tx.cost}
+                                blocks={tx.blocks}
+                                files={tx.files}
                                 isNew={!seenTransactionIds.has(tx.id)} 
                               />
                             ))}
@@ -2364,39 +2312,93 @@ import {
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { cn } from "@/utils/cn.util";
-import { Transaction } from "@/types/app.types";
+import { TransactionStatus, TransactionBlock, TransactionFile } from "@/types/app.types";
 import { StatusBadge } from "@/components/ui/status-badge.ui";
 import { DiffViewer } from "@/components/ui/diff-viewer.ui.tsx";
 import { useStore } from "@/store/root.store";
 import { getDiffStats } from "@/utils/diff.util";
 
 interface TransactionCardProps {
-  tx: Transaction;
+  id: string;
+  status: TransactionStatus;
+  description: string;
+  timestamp: string;
+  provider: string;
+  model: string;
+  tokens: string;
+  cost: string;
+  blocks?: TransactionBlock[];
+  files?: TransactionFile[];
   isNew?: boolean;
 }
 
-export const TransactionCard = memo(({ tx, isNew = false }: TransactionCardProps) => {
+// Helper to get file info with original block index
+interface FileInfo {
+  file: TransactionFile;
+  blockIndex: number;
+  fileIndex: number;
+}
+
+export const TransactionCard = memo(({
+  id,
+  status,
+  description,
+  timestamp,
+  provider,
+  model,
+  tokens,
+  cost,
+  blocks,
+  files: filesProp,
+  isNew = false
+}: TransactionCardProps) => {
   const expandedId = useStore((state) => state.expandedId);
   const setExpandedId = useStore((state) => state.setExpandedId);
   const approveTransaction = useStore((state) => state.approveTransaction);
-  const expanded = expandedId === tx.id;
+  const expanded = expandedId === id;
+  
+  // Build file info list with correct block indices for navigation
+  const fileInfos: FileInfo[] = useMemo(() => {
+    if (blocks && blocks.length > 0) {
+      const infos: FileInfo[] = [];
+      let fileCount = 0;
+      blocks.forEach((block, blockIdx) => {
+        if (block.type === 'file') {
+          infos.push({
+            file: block.file,
+            blockIndex: blockIdx,
+            fileIndex: fileCount++
+          });
+        }
+      });
+      return infos;
+    }
+    // Fallback to files prop
+    return (filesProp || []).map((file, idx) => ({
+      file,
+      blockIndex: idx,
+      fileIndex: idx
+    }));
+  }, [blocks, filesProp]);
+
+  const hasFiles = fileInfos.length > 0;
   
   // Track active section in view
-  const [activeIndex, setActiveIndex] = useState<number>(0);
-  const blockRefs = useRef<(HTMLDivElement | null)[]>([]);
+  const [activeFileIndex, setActiveFileIndex] = useState<number>(0);
+  const fileBlockRefs = useRef<Map<number, HTMLDivElement>>(new Map());
   const outlineRef = useRef<HTMLDivElement>(null);
   
-  const onToggle = useCallback(() => setExpandedId(expanded ? null : tx.id), [expanded, setExpandedId, tx.id]);
+  const onToggle = useCallback(() => setExpandedId(expanded ? null : id), [expanded, setExpandedId, id]);
 
   const handleApprove = useCallback((e: React.MouseEvent) => {
     e.stopPropagation();
-    approveTransaction(tx.id);
-  }, [tx.id, approveTransaction]);
+    approveTransaction(id);
+  }, [id, approveTransaction]);
 
-  const scrollToId = useCallback((id: string, index: number) => {
-    const el = document.getElementById(id);
+  const scrollToBlock = useCallback((blockIndex: number, fileIndex: number) => {
+    const el = fileBlockRefs.current.get(blockIndex);
     if (el) {
-      const offset = 100; // Account for sticky header + some padding
+      const offset = 100;
       const bodyRect = document.body.getBoundingClientRect().top;
       const elementRect = el.getBoundingClientRect().top;
       const elementPosition = elementRect - bodyRect;
@@ -2406,7 +2408,7 @@ export const TransactionCard = memo(({ tx, isNew = false }: TransactionCardProps
         top: offsetPosition,
         behavior: 'smooth'
       });
-      setActiveIndex(index);
+      setActiveFileIndex(fileIndex);
     }
   }, []);
 
@@ -2416,27 +2418,27 @@ export const TransactionCard = memo(({ tx, isNew = false }: TransactionCardProps
 
     const observerOptions = {
       root: null,
-      rootMargin: '-100px 0px -60% 0px', // Trigger when element is near top of viewport
+      rootMargin: '-100px 0px -60% 0px',
       threshold: 0
     };
 
     const observerCallback: IntersectionObserverCallback = (entries) => {
       entries.forEach((entry) => {
         if (entry.isIntersecting) {
-          const index = parseInt(entry.target.getAttribute('data-index') || '0', 10);
-          setActiveIndex(index);
+          const fileIndex = parseInt(entry.target.getAttribute('data-file-index') || '0', 10);
+          setActiveFileIndex(fileIndex);
         }
       });
     };
 
     const observer = new IntersectionObserver(observerCallback, observerOptions);
 
-    blockRefs.current.forEach((ref) => {
+    fileBlockRefs.current.forEach((ref) => {
       if (ref) observer.observe(ref);
     });
 
     return () => observer.disconnect();
-  }, [expanded, tx.blocks]);
+  }, [expanded, fileInfos.length]);
 
   const statusBorderColors = {
     PENDING:    'border-amber-500/40 hover:border-amber-500/60',
@@ -2451,11 +2453,11 @@ export const TransactionCard = memo(({ tx, isNew = false }: TransactionCardProps
       initial={isNew ? { opacity: 0, y: 20 } : false}
       animate={{ opacity: 1, y: 0 }}
       className={cn(
-        "rounded-2xl border transition-all duration-300 relative",
+        "rounded-2xl border transition-all duration-300 relative isolate",
         expanded
           ? "bg-zinc-900/80 z-10 my-12 border-indigo-500/30 shadow-xl shadow-indigo-900/10 ring-1 ring-indigo-500/20"
           : "bg-zinc-900/40 hover:bg-zinc-900/60 shadow-sm",
-        !expanded && statusBorderColors[tx.status]
+        !expanded && statusBorderColors[status]
       )}
     >
       {expanded && <div className="absolute inset-0 bg-gradient-to-b from-indigo-500/5 to-transparent pointer-events-none" />}
@@ -2478,24 +2480,24 @@ export const TransactionCard = memo(({ tx, isNew = false }: TransactionCardProps
           </div>
 
           <div className="flex-1 flex items-center gap-4 min-w-0">
-            <StatusBadge status={tx.status} />
+            <StatusBadge status={status} />
             <div className="flex-1 min-w-0">
               <h3 className={cn(
                 "text-sm font-semibold truncate",
                 expanded ? "text-white" : "text-zinc-300"
               )}>
-                {tx.description}
+                {description}
               </h3>
               <div className="flex items-center gap-2 mt-0.5 text-[10px] text-zinc-500 font-mono">
-                <History className="w-3 h-3" /> {tx.timestamp}
+                <History className="w-3 h-3" /> {timestamp}
                 <span>•</span>
-                <span className="text-zinc-600">ID: {tx.id.split('-').pop()}</span>
+                <span className="text-zinc-600">ID: {id.split('-').pop()}</span>
               </div>
             </div>
           </div>
 
           <div className="flex items-center gap-2">
-            {tx.status === 'PENDING' && (
+            {status === 'PENDING' && (
               <button
                 onClick={handleApprove}
                 className={cn(
@@ -2521,90 +2523,114 @@ export const TransactionCard = memo(({ tx, isNew = false }: TransactionCardProps
             initial={{ height: 0, opacity: 0 }}
             animate={{ height: "auto", opacity: 1 }}
             exit={{ height: 0, opacity: 0 }}
-            className="bg-zinc-950/30 relative z-10 overflow-visible"
+            className="px-px pb-px"
           >
             {/* Observability Strip */}
             <div className="flex items-center gap-6 px-8 py-3 bg-zinc-950 border-b border-zinc-900/50 overflow-x-auto scrollbar-hide">
-               <MetaItem icon={Cpu} label="Engine" value={`${tx.provider} / ${tx.model}`} color="text-indigo-400" />
-               <MetaItem icon={Terminal} label="Context" value={`${tx.tokens} tokens`} color="text-emerald-400" />
-               <MetaItem icon={Coins} label="Cost" value={tx.cost} color="text-amber-400" />
+               <MetaItem icon={Cpu} label="Engine" value={`${provider} / ${model}`} color="text-indigo-400" />
+               <MetaItem icon={Terminal} label="Context" value={`${tokens} tokens`} color="text-emerald-400" />
+               <MetaItem icon={Coins} label="Cost" value={cost} color="text-amber-400" />
                <div className="ml-auto hidden md:flex items-center gap-2 text-[10px] text-zinc-500 font-mono">
                   <ExternalLink className="w-3 h-3" />
                   <span>Report v2.4</span>
                </div>
             </div>
 
-            <div className="flex flex-col lg:flex-row gap-0 lg:gap-10 p-4 md:p-10 max-w-[1400px] mx-auto bg-zinc-950">
+            <div className="flex flex-col lg:flex-row gap-0 lg:gap-10 p-4 md:p-10 max-w-[1400px] mx-auto bg-zinc-950 rounded-b-xl">
 
               {/* QUICK JUMP SIDEBAR (Desktop) */}
-              <div className="hidden lg:block w-64 shrink-0">
-                <div 
-                  ref={outlineRef}
-                  className="sticky top-36 space-y-6 max-h-[calc(100vh-10rem)] overflow-y-auto overflow-x-hidden custom-scrollbar-thin flex flex-col"
-                >
-                  <div className="flex items-center gap-2 text-zinc-500 mb-2 shrink-0">
-                    <ListTree className="w-4 h-4" />
-                    <span className="text-[10px] uppercase font-bold tracking-widest">Outline</span>
-                    <span className="ml-auto text-[10px] text-zinc-600">
-                      {tx.blocks?.filter(b => b.type === 'file').length || 0} files
-                    </span>
+              {hasFiles && (
+                <div className="hidden lg:block w-64 shrink-0">
+                  <div 
+                    ref={outlineRef}
+                    className="sticky top-36 space-y-6 max-h-[calc(100vh-10rem)] overflow-y-auto overflow-x-hidden custom-scrollbar-thin flex flex-col"
+                  >
+                    <div className="flex items-center gap-2 text-zinc-500 mb-2 shrink-0">
+                      <ListTree className="w-4 h-4" />
+                      <span className="text-[10px] uppercase font-bold tracking-widest">Outline</span>
+                      <span className="ml-auto text-[10px] text-zinc-600">
+                        {fileInfos.length} files
+                      </span>
+                    </div>
+                    <nav className="space-y-0.5 pb-4">
+                      {fileInfos.map((info) => {
+                        const isActive = activeFileIndex === info.fileIndex;
+                        return (
+                          <button
+                            key={info.blockIndex}
+                            onClick={() => scrollToBlock(info.blockIndex, info.fileIndex)}
+                            className={cn(
+                              "w-full text-left px-3 py-2 rounded-lg text-[11px] font-mono transition-all truncate group flex items-center gap-2",
+                              isActive 
+                                ? "text-indigo-400 bg-indigo-500/10 border-l-2 border-indigo-500" 
+                                : "text-zinc-500 hover:text-zinc-300 hover:bg-zinc-800/50 border-l-2 border-transparent"
+                            )}
+                          >
+                            <span className={cn(
+                              "w-1.5 h-1.5 rounded-full shrink-0 transition-colors",
+                              isActive 
+                                ? "bg-indigo-400 shadow-[0_0_6px_rgba(129,140,248,0.6)]"
+                                : "bg-zinc-700 group-hover:bg-zinc-500"
+                            )} />
+                            <span className="truncate">{info.file.path.split('/').pop()}</span>
+                          </button>
+                        );
+                      })}
+                    </nav>
                   </div>
-                  <nav className="space-y-0.5 pb-4">
-                    {tx.blocks?.map((block, idx) => {
-                      if (block.type !== 'file') return null;
-                      const isActive = activeIndex === idx;
-                      return (
-                        <button
-                          key={idx}
-                          onClick={() => scrollToId(`${tx.id}-file-${idx}`, idx)}
-                          className={cn(
-                            "w-full text-left px-3 py-2 rounded-lg text-[11px] font-mono transition-all truncate group flex items-center gap-2",
-                            isActive 
-                              ? "text-indigo-400 bg-indigo-500/10 border-l-2 border-indigo-500" 
-                              : "text-zinc-500 hover:text-zinc-300 hover:bg-zinc-800/50 border-l-2 border-transparent"
-                          )}
-                        >
-                          <span className={cn(
-                            "w-1.5 h-1.5 rounded-full shrink-0 transition-colors",
-                            isActive 
-                              ? "bg-indigo-400 shadow-[0_0_6px_rgba(129,140,248,0.6)]"
-                              : "bg-zinc-700 group-hover:bg-zinc-500"
-                          )} />
-                          <span className="truncate">{(block as any).file.path.split('/').pop()}</span>
-                        </button>
-                      );
-                    })}
-                  </nav>
                 </div>
-              </div>
+              )}
 
               {/* MAIN CONTENT STREAM */}
               <div className="flex-1 space-y-12 min-w-0">
-                {(tx.blocks || []).length > 0 ? (
-                  tx.blocks.map((block, i) => (
-                    <div 
-                      key={i} 
-                      id={block.type === 'file' ? `${tx.id}-file-${i}` : undefined}
-                      ref={block.type === 'file' ? (el) => { blockRefs.current[i] = el; } : undefined}
-                      data-index={block.type === 'file' ? i : undefined}
-                    >
-                      {block.type === 'markdown' ? (
-                        <div className="prose prose-zinc prose-invert prose-sm max-w-none px-4 mb-8">
+                {(blocks || []).length > 0 ? (
+                  // Render blocks with interleaved markdown and files
+                  blocks.map((block, blockIdx) => {
+                    if (block.type === 'markdown') {
+                      return (
+                        <div key={blockIdx} className="prose prose-zinc prose-invert prose-sm max-w-none px-4">
                           <ReactMarkdown remarkPlugins={[remarkGfm]}>
                             {block.content}
                           </ReactMarkdown>
                         </div>
-                      ) : (
+                      );
+                    }
+                    // Find the file index for this block
+                    const fileInfo = fileInfos.find(f => f.blockIndex === blockIdx);
+                    const fileIndex = fileInfo?.fileIndex ?? 0;
+                    return (
+                      <div 
+                        key={blockIdx}
+                        ref={(el) => {
+                          if (el) fileBlockRefs.current.set(blockIdx, el);
+                        }}
+                        data-file-index={fileIndex}
+                      >
                         <FileSection file={block.file} />
-                      )}
+                      </div>
+                    );
+                  })
+                ) : (fileInfos.length > 0 ? (
+                  // Fallback: render files only (no markdown blocks)
+                  fileInfos.map((info) => (
+                    <div 
+                      key={info.blockIndex}
+                      ref={(el) => {
+                        if (el) fileBlockRefs.current.set(info.blockIndex, el);
+                      }}
+                      data-file-index={info.fileIndex}
+                    >
+                      <FileSection file={info.file} />
                     </div>
                   ))
                 ) : (
-                  null
-                )}
+                  <div className="text-zinc-500 text-center py-8">
+                    No files to display
+                  </div>
+                ))}
 
                 {/* Action Footer */}
-                {tx.status === 'PENDING' && (
+                {status === 'PENDING' && (
                   <div className="flex items-center justify-center pt-8 border-t border-zinc-800/50">
                     <button
                       onClick={handleApprove}
@@ -2636,7 +2662,7 @@ const MetaItem = memo(({ icon: Icon, label, value, color }: any) => (
   </div>
 ));
 
-const FileSection = memo(({ file }: { file: any }) => {
+const FileSection = memo(({ file }: { file: TransactionFile }) => {
   const [isExpanded, setIsExpanded] = useState(true);
   const stats = useMemo(() => getDiffStats(file.diff), [file.diff]);
 

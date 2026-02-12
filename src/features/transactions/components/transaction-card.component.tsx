@@ -372,10 +372,10 @@ const FileSection = memo(({ file }: { file: TransactionFile }) => {
   const toggleExpanded = useCallback(() => setIsExpanded(!isExpanded), [isExpanded]);
 
   return (
-    <div className="mb-10 group/file">
+    <div className="relative mb-10 group/file">
       <div 
         className={cn(
-          "sticky top-36 z-10 flex items-center justify-between px-4 py-2.5 bg-zinc-900/95 backdrop-blur-sm border border-zinc-800/60 transition-all duration-300",
+          "sticky top-36 z-30 flex items-center justify-between px-4 py-2.5 bg-zinc-900/95 backdrop-blur-sm border border-zinc-800/60 transition-all duration-300",
           isExpanded ? "rounded-t-xl border-b-zinc-800/30" : "rounded-xl"
         )}
       >
@@ -415,7 +415,7 @@ const FileSection = memo(({ file }: { file: TransactionFile }) => {
             initial={{ height: 0, opacity: 0 }}
             animate={{ height: "auto", opacity: 1 }}
             exit={{ height: 0, opacity: 0 }}
-            className="overflow-hidden border-x border-b border-zinc-800/60 rounded-b-xl bg-zinc-950"
+            className="relative z-0 overflow-hidden border-x border-b border-zinc-800/60 rounded-b-xl bg-zinc-950"
           >
             <DiffViewer diff={file.diff} language={file.language} className="max-h-[600px]" />
           </motion.div>
