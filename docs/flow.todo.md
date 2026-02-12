@@ -22,7 +22,12 @@ gitCommitMsg: "feat: enhance dashboard UI with TUI-inspired stream view and shor
 
 === 
 
-we need multi select feature for transaction list
+we need multi select feature for transaction list. 
+
+
+===
+
+simulated backend , real elysiajs server and client. monorepoed backend frontend structure. should be no backend logic at all in frontend
 
 ===
 

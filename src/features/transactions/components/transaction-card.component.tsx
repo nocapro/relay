@@ -11,7 +11,8 @@ import {
   Coins,
   History,
   ExternalLink,
-  ListTree
+  ListTree,
+  FileCode
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { cn } from "@/utils/cn.util";
@@ -151,6 +152,22 @@ export const TransactionCard = memo(({
     FAILED:     'border-red-500/40 hover:border-red-500/60',
   };
 
+  // Calculate aggregate stats for all files in the transaction
+  const transactionStats = useMemo(() => {
+    let totalAdds = 0;
+    let totalSubs = 0;
+    let fileCount = 0;
+    
+    fileInfos.forEach(({ file }) => {
+      const stats = getDiffStats(file.diff);
+      totalAdds += stats.adds;
+      totalSubs += stats.subs;
+      fileCount++;
+    });
+    
+    return { totalAdds, totalSubs, fileCount };
+  }, [fileInfos]);
+
   return (
     <motion.div 
       initial={isNew ? { opacity: 0, y: 20 } : false}
@@ -195,11 +212,38 @@ export const TransactionCard = memo(({
                 <History className="w-3 h-3" /> {timestamp}
                 <span>•</span>
                 <span className="text-zinc-600">ID: {id.split('-').pop()}</span>
+                {/* Stats - Hidden on very small screens, visible on sm+ */}
+                {hasFiles && (
+                  <>
+                    <span className="hidden sm:inline text-zinc-700">•</span>
+                    <span className="hidden sm:inline-flex items-center gap-1 text-zinc-400">
+                      <FileCode className="w-3 h-3" />
+                      {transactionStats.fileCount}
+                    </span>
+                    <span className="hidden sm:inline text-zinc-700">•</span>
+                    <span className="hidden sm:inline-flex items-center gap-1.5">
+                      <span className="text-emerald-500">+{transactionStats.totalAdds}</span>
+                      <span className="text-red-500">-{transactionStats.totalSubs}</span>
+                    </span>
+                  </>
+                )}
               </div>
             </div>
           </div>
 
           <div className="flex items-center gap-2">
+            {/* Mobile stats - Only visible when collapsed on mobile */}
+            {!expanded && hasFiles && (
+              <div className="flex md:hidden items-center gap-2 px-2">
+                <span className="text-[10px] text-zinc-500 flex items-center gap-1">
+                  <FileCode className="w-3 h-3" />
+                  {transactionStats.fileCount}
+                </span>
+                <span className="text-[10px] font-mono">
+                  <span className="text-emerald-500">+{transactionStats.totalAdds}</span>
+                </span>
+              </div>
+            )}
             {status === 'PENDING' && (
               <button
                 onClick={handleApprove}
