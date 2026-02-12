@@ -177,7 +177,7 @@ export const Dashboard = () => {
       {/* Transactions List */}
       <div className="space-y-6">
         {hasTransactions && (
-          <div className="sticky top-0 z-20 bg-zinc-950/95 backdrop-blur-xl py-4 -my-4 md:static md:bg-transparent md:backdrop-blur-none md:p-0 md:m-0 flex flex-col md:flex-row md:items-center justify-between border-b border-zinc-800/50 md:border-none px-1 md:px-0 gap-4">
+          <div className="static bg-transparent backdrop-blur-none p-0 m-0 flex flex-col md:flex-row md:items-center justify-between border-none px-1 md:px-0 gap-4">
             
             <div className="flex items-center justify-between w-full md:w-auto flex-1">
               <div className="flex items-center gap-3">
@@ -259,7 +259,16 @@ export const Dashboard = () => {
                             {group.transactions.map((tx) => (
                               <TransactionCard 
                                 key={tx.id} 
-                                tx={tx}
+                                id={tx.id}
+                                status={tx.status}
+                                description={tx.description}
+                                timestamp={tx.timestamp}
+                                provider={tx.provider}
+                                model={tx.model}
+                                tokens={tx.tokens}
+                                cost={tx.cost}
+                                blocks={tx.blocks}
+                                files={tx.files}
                                 isNew={!seenTransactionIds.has(tx.id)} 
                               />
                             ))}

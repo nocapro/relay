@@ -17,7 +17,7 @@ export const Navigation = () => {
   if (isMobile) {
     return (
       <div className="fixed bottom-0 left-0 right-0 z-40 bg-zinc-950/90 backdrop-blur-xl border-t border-zinc-800 pb-safe">
-        <div className="flex justify-around items-center p-2">
+        <div className="flex justify-around items-center py-1 px-2">
           {navItems.map((item) => {
             const isActive = location.pathname === item.path;
             return (
@@ -25,14 +25,14 @@ export const Navigation = () => {
                 key={item.path}
                 to={item.path}
                 className={cn(
-                  "flex flex-col items-center gap-1 p-2 rounded-xl transition-all w-20",
+                  "flex items-center justify-center p-2 rounded-xl transition-all w-16 h-12",
                   isActive ? "text-indigo-400" : "text-zinc-500 hover:text-zinc-300"
                 )}
               >
                 <div className={cn("p-1.5 rounded-full transition-all", isActive ? "bg-indigo-500/10" : "bg-transparent")}>
                   <item.icon className="w-5 h-5" />
                 </div>
-                <span className="text-[10px] font-medium">{item.label}</span>
+                
               </Link>
             );
           })}

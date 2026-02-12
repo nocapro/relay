@@ -15,39 +15,93 @@ import {
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { cn } from "@/utils/cn.util";
-import { Transaction } from "@/types/app.types";
+import { TransactionStatus, TransactionBlock, TransactionFile } from "@/types/app.types";
 import { StatusBadge } from "@/components/ui/status-badge.ui";
 import { DiffViewer } from "@/components/ui/diff-viewer.ui.tsx";
 import { useStore } from "@/store/root.store";
 import { getDiffStats } from "@/utils/diff.util";
 
 interface TransactionCardProps {
-  tx: Transaction;
+  id: string;
+  status: TransactionStatus;
+  description: string;
+  timestamp: string;
+  provider: string;
+  model: string;
+  tokens: string;
+  cost: string;
+  blocks?: TransactionBlock[];
+  files?: TransactionFile[];
   isNew?: boolean;
 }
 
-export const TransactionCard = memo(({ tx, isNew = false }: TransactionCardProps) => {
+// Helper to get file info with original block index
+interface FileInfo {
+  file: TransactionFile;
+  blockIndex: number;
+  fileIndex: number;
+}
+
+export const TransactionCard = memo(({
+  id,
+  status,
+  description,
+  timestamp,
+  provider,
+  model,
+  tokens,
+  cost,
+  blocks,
+  files: filesProp,
+  isNew = false
+}: TransactionCardProps) => {
   const expandedId = useStore((state) => state.expandedId);
   const setExpandedId = useStore((state) => state.setExpandedId);
   const approveTransaction = useStore((state) => state.approveTransaction);
-  const expanded = expandedId === tx.id;
+  const expanded = expandedId === id;
+  
+  // Build file info list with correct block indices for navigation
+  const fileInfos: FileInfo[] = useMemo(() => {
+    if (blocks && blocks.length > 0) {
+      const infos: FileInfo[] = [];
+      let fileCount = 0;
+      blocks.forEach((block, blockIdx) => {
+        if (block.type === 'file') {
+          infos.push({
+            file: block.file,
+            blockIndex: blockIdx,
+            fileIndex: fileCount++
+          });
+        }
+      });
+      return infos;
+    }
+    // Fallback to files prop
+    return (filesProp || []).map((file, idx) => ({
+      file,
+      blockIndex: idx,
+      fileIndex: idx
+    }));
+  }, [blocks, filesProp]);
+
+  const hasFiles = fileInfos.length > 0;
   
   // Track active section in view
-  const [activeIndex, setActiveIndex] = useState<number>(0);
-  const blockRefs = useRef<(HTMLDivElement | null)[]>([]);
+  const [activeFileIndex, setActiveFileIndex] = useState<number>(0);
+  const fileBlockRefs = useRef<Map<number, HTMLDivElement>>(new Map());
   const outlineRef = useRef<HTMLDivElement>(null);
   
-  const onToggle = useCallback(() => setExpandedId(expanded ? null : tx.id), [expanded, setExpandedId, tx.id]);
+  const onToggle = useCallback(() => setExpandedId(expanded ? null : id), [expanded, setExpandedId, id]);
 
   const handleApprove = useCallback((e: React.MouseEvent) => {
     e.stopPropagation();
-    approveTransaction(tx.id);
-  }, [tx.id, approveTransaction]);
+    approveTransaction(id);
+  }, [id, approveTransaction]);
 
-  const scrollToId = useCallback((id: string, index: number) => {
-    const el = document.getElementById(id);
+  const scrollToBlock = useCallback((blockIndex: number, fileIndex: number) => {
+    const el = fileBlockRefs.current.get(blockIndex);
     if (el) {
-      const offset = 100; // Account for sticky header + some padding
+      const offset = 100;
       const bodyRect = document.body.getBoundingClientRect().top;
       const elementRect = el.getBoundingClientRect().top;
       const elementPosition = elementRect - bodyRect;
@@ -57,7 +111,7 @@ export const TransactionCard = memo(({ tx, isNew = false }: TransactionCardProps
         top: offsetPosition,
         behavior: 'smooth'
       });
-      setActiveIndex(index);
+      setActiveFileIndex(fileIndex);
     }
   }, []);
 
@@ -67,27 +121,27 @@ export const TransactionCard = memo(({ tx, isNew = false }: TransactionCardProps
 
     const observerOptions = {
       root: null,
-      rootMargin: '-100px 0px -60% 0px', // Trigger when element is near top of viewport
+      rootMargin: '-100px 0px -60% 0px',
       threshold: 0
     };
 
     const observerCallback: IntersectionObserverCallback = (entries) => {
       entries.forEach((entry) => {
         if (entry.isIntersecting) {
-          const index = parseInt(entry.target.getAttribute('data-index') || '0', 10);
-          setActiveIndex(index);
+          const fileIndex = parseInt(entry.target.getAttribute('data-file-index') || '0', 10);
+          setActiveFileIndex(fileIndex);
         }
       });
     };
 
     const observer = new IntersectionObserver(observerCallback, observerOptions);
 
-    blockRefs.current.forEach((ref) => {
+    fileBlockRefs.current.forEach((ref) => {
       if (ref) observer.observe(ref);
     });
 
     return () => observer.disconnect();
-  }, [expanded, tx.blocks]);
+  }, [expanded, fileInfos.length]);
 
   const statusBorderColors = {
     PENDING:    'border-amber-500/40 hover:border-amber-500/60',
@@ -102,11 +156,11 @@ export const TransactionCard = memo(({ tx, isNew = false }: TransactionCardProps
       initial={isNew ? { opacity: 0, y: 20 } : false}
       animate={{ opacity: 1, y: 0 }}
       className={cn(
-        "rounded-2xl border transition-all duration-300 relative",
+        "rounded-2xl border transition-all duration-300 relative isolate",
         expanded
           ? "bg-zinc-900/80 z-10 my-12 border-indigo-500/30 shadow-xl shadow-indigo-900/10 ring-1 ring-indigo-500/20"
           : "bg-zinc-900/40 hover:bg-zinc-900/60 shadow-sm",
-        !expanded && statusBorderColors[tx.status]
+        !expanded && statusBorderColors[status]
       )}
     >
       {expanded && <div className="absolute inset-0 bg-gradient-to-b from-indigo-500/5 to-transparent pointer-events-none" />}
@@ -129,24 +183,24 @@ export const TransactionCard = memo(({ tx, isNew = false }: TransactionCardProps
           </div>
 
           <div className="flex-1 flex items-center gap-4 min-w-0">
-            <StatusBadge status={tx.status} />
+            <StatusBadge status={status} />
             <div className="flex-1 min-w-0">
               <h3 className={cn(
                 "text-sm font-semibold truncate",
                 expanded ? "text-white" : "text-zinc-300"
               )}>
-                {tx.description}
+                {description}
               </h3>
               <div className="flex items-center gap-2 mt-0.5 text-[10px] text-zinc-500 font-mono">
-                <History className="w-3 h-3" /> {tx.timestamp}
+                <History className="w-3 h-3" /> {timestamp}
                 <span>•</span>
-                <span className="text-zinc-600">ID: {tx.id.split('-').pop()}</span>
+                <span className="text-zinc-600">ID: {id.split('-').pop()}</span>
               </div>
             </div>
           </div>
 
           <div className="flex items-center gap-2">
-            {tx.status === 'PENDING' && (
+            {status === 'PENDING' && (
               <button
                 onClick={handleApprove}
                 className={cn(
@@ -172,90 +226,114 @@ export const TransactionCard = memo(({ tx, isNew = false }: TransactionCardProps
             initial={{ height: 0, opacity: 0 }}
             animate={{ height: "auto", opacity: 1 }}
             exit={{ height: 0, opacity: 0 }}
-            className="bg-zinc-950/30 relative z-10 overflow-visible"
+            className="px-px pb-px"
           >
             {/* Observability Strip */}
             <div className="flex items-center gap-6 px-8 py-3 bg-zinc-950 border-b border-zinc-900/50 overflow-x-auto scrollbar-hide">
-               <MetaItem icon={Cpu} label="Engine" value={`${tx.provider} / ${tx.model}`} color="text-indigo-400" />
-               <MetaItem icon={Terminal} label="Context" value={`${tx.tokens} tokens`} color="text-emerald-400" />
-               <MetaItem icon={Coins} label="Cost" value={tx.cost} color="text-amber-400" />
+               <MetaItem icon={Cpu} label="Engine" value={`${provider} / ${model}`} color="text-indigo-400" />
+               <MetaItem icon={Terminal} label="Context" value={`${tokens} tokens`} color="text-emerald-400" />
+               <MetaItem icon={Coins} label="Cost" value={cost} color="text-amber-400" />
                <div className="ml-auto hidden md:flex items-center gap-2 text-[10px] text-zinc-500 font-mono">
                   <ExternalLink className="w-3 h-3" />
                   <span>Report v2.4</span>
                </div>
             </div>
 
-            <div className="flex flex-col lg:flex-row gap-0 lg:gap-10 p-4 md:p-10 max-w-[1400px] mx-auto bg-zinc-950">
+            <div className="flex flex-col lg:flex-row gap-0 lg:gap-10 p-4 md:p-10 max-w-[1400px] mx-auto bg-zinc-950 rounded-b-xl">
 
               {/* QUICK JUMP SIDEBAR (Desktop) */}
-              <div className="hidden lg:block w-64 shrink-0">
-                <div 
-                  ref={outlineRef}
-                  className="sticky top-36 space-y-6 max-h-[calc(100vh-10rem)] overflow-y-auto overflow-x-hidden custom-scrollbar-thin flex flex-col"
-                >
-                  <div className="flex items-center gap-2 text-zinc-500 mb-2 shrink-0">
-                    <ListTree className="w-4 h-4" />
-                    <span className="text-[10px] uppercase font-bold tracking-widest">Outline</span>
-                    <span className="ml-auto text-[10px] text-zinc-600">
-                      {tx.blocks?.filter(b => b.type === 'file').length || 0} files
-                    </span>
+              {hasFiles && (
+                <div className="hidden lg:block w-64 shrink-0">
+                  <div 
+                    ref={outlineRef}
+                    className="sticky top-36 space-y-6 max-h-[calc(100vh-10rem)] overflow-y-auto overflow-x-hidden custom-scrollbar-thin flex flex-col"
+                  >
+                    <div className="flex items-center gap-2 text-zinc-500 mb-2 shrink-0">
+                      <ListTree className="w-4 h-4" />
+                      <span className="text-[10px] uppercase font-bold tracking-widest">Outline</span>
+                      <span className="ml-auto text-[10px] text-zinc-600">
+                        {fileInfos.length} files
+                      </span>
+                    </div>
+                    <nav className="space-y-0.5 pb-4">
+                      {fileInfos.map((info) => {
+                        const isActive = activeFileIndex === info.fileIndex;
+                        return (
+                          <button
+                            key={info.blockIndex}
+                            onClick={() => scrollToBlock(info.blockIndex, info.fileIndex)}
+                            className={cn(
+                              "w-full text-left px-3 py-2 rounded-lg text-[11px] font-mono transition-all truncate group flex items-center gap-2",
+                              isActive 
+                                ? "text-indigo-400 bg-indigo-500/10 border-l-2 border-indigo-500" 
+                                : "text-zinc-500 hover:text-zinc-300 hover:bg-zinc-800/50 border-l-2 border-transparent"
+                            )}
+                          >
+                            <span className={cn(
+                              "w-1.5 h-1.5 rounded-full shrink-0 transition-colors",
+                              isActive 
+                                ? "bg-indigo-400 shadow-[0_0_6px_rgba(129,140,248,0.6)]"
+                                : "bg-zinc-700 group-hover:bg-zinc-500"
+                            )} />
+                            <span className="truncate">{info.file.path.split('/').pop()}</span>
+                          </button>
+                        );
+                      })}
+                    </nav>
                   </div>
-                  <nav className="space-y-0.5 pb-4">
-                    {tx.blocks?.map((block, idx) => {
-                      if (block.type !== 'file') return null;
-                      const isActive = activeIndex === idx;
-                      return (
-                        <button
-                          key={idx}
-                          onClick={() => scrollToId(`${tx.id}-file-${idx}`, idx)}
-                          className={cn(
-                            "w-full text-left px-3 py-2 rounded-lg text-[11px] font-mono transition-all truncate group flex items-center gap-2",
-                            isActive 
-                              ? "text-indigo-400 bg-indigo-500/10 border-l-2 border-indigo-500" 
-                              : "text-zinc-500 hover:text-zinc-300 hover:bg-zinc-800/50 border-l-2 border-transparent"
-                          )}
-                        >
-                          <span className={cn(
-                            "w-1.5 h-1.5 rounded-full shrink-0 transition-colors",
-                            isActive 
-                              ? "bg-indigo-400 shadow-[0_0_6px_rgba(129,140,248,0.6)]"
-                              : "bg-zinc-700 group-hover:bg-zinc-500"
-                          )} />
-                          <span className="truncate">{(block as any).file.path.split('/').pop()}</span>
-                        </button>
-                      );
-                    })}
-                  </nav>
                 </div>
-              </div>
+              )}
 
               {/* MAIN CONTENT STREAM */}
               <div className="flex-1 space-y-12 min-w-0">
-                {(tx.blocks || []).length > 0 ? (
-                  tx.blocks.map((block, i) => (
-                    <div 
-                      key={i} 
-                      id={block.type === 'file' ? `${tx.id}-file-${i}` : undefined}
-                      ref={block.type === 'file' ? (el) => { blockRefs.current[i] = el; } : undefined}
-                      data-index={block.type === 'file' ? i : undefined}
-                    >
-                      {block.type === 'markdown' ? (
-                        <div className="prose prose-zinc prose-invert prose-sm max-w-none px-4 mb-8">
+                {(blocks || []).length > 0 ? (
+                  // Render blocks with interleaved markdown and files
+                  blocks.map((block, blockIdx) => {
+                    if (block.type === 'markdown') {
+                      return (
+                        <div key={blockIdx} className="prose prose-zinc prose-invert prose-sm max-w-none px-4">
                           <ReactMarkdown remarkPlugins={[remarkGfm]}>
                             {block.content}
                           </ReactMarkdown>
                         </div>
-                      ) : (
+                      );
+                    }
+                    // Find the file index for this block
+                    const fileInfo = fileInfos.find(f => f.blockIndex === blockIdx);
+                    const fileIndex = fileInfo?.fileIndex ?? 0;
+                    return (
+                      <div 
+                        key={blockIdx}
+                        ref={(el) => {
+                          if (el) fileBlockRefs.current.set(blockIdx, el);
+                        }}
+                        data-file-index={fileIndex}
+                      >
                         <FileSection file={block.file} />
-                      )}
+                      </div>
+                    );
+                  })
+                ) : (fileInfos.length > 0 ? (
+                  // Fallback: render files only (no markdown blocks)
+                  fileInfos.map((info) => (
+                    <div 
+                      key={info.blockIndex}
+                      ref={(el) => {
+                        if (el) fileBlockRefs.current.set(info.blockIndex, el);
+                      }}
+                      data-file-index={info.fileIndex}
+                    >
+                      <FileSection file={info.file} />
                     </div>
                   ))
                 ) : (
-                  null
-                )}
+                  <div className="text-zinc-500 text-center py-8">
+                    No files to display
+                  </div>
+                ))}
 
                 {/* Action Footer */}
-                {tx.status === 'PENDING' && (
+                {status === 'PENDING' && (
                   <div className="flex items-center justify-center pt-8 border-t border-zinc-800/50">
                     <button
                       onClick={handleApprove}
@@ -287,7 +365,7 @@ const MetaItem = memo(({ icon: Icon, label, value, color }: any) => (
   </div>
 ));
 
-const FileSection = memo(({ file }: { file: any }) => {
+const FileSection = memo(({ file }: { file: TransactionFile }) => {
   const [isExpanded, setIsExpanded] = useState(true);
   const stats = useMemo(() => getDiffStats(file.diff), [file.diff]);
 

@@ -26,6 +26,7 @@ src/
     settings.tsx
   services/
     api.service.ts
+    mock-data.json
   store/
     slices/
       transaction.slice.ts
@@ -160,6 +161,400 @@ import { PlaceholderView } from '@/components/common/placeholder.view';
 
 export default function SettingsRoute() {
   return <PlaceholderView title="System Settings" icon={Settings} />;
+}
+```
+
+## File: src/services/mock-data.json
+```json
+{
+  "prompts": [
+    {
+      "id": "prompt-cloud-infra",
+      "title": "Migrate to Kubernetes & Helm",
+      "content": "Transition the application from legacy VM deployment to a Kubernetes-native architecture using Helm charts for scalability and resilience.",
+      "timestamp": "12 mins ago"
+    },
+    {
+      "id": "prompt-security-oidc",
+      "title": "Implement OIDC Authentication",
+      "content": "Replace the internal JWT logic with a robust OpenID Connect flow via a third-party provider like Auth0 for better enterprise security and SSO capabilities.",
+      "timestamp": "45 mins ago"
+    },
+    {
+      "id": "prompt-backend-perf",
+      "title": "Optimize Data Ingestion Layer",
+      "content": "Improve database write performance by implementing a batching strategy and adding Redis as a write-behind cache to handle high-throughput scenarios.",
+      "timestamp": "3 hours ago"
+    },
+    {
+      "id": "prompt-cicd",
+      "title": "Establish CI/CD Pipeline",
+      "content": "Automate the build, test, and deployment process using GitHub Actions to improve reliability and development velocity.",
+      "timestamp": "5 hours ago"
+    },
+    {
+      "id": "prompt-feature-comments",
+      "title": "Implement Transaction Commenting System",
+      "content": "Develop a full-stack commenting feature for transactions, allowing users to collaborate and discuss specific code changes.",
+      "timestamp": "1 day ago"
+    }
+  ],
+  "transactions": [
+    {
+      "id": "tx-infra-k8s",
+      "status": "PENDING",
+      "description": "Infra: K8s-native deployment with Helm and Monitoring",
+      "timestamp": "Just now",
+      "createdAt": "2026-02-12T12:30:00.000Z",
+      "promptId": "prompt-cloud-infra",
+      "author": "ops-lead",
+      "provider": "Anthropic",
+      "model": "claude-3.5-sonnet",
+      "cost": "$0.142",
+      "tokens": "7,800",
+      "reasoning": "Legacy reasoning. See blocks for narrative.",
+      "files": [],
+      "blocks": [
+        {
+          "type": "markdown",
+          "content": "### Kubernetes Migration Strategy\n\nTo achieve higher availability and standardized deployments, I am migrating the `relaycode-web` service to Kubernetes. This begins with creating a multi-stage `Dockerfile` to produce a minimal, production-ready image."
+        },
+        {
+          "type": "file",
+          "file": {
+            "path": "Dockerfile",
+            "status": "created",
+            "language": "dockerfile",
+            "diff": "@@ -0,0 +1,15 @@\n+FROM node:20-alpine AS builder\n+WORKDIR /app\n+COPY package*.json ./\n+RUN npm ci\n+COPY . .\n+RUN npm run build\n+\n+FROM nginx:stable-alpine\n+COPY --from=builder /app/build /usr/share/nginx/html\n+EXPOSE 80\n+CMD [\"nginx\", \"-g\", \"daemon off;\"]"
+          }
+        },
+        {
+          "type": "markdown",
+          "content": "Next, I am establishing the Helm chart structure. The `Chart.yaml` defines the package metadata, and `values.yaml` provides default configuration that can be overridden during deployment for different environments."
+        },
+        {
+          "type": "file",
+          "file": {
+            "path": "charts/relay-app/Chart.yaml",
+            "status": "created",
+            "language": "yaml",
+            "diff": "@@ -0,0 +1,6 @@\n+apiVersion: v2\n+name: relay-web\n+description: Helm chart for relaycode-web\n+type: application\n+version: 1.0.0\n+appVersion: \"1.2.4\""
+          }
+        },
+        {
+          "type": "file",
+          "file": {
+            "path": "charts/relay-app/values.yaml",
+            "status": "created",
+            "language": "yaml",
+            "diff": "@@ -0,0 +1,10 @@\n+replicaCount: 3\n+image:\n+  repository: relaycode/web\n+  tag: \"latest\"\n+service:\n+  type: ClusterIP\n+  port: 80\n+ingress:\n+  enabled: true\n+  host: app.relaycode.com"
+          }
+        },
+        {
+          "type": "markdown",
+          "content": "The core workload is defined in `deployment.yaml`, which uses values from `values.yaml` to configure the number of replicas, container image, and health probes."
+        },
+        {
+          "type": "file",
+          "file": {
+            "path": "charts/relay-app/templates/deployment.yaml",
+            "status": "created",
+            "language": "yaml",
+            "diff": "@@ -0,0 +1,18 @@\n+apiVersion: apps/v1\n+kind: Deployment\n+metadata:\n+  name: {{ .Release.Name }}\n+spec:\n+  replicas: {{ .Values.replicaCount }}\n+  template:\n+    spec:\n+      containers:\n+        - name: web\n+          image: \"{{ .Values.image.repository }}:{{ .Values.image.tag }}\"\n+          ports:\n+            - containerPort: 80\n+          livenessProbe:\n+            httpGet:\n+              path: /healthz\n+              port: 80"
+          }
+        },
+        {
+          "type": "markdown",
+          "content": "Finally, a deployment script automates the process of building the Docker image, pushing it to a registry, and applying the Helm chart."
+        },
+        {
+          "type": "file",
+          "file": {
+            "path": "scripts/k8s-deploy.sh",
+            "status": "created",
+            "language": "bash",
+            "diff": "@@ -0,0 +1,6 @@\n+#!/bin/bash\n+docker build -t relaycode/web:latest .\n+docker push relaycode/web:latest\n+helm upgrade --install relay-web ./charts/relay-app \\\n+  --set image.tag=$(git rev-parse --short HEAD) \\\n+  --namespace production"
+          }
+        }
+      ]
+    },
+    {
+      "id": "tx-auth-oidc",
+      "status": "PENDING",
+      "description": "Security: Auth0 Integration & Middleware Hardening",
+      "timestamp": "15 mins ago",
+      "createdAt": "2026-02-12T12:15:00.000Z",
+      "promptId": "prompt-security-oidc",
+      "author": "security-bot",
+      "provider": "OpenRouter",
+      "model": "anthropic/claude-3-opus",
+      "cost": "$0.085",
+      "tokens": "4,120",
+      "reasoning": "Switching to Auth0 eliminates the risk of managing refresh token storage in our database.",
+      "files": [],
+      "blocks": [
+        {
+          "type": "markdown",
+          "content": "### Security Refactor: OIDC Transition\n\nI am replacing our internal JWT handling with the official Auth0 Next.js SDK. This starts with adding the necessary dependency to our `package.json`."
+        },
+        {
+          "type": "file",
+          "file": {
+            "path": "package.json",
+            "status": "modified",
+            "language": "json",
+            "diff": "@@ -15,4 +15,5 @@\n   \"dependencies\": {\n+    \"@auth0/nextjs-auth0\": \"^3.5.0\",\n     \"clsx\": \"2.1.1\",\n     \"framer-motion\": \"^12.34.0\""
+          }
+        },
+        {
+          "type": "markdown",
+          "content": "Next, I'm replacing our custom token verification middleware with the `withMiddlewareAuthRequired` helper from the Auth0 SDK. This standardizes route protection and handles session management automatically."
+        },
+        {
+          "type": "file",
+          "file": {
+            "path": "src/middleware.ts",
+            "status": "modified",
+            "language": "typescript",
+            "diff": "@@ -1,6 +1,5 @@\n-import { verifyToken } from './lib/auth';\n+import { withMiddlewareAuthRequired } from '@auth0/nextjs-auth0/edge';\n \n-export function middleware(req: Request) {\n-  return verifyToken(req);\n-}\n+export default withMiddlewareAuthRequired();\n+\n+export const config = { matcher: ['/dashboard/:path*', '/api/:path*'] };"
+          }
+        },
+        {
+          "type": "markdown",
+          "content": "The frontend user hook is updated to use the client-side `useUser` from Auth0, which provides the user profile, loading state, and errors."
+        },
+        {
+          "type": "file",
+          "file": {
+            "path": "src/hooks/useUser.ts",
+            "status": "modified",
+            "language": "typescript",
+            "diff": "@@ -1,8 +1,10 @@\n-export const useUser = () => {\n-  const [user, setUser] = useState(null);\n-  useEffect(() => {\n-    fetch('/api/me').then(res => res.json()).then(setUser);\n-  }, []);\n-  return user;\n-};+import { useUser as useAuth0User } from '@auth0/nextjs-auth0/client';\n+\n+export const useUser = () => {\n+  const { user, isLoading, error } = useAuth0User();\n+  return { user, isLoading, error };\n+};"
+          }
+        },
+        {
+          "type": "markdown",
+          "content": "To handle login, logout, and callback routes, I'm creating a dynamic API route that uses Auth0's `handleAuth` function."
+        },
+        {
+          "type": "file",
+          "file": {
+            "path": "src/app/api/auth/[auth0]/route.ts",
+            "status": "created",
+            "language": "typescript",
+            "diff": "@@ -0,0 +1,5 @@\n+import { handleAuth } from '@auth0/nextjs-auth0';\n+\n+export const GET = handleAuth();"
+          }
+        },
+        {
+          "type": "markdown",
+          "content": "Finally, I'm updating our internal `User` type to include additional profile fields provided by the OIDC provider."
+        },
+        {
+          "type": "file",
+          "file": {
+            "path": "src/types/auth.ts",
+            "status": "modified",
+            "language": "typescript",
+            "diff": "@@ -1,4 +1,8 @@\n export interface User {\n   id: string;\n   email: string;\n+  picture?: string;\n+  nickname?: string;\n+  email_verified: boolean;\n+  updated_at: string;\n }"
+          }
+        }
+      ]
+    },
+    {
+      "id": "tx-perf-redis",
+      "status": "APPLIED",
+      "description": "Performance: Redis Cache Layer & Query Optimization",
+      "timestamp": "1 hour ago",
+      "createdAt": "2026-02-12T11:30:00.000Z",
+      "promptId": "prompt-backend-perf",
+      "author": "db-wizard",
+      "provider": "Anthropic",
+      "model": "claude-3-5-sonnet",
+      "cost": "$0.032",
+      "tokens": "2,100",
+      "reasoning": "Adding a caching layer to the dashboard stats endpoint to reduce DB load.",
+      "files": [],
+      "blocks": [
+        {
+          "type": "markdown",
+          "content": "### Dashboard Latency Fix\n\nI've identified that dashboard aggregate queries are hitting the main PostgreSQL instance too frequently. To mitigate this, I'm first adding a composite index to the `Event` table in our Prisma schema. This will speed up range scans on `userId` and `createdAt`."
+        },
+        {
+          "type": "file",
+          "file": {
+            "path": "prisma/schema.prisma",
+            "status": "modified",
+            "language": "prisma",
+            "diff": "@@ -22,5 +22,7 @@\n model Event {\n   id        String   @id @default(cuid())\n   userId    String\n   type      String\n   createdAt DateTime @default(now())\n+  @@index([userId, createdAt])\n }"
+          }
+        },
+        {
+          "type": "markdown",
+          "content": "Next, I'm introducing a Redis client to the application to serve as our caching layer."
+        },
+        {
+          "type": "file",
+          "file": {
+            "path": "src/lib/redis.ts",
+            "status": "created",
+            "language": "typescript",
+            "diff": "@@ -0,0 +1,8 @@\n+import { createClient } from 'redis';\n+\n+const client = createClient({ url: process.env.REDIS_URL });\n+client.on('error', (err) => console.error('Redis Error', err));\n+\n+export default client;"
+          }
+        },
+        {
+          "type": "markdown",
+          "content": "I am now implementing the cache-aside pattern in the stats API route. It will first check Redis for cached data before falling back to a database query. The results are then stored in Redis with a 5-minute (300 seconds) TTL."
+        },
+        {
+          "type": "file",
+          "file": {
+            "path": "src/app/api/stats/route.ts",
+            "status": "modified",
+            "language": "typescript",
+            "diff": "@@ -4,6 +4,13 @@\n export async function GET() {\n+  const cached = await redis.get('stats:global');\n+  if (cached) return Response.json(JSON.parse(cached));\n+\n   const stats = await db.event.groupBy({ ... });\n+  await redis.set('stats:global', JSON.stringify(stats), { EX: 300 });\n+\n   return Response.json(stats);\n }"
+          }
+        },
+        {
+          "type": "markdown",
+          "content": "To support this new service, the `REDIS_URL` environment variable must be available. I've added it to the example environment file."
+        },
+        {
+          "type": "file",
+          "file": {
+            "path": ".env.example",
+            "status": "modified",
+            "language": "bash",
+            "diff": "@@ -2,3 +2,4 @@\n DATABASE_URL=\"postgresql://...\"\n+REDIS_URL=\"redis://localhost:6379\"\n AUTH0_SECRET=\"use-openssl-rand-hex-32\""
+          }
+        },
+        {
+          "type": "markdown",
+          "content": "Finally, I'm enabling Prisma's query logging in development to make it easier to debug database performance issues in the future."
+        },
+        {
+          "type": "file",
+          "file": {
+            "path": "src/lib/prisma.ts",
+            "status": "modified",
+            "language": "typescript",
+            "diff": "@@ -5,4 +5,4 @@\n-export const prisma = new PrismaClient();\n+export const prisma = new PrismaClient({ log: ['query', 'info'] });"
+          }
+        }
+      ]
+    },
+    {
+      "id": "tx-cicd-actions",
+      "status": "COMMITTED",
+      "description": "DevOps: Establish CI/CD pipeline with GitHub Actions",
+      "timestamp": "4 hours ago",
+      "createdAt": "2026-02-12T08:30:00.000Z",
+      "promptId": "prompt-cicd",
+      "author": "ops-lead",
+      "provider": "GitHub",
+      "model": "Copilot Enterprise",
+      "cost": "$0.000",
+      "tokens": "1,500",
+      "reasoning": "Automating deployments to reduce manual error and improve release cadence.",
+      "files": [],
+      "blocks": [
+        {
+          "type": "markdown",
+          "content": "### CI/CD Automation\n\nTo ensure code quality and streamline deployments, I'm setting up a GitHub Actions workflow. This workflow will trigger on pushes to the `main` branch and on pull requests."
+        },
+        {
+          "type": "file",
+          "file": {
+            "path": ".github/workflows/ci.yml",
+            "status": "created",
+            "language": "yaml",
+            "diff": "@@ -0,0 +1,25 @@\n+name: CI/CD Pipeline\n+on:\n+  push:\n+    branches: [ main ]\n+  pull_request:\n+    branches: [ main ]\n+jobs:\n+  build-and-test:\n+    runs-on: ubuntu-latest\n+    steps:\n+      - uses: actions/checkout@v4\n+      - name: Setup Node.js\n+        uses: actions/setup-node@v4\n+        with:\n+          node-version: 20\n+      - run: npm ci\n+      - run: npm run build\n+      - run: npm test\n+  deploy:\n+    needs: build-and-test\n+    if: github.ref == 'refs/heads/main'\n+    runs-on: ubuntu-latest\n+    steps:\n+      - uses: actions/checkout@v4\n+      - name: Deploy to Production\n+        run: ./scripts/k8s-deploy.sh"
+          }
+        },
+        {
+          "type": "markdown",
+          "content": "I'm also adding a simple test script placeholder to `package.json` so the `npm test` step in the CI workflow passes."
+        },
+        {
+          "type": "file",
+          "file": {
+            "path": "package.json",
+            "status": "modified",
+            "language": "json",
+            "diff": "@@ -7,6 +7,7 @@\n   \"scripts\": {\n     \"dev\": \"react-router dev\",\n     \"build\": \"react-router build\",\n+    \"test\": \"echo \\\"Error: no test specified\\\" && exit 0\",\n     \"preview\": \"react-router-serve ./build/server/index.js\"\n   },"
+          }
+        }
+      ]
+    },
+    {
+      "id": "tx-feature-comments",
+      "status": "REVERTED",
+      "description": "Feature: Full-stack Transaction Commenting System",
+      "timestamp": "8 hours ago",
+      "createdAt": "2026-02-12T04:30:00.000Z",
+      "promptId": "prompt-feature-comments",
+      "author": "dev-team",
+      "provider": "Anthropic",
+      "model": "claude-3.5-haiku",
+      "cost": "$0.015",
+      "tokens": "3,250",
+      "reasoning": "Reverting due to a bug in optimistic UI updates causing ghost comments. Will re-evaluate the state management approach.",
+      "files": [],
+      "blocks": [
+        {
+          "type": "markdown",
+          "content": "### Feature: Transaction Comments\n\nI'm adding a commenting system. First, the database schema needs a `Comment` model with relations to `User` and `Transaction`."
+        },
+        {
+          "type": "file",
+          "file": {
+            "path": "prisma/schema.prisma",
+            "status": "modified",
+            "language": "prisma",
+            "diff": "@@ -15,3 +15,12 @@\n model User {\n   id    String @id @default(cuid())\n   email String @unique\n+  comments Comment[]\n+}\n+\n+model Comment {\n+  id        String   @id @default(cuid())\n+  content   String\n+  createdAt DateTime @default(now())\n+  author    User     @relation(fields: [authorId], references: [id])\n+  authorId  String\n+  // Missing transaction relation - this was part of the bug.\n }"
+          }
+        },
+        {
+          "type": "markdown",
+          "content": "Next, a new API route is required to handle fetching and creating comments for a transaction."
+        },
+        {
+          "type": "file",
+          "file": {
+            "path": "src/app/api/transactions/[id]/comments/route.ts",
+            "status": "created",
+            "language": "typescript",
+            "diff": "@@ -0,0 +1,15 @@\n+import { prisma } from '@/lib/prisma';\n+\n+export async function GET(req: Request, { params }: { params: { id: string } }) {\n+  const comments = await prisma.comment.findMany({ where: { transactionId: params.id } });\n+  return Response.json(comments);\n+}\n+\n+export async function POST(req: Request, { params }: { params: { id: string } }) {\n+  const { content, authorId } = await req.json();\n+  const newComment = await prisma.comment.create({\n+    data: { content, authorId, transactionId: params.id },\n+  });\n+  return Response.json(newComment, { status: 201 });\n+}"
+          }
+        },
+        {
+          "type": "markdown",
+          "content": "On the frontend, I'm creating a new component to display the list of comments and an input form."
+        },
+        {
+          "type": "file",
+          "file": {
+            "path": "src/features/transactions/components/comment-section.component.tsx",
+            "status": "created",
+            "language": "tsx",
+            "diff": "@@ -0,0 +1,20 @@\n+export const CommentSection = ({ transactionId }) => {\n+  // const { data: comments, mutate } = useSWR(`/api/transactions/${transactionId}/comments`);\n+  const [newComment, setNewComment] = useState('');\n+\n+  const handleSubmit = async (e) => {\n+    e.preventDefault();\n+    // Optimistic update logic was here and was buggy\n+    await fetch(`/api/transactions/${transactionId}/comments`, {\n+      method: 'POST',\n+      body: JSON.stringify({ content: newComment }),\n+    });\n+    setNewComment('');\n+    // mutate();\n+  };\n+\n+  return <div>{/* UI for comments and form */}</div>;\n+};"
+          }
+        },
+        {
+          "type": "markdown",
+          "content": "Finally, this new component is integrated into the main `TransactionCard`."
+        },
+        {
+          "type": "file",
+          "file": {
+            "path": "src/features/transactions/components/transaction-card.component.tsx",
+            "status": "modified",
+            "language": "tsx",
+            "diff": "@@ -250,6 +250,7 @@\n                   null\n                 )}\n \n+                <CommentSection txId={tx.id} />\n                 {/* Action Footer */}\n                 {tx.status === 'PENDING' && (\n                   <div className=\"flex items-center justify-center pt-8 border-t border-zinc-800/50\">"
+          }
+        }
+      ]
+    }
+  ]
 }
 ```
 

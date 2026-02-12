@@ -20,7 +20,7 @@ promptSummary: Improve Dashboard page features and UI/UX based on readme.md phil
 gitCommitMsg: "feat: enhance dashboard UI with TUI-inspired stream view and shortcut hints"
 ```
 
-===
+=== 
 
 we need multi select feature for transaction list
 
