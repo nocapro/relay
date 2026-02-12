@@ -24,12 +24,35 @@ gitCommitMsg: "feat: enhance dashboard UI with TUI-inspired stream view and shor
 
 we need multi select feature for transaction list. 
 
+===
+
+we dont need transaction history page, change with prompt management page that prompt relate also with transactions
 
 ===
 
-simulated backend , real elysiajs server and client. monorepoed backend frontend structure. should be no backend logic at all in frontend
+dashboard: implement lazy loading on bottom scroll 
 
 ===
+
+simulated backend with json mock data, logic , and services , real elysiajs server and client. monorepoed backend frontend structure. should be no backend logic at all in frontend
+
+===
+
+transaction:
+lets change the data and naming convention shape, card title = git commit message (truncated) 
+
+===
+
+please think about amazing UI cohesive UX about each transaction sometimes has one parent transaction. so something like transaction chainning. of course in single prompt can having many chanis of transactions 
+
+===
+
+1. remove Approve implementation CTA button
+2. action bar having horizontal gap on right side after button only on desktop view
+3. only on mobiel view: action bar should hide on scroll down/up and show on stop scroll  
+4. need more height spacing between data group labels
+
+=== DONE
 
 update transaction card UI UX to be simpler and cohesiveness because the content of the changes contains markdown like this docs/relay.md so I want basically showin rendered markdown but with interactive code block and cool observability
 
