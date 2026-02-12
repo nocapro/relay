@@ -50,6 +50,16 @@ export function parseDiff(diff: string): DiffLine[] {
 }
 
 /**
+ * Extracts addition/removal stats from a raw diff string
+ */
+export function getDiffStats(diff: string) {
+  const lines = diff.split('\n');
+  const adds = lines.filter(l => l.startsWith('+') && !l.startsWith('+++')).length;
+  const subs = lines.filter(l => l.startsWith('-') && !l.startsWith('---')).length;
+  return { adds, subs };
+}
+
+/**
  * Basic syntax highlighter for JS/TS/CSS
  */
 const KEYWORDS = [

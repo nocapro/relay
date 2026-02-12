@@ -1,5 +1,7 @@
 # Directory Structure
 ```
+docs/
+  relay.md
 src/
   components/
     common/
@@ -20,6 +22,10 @@ src/
     mobile.hook.ts
   pages/
     dashboard.page.tsx
+  routes/
+    dashboard.tsx
+    history.tsx
+    settings.tsx
   services/
     api.service.ts
   store/
@@ -34,11 +40,10 @@ src/
   utils/
     cn.util.ts
     diff.util.ts
-  app.component.tsx
-  main.tsx
-index.html
+    group.util.ts
+  root.tsx
+  routes.ts
 package.json
-readme.md
 tsconfig.json
 vite.config.ts
 ```
@@ -174,100 +179,6 @@ export const Header = () => {
 };
 ````
 
-## File: src/components/layout/navigation.layout.tsx
-````typescript
-import { Activity, Settings, Clock, Terminal } from 'lucide-react';
-import { motion } from 'framer-motion';
-import { cn } from "@/utils/cn.util";
-import { useStore } from "@/store/root.store";
-import { useIsMobile } from "@/hooks/mobile.hook";
-import { AppTab } from '@/types/app.types';
-
-export const Navigation = () => {
-  const activeTab = useStore((state) => state.activeTab);
-  const setActiveTab = useStore((state) => state.setActiveTab);
-  const isMobile = useIsMobile();
-
-  const items: { id: AppTab; icon: any; label: string }[] = [
-    { id: 'dashboard', icon: Activity, label: 'Stream' },
-    { id: 'history', icon: Clock, label: 'History' },
-    { id: 'settings', icon: Settings, label: 'Settings' },
-  ];
-
-  if (isMobile) {
-    return (
-      <div className="fixed bottom-0 left-0 right-0 z-40 bg-zinc-950/90 backdrop-blur-xl border-t border-zinc-800 pb-safe">
-        <div className="flex justify-around items-center p-2">
-          {items.map((item) => (
-            <button
-              key={item.id}
-              onClick={() => setActiveTab(item.id)}
-              className={cn(
-                "flex flex-col items-center gap-1 p-2 rounded-xl transition-all w-20",
-                activeTab === item.id ? "text-indigo-400" : "text-zinc-500 hover:text-zinc-300"
-              )}
-            >
-              <div className={cn("p-1.5 rounded-full transition-all", activeTab === item.id ? "bg-indigo-500/10" : "bg-transparent")}>
-                <item.icon className="w-5 h-5" />
-              </div>
-              <span className="text-[10px] font-medium">{item.label}</span>
-            </button>
-          ))}
-        </div>
-      </div>
-    );
-  }
-
-  return (
-    <div className="w-64 border-r border-zinc-800/60 bg-zinc-950 flex flex-col h-screen fixed left-0 top-0 z-20">
-      <div className="p-6 flex items-center gap-3">
-        <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-indigo-500 via-purple-500 to-indigo-600 flex items-center justify-center shadow-lg shadow-indigo-500/20 ring-1 ring-white/10">
-          <Terminal className="w-5 h-5 text-white" />
-        </div>
-        <span className="font-bold text-lg tracking-tight text-white">Relaycode</span>
-      </div>
-
-      <div className="px-4 py-2">
-        <div className="text-xs font-semibold text-zinc-500 uppercase tracking-wider mb-2 px-2">Menu</div>
-        <nav className="space-y-1">
-          {items.map((item) => (
-            <button
-              key={item.id}
-              onClick={() => setActiveTab(item.id)}
-              className={cn(
-                "w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-all duration-200 group relative",
-                activeTab === item.id 
-                  ? "bg-zinc-900 text-white shadow-inner shadow-black/20" 
-                  : "text-zinc-400 hover:text-zinc-200 hover:bg-zinc-900/50"
-              )}
-            >
-              {activeTab === item.id && (
-                <motion.div layoutId="activeNav" className="absolute left-0 w-1 h-5 bg-indigo-500 rounded-r-full" />
-              )}
-              <item.icon className={cn("w-4 h-4 transition-colors", activeTab === item.id ? "text-indigo-400" : "text-zinc-500 group-hover:text-zinc-300")} />
-              {item.label}
-            </button>
-          ))}
-        </nav>
-      </div>
-
-      <div className="mt-auto p-4 border-t border-zinc-800/60">
-        <div className="bg-gradient-to-br from-zinc-900 to-zinc-900/50 rounded-lg p-3 border border-zinc-800 shadow-sm">
-          <div className="flex items-center gap-2 mb-2">
-            <div className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse shadow-[0_0_8px_rgba(16,185,129,0.5)]" />
-            <span className="text-xs font-medium text-zinc-300">System Online</span>
-          </div>
-          <div className="flex justify-between items-center text-xs text-zinc-500 font-mono">
-            <span>v1.2.4</span>
-            <span className="bg-zinc-800 px-1.5 py-0.5 rounded text-zinc-400">Stable</span>
-          </div>
-        </div>
-      </div>
-    </div>
-  );
-};
-````
-
 ## File: src/components/ui/diff-viewer.ui.tsx
 ````typescript
 import { useMemo } from 'react';
@@ -282,9 +193,9 @@ interface DiffViewerProps {
 
 export const DiffViewer = ({ diff, language, className }: DiffViewerProps) => {
   const lines = useMemo(() => parseDiff(diff), [diff]);
-
+  
   return (
-    <div className={cn("font-mono text-xs overflow-x-auto", className)}>
+    <div className={cn("font-mono text-[11px] md:text-xs overflow-x-auto relative", className)}>
       <div className="min-w-full inline-block">
         {lines.map((line, i) => (
           <LineRow key={i} line={line} />
@@ -312,15 +223,15 @@ const LineRow = ({ line }: { line: DiffLine }) => {
   const gutterClass = 
     line.type === 'add' ? 'bg-emerald-500/20 text-emerald-500' :
     line.type === 'remove' ? 'bg-red-500/20 text-red-500' :
-    'text-zinc-600';
+    'text-zinc-700';
 
   return (
-    <div className={cn("flex w-full group hover:bg-white/5", bgClass)}>
+    <div className={cn("flex w-full group/line hover:bg-white/5 transition-colors", bgClass)}>
       {/* Line Numbers */}
-      <div className={cn("w-12 flex-shrink-0 select-none text-right pr-3 py-0.5 border-r border-white/5", gutterClass)}>
+      <div className={cn("w-10 md:w-12 flex-shrink-0 select-none text-right pr-2 md:pr-3 py-0.5 border-r border-white/5 font-mono opacity-40 group-hover/line:opacity-100 transition-opacity", gutterClass)}>
         {line.oldLine || ' '}
       </div>
-      <div className={cn("w-12 flex-shrink-0 select-none text-right pr-3 py-0.5 border-r border-white/5", gutterClass)}>
+      <div className={cn("w-10 md:w-12 flex-shrink-0 select-none text-right pr-2 md:pr-3 py-0.5 border-r border-white/5 font-mono opacity-40 group-hover/line:opacity-100 transition-opacity", gutterClass)}>
         {line.newLine || ' '}
       </div>
       
@@ -367,54 +278,33 @@ export function useIsMobile() {
 }
 ````
 
-## File: src/store/slices/ui.slice.ts
+## File: src/routes/dashboard.tsx
 ````typescript
-import { StateCreator } from 'zustand';
-import { AppTab } from '@/types/app.types';
-import { RootState } from '../root.store';
+import { Dashboard } from '@/pages/dashboard.page';
 
-export interface UiSlice {
-  activeTab: AppTab;
-  isCmdOpen: boolean;
-  setActiveTab: (tab: AppTab) => void;
-  setCmdOpen: (open: boolean) => void;
-  toggleCmd: () => void;
+export default function DashboardRoute() {
+  return <Dashboard />;
 }
-
-export const createUiSlice: StateCreator<RootState, [], [], UiSlice> = (set) => ({
-  activeTab: 'dashboard',
-  isCmdOpen: false,
-  setActiveTab: (tab) => set({ activeTab: tab }),
-  setCmdOpen: (open) => set({ isCmdOpen: open }),
-  toggleCmd: () => set((state) => ({ isCmdOpen: !state.isCmdOpen })),
-});
 ````
 
-## File: src/store/root.store.ts
+## File: src/routes/history.tsx
 ````typescript
-import { create } from 'zustand';
-import { createUiSlice, UiSlice } from './slices/ui.slice';
-import { createTransactionSlice, TransactionSlice } from './slices/transaction.slice';
+import { Clock } from 'lucide-react';
+import { PlaceholderView } from '@/components/common/placeholder.view';
 
-export type RootState = UiSlice & TransactionSlice;
+export default function HistoryRoute() {
+  return <PlaceholderView title="Transaction History" icon={Clock} />;
+}
+````
 
-export const useStore = create<RootState>()((...a) => ({
-  ...createUiSlice(...a),
-  ...createTransactionSlice(...a),
-}));
+## File: src/routes/settings.tsx
+````typescript
+import { Settings } from 'lucide-react';
+import { PlaceholderView } from '@/components/common/placeholder.view';
 
-// Export specialized selectors for cleaner global usage
-export const useUiActions = () => useStore((state) => ({
-  setActiveTab: state.setActiveTab,
-  setCmdOpen: state.setCmdOpen,
-  toggleCmd: state.toggleCmd,
-}));
-
-export const useTransactionActions = () => useStore((state) => ({
-  setExpandedId: state.setExpandedId,
-  toggleWatching: state.toggleWatching,
-  fetchTransactions: state.fetchTransactions,
-}));
+export default function SettingsRoute() {
+  return <PlaceholderView title="System Settings" icon={Settings} />;
+}
 ````
 
 ## File: src/utils/cn.util.ts
@@ -481,6 +371,16 @@ export function parseDiff(diff: string): DiffLine[] {
 }
 
 /**
+ * Extracts addition/removal stats from a raw diff string
+ */
+export function getDiffStats(diff: string) {
+  const lines = diff.split('\n');
+  const adds = lines.filter(l => l.startsWith('+') && !l.startsWith('+++')).length;
+  const subs = lines.filter(l => l.startsWith('-') && !l.startsWith('---')).length;
+  return { adds, subs };
+}
+
+/**
  * Basic syntax highlighter for JS/TS/CSS
  */
 const KEYWORDS = [
@@ -541,36 +441,128 @@ export function tokenizeCode(code: string): SyntaxToken[] {
 }
 ````
 
-## File: src/app.component.tsx
+## File: src/utils/group.util.ts
 ````typescript
+import { Transaction, Prompt, GroupByStrategy } from '@/types/app.types';
+
+export interface GroupedData {
+  id: string;
+  label: string;
+  count: number;
+  transactions: Transaction[];
+}
+
+// Helper to get relative date
+const getRelativeDate = (dateStr: string): string => {
+  const date = new Date(dateStr);
+  const now = new Date();
+  const diffDays = Math.floor((now.getTime() - date.getTime()) / (1000 * 60 * 60 * 24));
+
+  if (diffDays === 0) return 'Today';
+  if (diffDays === 1) return 'Yesterday';
+  if (diffDays < 7) return 'This Week';
+  if (diffDays < 30) return 'This Month';
+  return 'Older';
+};
+
+export function groupTransactions(
+  transactions: Transaction[],
+  prompts: Prompt[],
+  strategy: GroupByStrategy
+): GroupedData[] {
+  if (strategy === 'none' || !transactions.length) {
+    return [{
+      id: 'all',
+      label: 'All Transactions',
+      count: transactions.length,
+      transactions
+    }];
+  }
+
+  const groups = new Map<string, { label: string; transactions: Transaction[] }>();
+
+  // 1. Sort transactions by date first for consistent ordering
+  const sorted = [...transactions].sort((a, b) => 
+    new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
+  );
+
+  sorted.forEach(tx => {
+    let key = 'unknown';
+    let label = 'Unknown';
+
+    switch (strategy) {
+      case 'prompt': {
+        key = tx.promptId;
+        const prompt = prompts.find(p => p.id === tx.promptId);
+        label = prompt?.title || 'Orphaned Transactions';
+        break;
+      }
+      case 'date': {
+        key = getRelativeDate(tx.createdAt);
+        label = key;
+        break;
+      }
+      case 'author': {
+        key = tx.author || 'unknown';
+        label = tx.author ? `@${tx.author}` : 'Unknown Author';
+        break;
+      }
+      case 'status': {
+        key = tx.status;
+        label = tx.status.charAt(0) + tx.status.slice(1).toLowerCase();
+        break;
+      }
+      case 'files': {
+        // Group by the first file path or "No Files"
+        const firstFile = tx.files[0];
+        key = firstFile?.path || 'no-files';
+        label = firstFile?.path || 'No Files Attached';
+        break;
+      }
+    }
+
+    if (!groups.has(key)) {
+      groups.set(key, { label, transactions: [] });
+    }
+    groups.get(key)!.transactions.push(tx);
+  });
+
+  // Convert map to array and calculate counts
+  return Array.from(groups.entries()).map(([id, data]) => ({
+    id,
+    label: data.label,
+    count: data.transactions.length,
+    transactions: data.transactions
+  }));
+}
+````
+
+## File: src/root.tsx
+````typescript
+import { Links, Meta, Scripts, ScrollRestoration, Outlet } from 'react-router';
+import type { LinksFunction } from 'react-router';
 import { useEffect } from 'react';
-import { Settings, Clock } from 'lucide-react';
-import { motion, AnimatePresence } from 'framer-motion';
-import { cn } from "@/utils/cn.util";
-import { useStore } from "@/store/root.store";
-import { useIsMobile } from "@/hooks/mobile.hook";
+import { cn } from '@/utils/cn.util';
+import { useStore } from '@/store/root.store';
+import { CommandPalette } from '@/components/layout/command-palette.layout';
+import { Navigation } from '@/components/layout/navigation.layout';
+import { Header } from '@/components/layout/header.layout';
+import { FloatingActionBar } from '@/features/transactions/components/action-bar.component';
+import { useIsMobile } from '@/hooks/mobile.hook';
 
-// Components
-import { CommandPalette } from "@/components/layout/command-palette.layout";
-import { Navigation } from "@/components/layout/navigation.layout";
-import { Header } from "@/components/layout/header.layout";
-import { PlaceholderView } from "@/components/common/placeholder.view";
+import '@/styles/main.style.css';
 
-// Pages
-import { Dashboard } from "@/pages/dashboard.page";
-import { FloatingActionBar } from "@/features/transactions/components/action-bar.component";
+export const links: LinksFunction = () => [];
 
-export function App() {
-  const activeTab = useStore((state) => state.activeTab);
+export function Layout({ children }: { children: React.ReactNode }) {
   const setCmdOpen = useStore((state) => state.setCmdOpen);
   const isMobile = useIsMobile();
 
-  // Keyboard Shortcuts
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
       if ((e.metaKey || e.ctrlKey) && e.key === 'k') {
         e.preventDefault();
-        setCmdOpen(true); // Using store directly inside effect might need callback if strict, but this works
+        setCmdOpen(true);
       }
       if (e.key === 'Escape') setCmdOpen(false);
     };
@@ -579,512 +571,46 @@ export function App() {
   }, [setCmdOpen]);
 
   return (
-    <div className="min-h-screen bg-zinc-950 text-zinc-100 font-sans selection:bg-indigo-500/30 selection:text-indigo-200 overflow-x-hidden">
-      <CommandPalette />
-      
-      <Navigation />
-      
-      <div className={cn("flex flex-col min-h-screen transition-all duration-300", isMobile ? "pb-20" : "pl-64")}>
-        <Header />
-        
-        <main className="flex-1 relative">
-          <AnimatePresence mode="wait">
-             <motion.div
-               key={activeTab}
-               initial={{ opacity: 0, x: 20 }}
-               animate={{ opacity: 1, x: 0 }}
-               exit={{ opacity: 0, x: -20 }}
-               transition={{ duration: 0.2 }}
-             >
-                {activeTab === 'dashboard' && <Dashboard />}
-                {activeTab === 'history' && <PlaceholderView title="Transaction History" icon={Clock} />}
-                {activeTab === 'settings' && <PlaceholderView title="System Settings" icon={Settings} />}
-             </motion.div>
-          </AnimatePresence>
-        </main>
-        <FloatingActionBar />
-      </div>
-    </div>
+    <html lang="en">
+      <head>
+        <meta charSet="utf-8" />
+        <meta name="viewport" content="width=device-width, initial-scale=1" />
+        <Meta />
+        <Links />
+      </head>
+      <body className="antialiased">
+        <div className="min-h-screen bg-zinc-950 text-zinc-100 font-sans selection:bg-indigo-500/30 selection:text-indigo-200 overflow-x-hidden">
+          <CommandPalette />
+          <Navigation />
+          <div className={cn("flex flex-col min-h-screen transition-all duration-300", isMobile ? "pb-20" : "pl-64")}>
+            <Header />
+            <main className="flex-1 relative">
+              {children}
+            </main>
+            <FloatingActionBar />
+          </div>
+        </div>
+        <ScrollRestoration />
+        <Scripts />
+      </body>
+    </html>
   );
+}
+
+export default function App() {
+  return <Outlet />;
 }
 ````
 
-## File: readme.md
-````markdown
-# Relaycode
-
-**A zero-friction, AI-native patch engine for modern development workflows.**
-
-Relaycode is a stateful Terminal User Interface (TUI) application that bridges the gap between AI-generated code changes and production commits. It transforms chaotic AI patch application into a structured, reviewable, and reversible transaction system.
-
-## Table of Contents
-
-- [Core Philosophy](#core-philosophy)
-- [Key Features](#key-features)
-- [System Architecture](#system-architecture)
-- [Workflow & State Machines](#workflow--state-machines)
-- [Screen Reference](#screen-reference)
-- [Configuration](#configuration)
-- [Keyboard Navigation](#keyboard-navigation)
-- [Integration Points](#integration-points)
-
----
-
-## Core Philosophy
-
-### Transaction-Based Code Management
-
-Relaycode treats every code change as a **transaction**—a discrete, trackable unit of work that moves through defined states:
-
-1. **PENDING** - Patch detected, awaiting review
-2. **APPLIED** - Changes approved and written to filesystem
-3. **COMMITTED** - Changes committed to git history
-4. **REVERTED** - Changes undone (creates inverse transaction)
-5. **FAILED** - Patch application failed, awaiting repair
-
-### Zero-Friction AI Integration
-
-Unlike traditional AI coding assistants that overwrite files directly, Relaycode:
-- **Intercepts** AI-generated patches from clipboard
-- **Stages** them in a reviewable state without touching git
-- **Validates** changes with post-commands (tests, linters)
-- **Preserves** complete audit trails of AI reasoning and decisions
-
-### Stateful TUI Architecture
-
-Built with React + Ink, Relaycode maintains complex UI state:
-- **Persistent Context**: Header shows git branch, project ID, and system status
-- **Progressive Disclosure**: Expandable sections reveal detail without clutter
-- **Context-Aware Actions**: Footer shortcuts change based on current state
-- **Non-Blocking Operations**: Background processing with real-time feedback
-
----
-
-## Key Features
-
-### 1. Intelligent Clipboard Monitoring (`relay watch`)
-- **Live Detection**: Automatically detects patch formats in clipboard
-- **Smart Parsing**: Supports unified diff, git patches, and AI-generated formats
-- **Global Pause/Resume**: System-wide clipboard monitoring control (`P`)
-- **Event Stream**: Reverse-chronological transaction history with real-time updates
-
-### 2. Granular Review System
-- **Per-File Approval**: Approve/reject individual files within a transaction
-- **Visual Diff Rendering**: Syntax-highlighted diffs with hunk navigation (`J`/`K`)
-- **AI Reasoning Display**: View step-by-step AI logic (`R` key)
-- **Strategy Selection**: Choose patch application strategies (replace, merge, etc.)
-
-### 3. Multi-State Repair Workflows
-When patches fail (context mismatches, line offsets):
-- **Manual Override**: Edit patch context directly
-- **AI Auto-Repair**: Automated context adjustment with progress visualization
-- **Bulk Repair**: Handle multiple failed files simultaneously
-- **External Handoff**: Generate detailed prompts for external AI agents
-
-### 4. Post-Command Validation
-- **Hook Integration**: Automatic test/lint execution after patch application
-- **Output Capture**: View script results inline with error navigation
-- **Conditional Logic**: Block commits on failed validation or allow override
-- **Performance Metrics**: Track execution time for each validation step
-
-### 5. Advanced Copy Mode
-Context-aware clipboard extraction:
-- **Metadata Extraction**: Copy UUIDs, git messages, AI prompts
-- **Diff Aggregation**: Copy specific files or entire transaction diffs
-- **Context Sharing**: Export context files for external AI agents
-- **Multi-Select**: Bulk copy across multiple transactions
-
-### 6. Transaction History & Forensics
-Complete audit trail with drill-down capabilities:
-- **Hierarchical Browsing**: 3-level expansion (Transaction → Section → Content)
-- **In-Place Diff Preview**: View code changes without leaving the list
-- **Advanced Filtering**: Query by file path, status, date, or content (`F`)
-- **Bulk Actions**: Revert, delete, or mark multiple transactions
-- **Immutable Records**: Original AI prompts and reasoning preserved forever
-
-### 7. Git-Native Workflow
-- **Commit Aggregation**: Bundle multiple transactions into single git commits
-- **Message Generation**: AI-generated commit messages with manual override
-- **Pre-Commit Review**: Final "airlock" screen before `git commit`
-- **Revert Safety**: Creates new transactions for rollbacks, preserving history
-
-### 8. Multi-Provider AI Support
-- **Provider Agnostic**: OpenRouter, Anthropic, OpenAI, Google AI, etc.
-- **Model Selection**: Per-transaction model choice with cost awareness
-- **Secure Storage**: Encrypted local API key management
-- **Failover Logic**: Automatic retry with exponential backoff
-
----
-
-## System Architecture
-
-### Technology Stack
-
-```
-┌─────────────────────────────────────────────────────────────┐
-│                    React + Ink (TUI)                        │
-│  ┌─────────────┐  ┌──────────────┐  ┌──────────────────┐   │
-│  │  Screens    │  │   Stores     │  │   Components     │   │
-│  │  (16 types) │  │  (Zustand)   │  │ (Ink + Custom)   │   │
-│  └──────┬──────┘  └──────┬───────┘  └────────┬─────────┘   │
-└─────────┼────────────────┼───────────────────┼─────────────┘
-          │                │                   │
-┌─────────▼────────────────▼───────────────────▼─────────────┐
-│                    Service Layer                           │
-│  ┌──────────────┐ ┌──────────────┐ ┌──────────────────┐   │
-│  │   Patch      │ │   Git        │ │   AI Providers   │   │
-│  │  Processor   │ │  Integration │ │   (Multi-model)  │   │
-│  └──────────────┘ └──────────────┘ └──────────────────┘   │
-└─────────────────────────────────────────────────────────────┘
-```
-
-### State Management Architecture
-
-**Store Segregation:**
-- `dashboard.store.ts` - Watcher state, event stream, selection
-- `review.store.ts` - Transaction review states, file approvals, body views
-- `transaction.store.ts` - Transaction data, history, metadata
-- `init.store.ts` - Bootstrap phase machine, user choices
-- `settings.store.ts` - AI provider configuration, API keys
-
-### Transaction Lifecycle
-
-```
-┌──────────┐    Detect     ┌──────────┐    Review     ┌──────────┐
-│ Clipboard│──────────────▶│  PENDING │──────────────▶│  APPLIED │
-└──────────┘               └──────────┘               └────┬─────┘
-                                                           │
-                              ┌────────────────────────────┘
-                              │ Post-Commands
-                              ▼
-┌──────────┐    Commit    ┌──────────┐    Revert    ┌──────────┐
-│   Git    │◀─────────────│ COMMITTED│◀─────────────│ REVERTED │
-└──────────┘               └──────────┘               └──────────┘
-```
-
----
-
-## Workflow & State Machines
-
-### 1. Standard Application Flow
-
-```mermaid
-[Splash Screen] → [Initialization] → [Dashboard] → [Review] → [Commit]
-```
-
-**Phase 1: Bootstrap** (`relay init`)
-- **Analyze**: Detect project structure, git status, existing config
-- **Configure**: Create `relay.config.json`, initialize `.relay/` state directory
-- **Interactive Choice**: Git repository initialization prompts
-- **Finalize**: Generate system prompts, display next actions
-
-**Phase 2: Monitoring** (`relay watch`)
-- **Active Listening**: Clipboard watcher monitors for patch formats
-- **Transaction Creation**: New transactions appear in PENDING state
-- **Real-time Updates**: Event stream with animated entry indicators
-- **Global Controls**: Pause/Resume affects all screens
-
-**Phase 3: Review** (Auto-triggered on detection)
-The Review Screen implements a **13-state finite state machine**:
-
-| State | Description | Key Actions |
-|-------|-------------|-------------|
-| **Success** | All files applied, scripts passed | Approve All (`A`), Commit (`C`) |
-| **Partial Failure** | Some files failed to apply | Try Repair (`T`), Bulk Repair (`Shift+T`) |
-| **Script Issues** | Tests/lint failed | View Output (`Enter`), Navigate Errors (`J`/`K`) |
-| **Diff View** | Examining code changes | Hunk Nav (`J`/`K`), Expand (`X`) |
-| **Reasoning View** | Reading AI logic | Scroll (`↑↓`), Copy (`C`) |
-| **Copy Mode** | Extracting data | Multi-select (`Space`), Aggregate Copy |
-| **Bulk Repair Modal** | Multi-file fix strategy | Handoff, Auto-repair, Change Strategy |
-| **Handoff Confirm** | External AI delegation | Confirm (`Enter`), Copy Prompt |
-
-**Phase 4: Commit** (`relay git commit` or `C` from Dashboard)
-- **Summary View**: Lists all included transactions
-- **Message Preview**: Shows generated commit message
-- **Final Gate**: Explicit confirmation before git operations
-- **Atomic Commit**: All or nothing transaction bundling
-
-### 2. AI Processing Flow (Auto-Repair)
-
-When patch application fails:
-
-```
-[Review Screen] → [AI Processing Screen] → [Context Analysis] → [API Request]
-                                                         ↓
-[Patch Generation] ← [Response Processing] ← [AI Interaction]
-        ↓
-[Validation] → [Success: Return to Review] / [Failure: Error Display]
-```
-
-**Visual Feedback:**
-- Real-time step indicators with spinners (`(●)`)
-- Sub-step hierarchies for file-level operations
-- Timing information (elapsed: 5.1s)
-- Error context with retry logic
-
-### 3. Failure Recovery Hierarchy
-
-1. **Single File Repair** (`T` on failed file)
-   - Change strategy (context vs. line-based)
-   - Manual context edit
-   - AI-guided repair
-
-2. **Bulk Repair** (`Shift+T` with multiple failures)
-   - Copy bulk re-apply prompt (for single-shot AI)
-   - Bulk strategy change
-   - Auto-repair with AI (parallel processing)
-
-3. **External Handoff**
-   - Generate comprehensive prompt with context
-   - Copy to clipboard for external agent (Claude, GPT-4, etc.)
-   - Mark transaction as "Handoff" (terminal state)
-
----
-
-## Screen Reference
-
-### Dashboard Screen (`relay watch`)
-The operational HUD with **5 distinct states**:
-- **Active & Listening**: Default operational state
-- **Paused**: Clipboard monitoring suspended
-- **Confirmation Overlay**: Modal for destructive actions (Approve All)
-- **In-Progress**: Animated spinners during batch operations
-- **Expanded Item**: Drill-down into transaction details
-
-**Key Footer Actions**: `(A)pprove All`, `(C)ommit`, `(P)ause`, `(L)og`, `(Q)uit`
-
-### Review Screen (13 States)
-Complex multi-state interface with dynamic footers:
-
-**Primary Views:**
-- **Navigator**: File list with status indicators (`[✓]`, `[✗]`, `[!]`)
-- **Diff View**: Syntax-highlighted changes with hunk navigation (`J`/`K`)
-- **Reasoning View**: AI thought process with scroll support
-- **Script Output**: Test/lint results with error navigation
-
-**Modal Overlays:**
-- **Copy Mode**: Checkbox selection for data extraction
-- **Bulk Repair**: Strategy selection for multiple failures
-- **Handoff Confirm**: Final check before external delegation
-
-### Transaction History Screen (`relay log`)
-Hierarchical database explorer:
-
-**3-Level Drill Down:**
-1. **Transaction List** - `▸` collapsed, `▾` expanded
-2. **Section Preview** - Prompt, Reasoning, Files list
-3. **Content Preview** - In-place diff/reasoning text
-
-**Advanced Features:**
-- **Filtering**: Real-time search with syntax (`logger.ts status:committed`)
-- **Multi-Select**: Spacebar selection for bulk operations
-- **Copy Mode**: Multi-transaction data aggregation
-- **Bulk Actions**: Revert, delete, or modify multiple transactions
-
-### AI Processing Screen
-Real-time monitoring for automated operations:
-
-**Visual Indicators:**
-- `( )` Pending → `(●)` Active → `[✓]` Completed → `[!]` Failed
-- Hierarchical sub-steps with indentation
-- Elapsed time counters
-- Progress-aware footer (Cancel, Skip Script)
-
-### Git Commit Screen
-Final "airlock" before repository modification:
-
-- **Contextual Summary**: Lists bundled transactions
-- **Message Preview**: Final commit message display
-- **Safety Gate**: Binary choice (Confirm/Cancel)
-- **Simplicity**: No deep inspection, only final confirmation
-
-### Settings Screen
-AI provider configuration with **3-step setup**:
-1. **Provider Selection**: Searchable dropdown (OpenRouter, Anthropic, etc.)
-2. **API Key Input**: Masked secure input with validation
-3. **Model Selection**: Provider-filtered model list
-
-**Features**: Real-time validation, secure local storage, multi-profile support
-
-### Supporting Screens
-- **Copy Mode**: Context-aware data extraction overlay (available in Review, History, Details)
-- **Debug Log**: System event monitoring with level filtering (ERROR, WARN, INFO, DEBUG)
-- **Notification**: Non-blocking alerts with auto-dismissal (Success, Error, Warning, Info)
-- **Initialization**: 5-phase bootstrap (Analyze → Configure → Interactive → Finalize)
-- **Splash Screen**: Animated startup with update checking and community links
-
----
-
-## Configuration
-
-### File Structure
-```
-project-root/
-├── relay.config.json          # Main configuration
-├── .relay/                    # State directory (gitignored by default)
-│   ├── transactions/          # Transaction YAML files
-│   ├── prompts/
-│   │   └── system-prompt.md   # AI system instructions
-│   └── state.json             # Application state
-└── .gitignore                 # Relaycode patterns added automatically
-```
-
-### Configuration Options (`relay.config.json`)
-```json
-{
-  "projectId": "my-project",
-  "aiProvider": {
-    "name": "openrouter",
-    "apiKey": "sk-or-v1-...",
-    "defaultModel": "anthropic/claude-3.5-sonnet"
-  },
-  "postCommands": [
-    "npm run test",
-    "npm run lint"
-  ],
-  "git": {
-    "autoCommit": false,
-    "commitMessageTemplate": "conventional"
-  },
-  "ui": {
-    "theme": "default",
-    "confirmDestructive": true
-  }
-}
-```
-
-### Environment Variables
-- `RELAYCODE_API_KEY` - Override provider API key
-- `RELAYCODE_CONFIG_PATH` - Custom config location
-- `RELAYCODE_DEBUG` - Enable debug logging
-
----
-
-## Keyboard Navigation
-
-### Universal Shortcuts
-| Key | Action |
-|-----|--------|
-| `?` | Global help overlay |
-| `Q` / `Ctrl+C` | Quit/Cancel |
-| `Esc` | Back/Close modal |
-| `↑` `↓` | Navigate items |
-| `→` / `Enter` | Expand/Select |
-| `←` | Collapse/Back |
-
-### Context-Aware Shortcuts
-Shortcuts change based on current screen state:
-
-**Dashboard:**
-- `A` - Approve All (with confirmation)
-- `C` - Commit All
-- `P` - Pause/Resume
-- `L` - View Log
-
-**Review Screen:**
-- `Space` - Toggle file approval
-- `D` - View Diff
-- `R` - View Reasoning
-- `T` - Try Repair (failed files)
-- `Shift+T` - Bulk Repair
-- `C` - Copy Mode
-- `J`/`K` - Next/Previous hunk or error
-
-**History Screen:**
-- `F` - Filter mode
-- `Space` - Select for bulk
-- `B` - Bulk Actions
-- `O` - Open YAML
-
-**Copy Mode (Global):**
-- `U` - UUID
-- `M` - Git Message
-- `P` - Prompt
-- `R` - Reasoning
-- `F` - Diff for selected file
-- `A` - All Diffs
-
----
-
-## Integration Points
-
-### AI Provider Integration
-- **OpenRouter**: Unified API for multiple models
-- **Anthropic**: Claude 3.5 Sonnet with extended thinking
-- **OpenAI**: GPT-4, GPT-4o with tool use
-- **Local Models**: Ollama, LM Studio support
-
-**Features:**
-- Streaming responses for real-time processing
-- Cost tracking per transaction
-- Model fallback chains
-- Rate limit handling with exponential backoff
-
-### Git Integration
-- **Native Git**: Direct `git` CLI execution
-- **State Synchronization**: Transaction status synced with git state
-- **Reversible Operations**: All changes tracked as revertible transactions
-- **Branch Awareness**: Dashboard shows current branch in header
-
-### Editor Integration
-- **YAML Editing**: `O` key opens transaction YAML in `$EDITOR`
-- **Diff Viewing**: Integration with external diff tools (configurable)
-- **File Preview**: Open specific files from review screen
-
-### Clipboard System
-- **Multi-format**: Supports HTML, RTF, plain text
-- **Paste Detection**: Monitors system clipboard continuously
-- **Format Validation**: Validates patch structure before processing
-- **Copy Aggregation**: Multi-item clipboard formatting
-
----
-
-## Development
-
-### Prerequisites
-- Node.js 18+
-- Git 2.30+
-- Terminal with Unicode and 256-color support
-
-### Installation
-```bash
-npm install -g relaycode
-# or
-yarn global add relaycode
-# or
-bun install -g relaycode
-```
-
-### Quick Start
-```bash
-# Initialize project
-cd my-project
-relay init
-
-# Start monitoring
-relay watch
-
-# Process a patch from clipboard
-# (Paste patch, UI appears automatically)
-
-# View history
-relay log
-
-# Commit approved changes
-relay git commit
-```
-
----
-
-## License
-
-MIT License - See [LICENSE](LICENSE) for details.
-
-Built by Arman and contributors · [https://relay.noca.pro ](https://relay.noca.pro )
-
----
-
-**Relaycode**: Transforming AI-generated chaos into structured, reviewable, and reversible development workflows.
+## File: src/routes.ts
+````typescript
+import { type RouteConfig, index, route } from '@react-router/dev/routes';
+
+export default [
+  index('routes/dashboard.tsx'),
+  route('history', 'routes/history.tsx'),
+  route('settings', 'routes/settings.tsx'),
+] satisfies RouteConfig;
 ````
 
 ## File: tsconfig.json
@@ -1120,6 +646,104 @@ Built by Arman and contributors · [https://relay.noca.pro ](https://relay.noca.
   },
   "include": ["src", "vite.config.ts"]
 }
+````
+
+## File: src/components/layout/navigation.layout.tsx
+````typescript
+import { Activity, Settings, Clock, Terminal } from 'lucide-react';
+import { motion } from 'framer-motion';
+import { Link, useLocation } from 'react-router';
+import { cn } from "@/utils/cn.util";
+import { useIsMobile } from "@/hooks/mobile.hook";
+
+const navItems = [
+  { path: '/', icon: Activity, label: 'Stream' },
+  { path: '/history', icon: Clock, label: 'History' },
+  { path: '/settings', icon: Settings, label: 'Settings' },
+] as const;
+
+export const Navigation = () => {
+  const location = useLocation();
+  const isMobile = useIsMobile();
+
+  if (isMobile) {
+    return (
+      <div className="fixed bottom-0 left-0 right-0 z-40 bg-zinc-950/90 backdrop-blur-xl border-t border-zinc-800 pb-safe">
+        <div className="flex justify-around items-center p-2">
+          {navItems.map((item) => {
+            const isActive = location.pathname === item.path;
+            return (
+              <Link
+                key={item.path}
+                to={item.path}
+                className={cn(
+                  "flex flex-col items-center gap-1 p-2 rounded-xl transition-all w-20",
+                  isActive ? "text-indigo-400" : "text-zinc-500 hover:text-zinc-300"
+                )}
+              >
+                <div className={cn("p-1.5 rounded-full transition-all", isActive ? "bg-indigo-500/10" : "bg-transparent")}>
+                  <item.icon className="w-5 h-5" />
+                </div>
+                <span className="text-[10px] font-medium">{item.label}</span>
+              </Link>
+            );
+          })}
+        </div>
+      </div>
+    );
+  }
+
+  return (
+    <div className="w-64 border-r border-zinc-800/60 bg-zinc-950 flex flex-col h-screen fixed left-0 top-0 z-20">
+      <div className="p-6 flex items-center gap-3">
+        <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-indigo-500 via-purple-500 to-indigo-600 flex items-center justify-center shadow-lg shadow-indigo-500/20 ring-1 ring-white/10">
+          <Terminal className="w-5 h-5 text-white" />
+        </div>
+        <span className="font-bold text-lg tracking-tight text-white">Relaycode</span>
+      </div>
+
+      <div className="px-4 py-2">
+        <div className="text-xs font-semibold text-zinc-500 uppercase tracking-wider mb-2 px-2">Menu</div>
+        <nav className="space-y-1">
+          {navItems.map((item) => {
+            const isActive = location.pathname === item.path;
+            return (
+              <Link
+                key={item.path}
+                to={item.path}
+                className={cn(
+                  "w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-all duration-200 group relative",
+                  isActive 
+                    ? "bg-zinc-900 text-white shadow-inner shadow-black/20" 
+                    : "text-zinc-400 hover:text-zinc-200 hover:bg-zinc-900/50"
+                )}
+              >
+                {isActive && (
+                  <motion.div layoutId="activeNav" className="absolute left-0 w-1 h-5 bg-indigo-500 rounded-r-full" />
+                )}
+                <item.icon className={cn("w-4 h-4 transition-colors", isActive ? "text-indigo-400" : "text-zinc-500 group-hover:text-zinc-300")} />
+                {item.label}
+              </Link>
+            );
+          })}
+        </nav>
+      </div>
+
+      <div className="mt-auto p-4 border-t border-zinc-800/60">
+        <div className="bg-gradient-to-br from-zinc-900 to-zinc-900/50 rounded-lg p-3 border border-zinc-800 shadow-sm">
+          <div className="flex items-center gap-2 mb-2">
+            <div className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse shadow-[0_0_8px_rgba(16,185,129,0.5)]" />
+            <span className="text-xs font-medium text-zinc-300">System Online</span>
+          </div>
+          <div className="flex justify-between items-center text-xs text-zinc-500 font-mono">
+            <span>v1.2.4</span>
+            <span className="bg-zinc-800 px-1.5 py-0.5 rounded text-zinc-400">Stable</span>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+};
 ````
 
 ## File: src/components/ui/status-badge.ui.tsx
@@ -1231,279 +855,539 @@ export const FloatingActionBar = () => {
 };
 ````
 
-## File: src/features/transactions/components/transaction-card.component.tsx
+## File: src/store/slices/ui.slice.ts
 ````typescript
-import { useState } from 'react';
-import { 
-  CheckCircle2, 
-  RefreshCw, 
-  MoreHorizontal, 
-  ChevronDown, 
-  ChevronRight, 
-  FileCode, 
-  Zap, 
-  Copy, 
-  Code2,
-  BrainCircuit,
-  FileDiff,
-  Terminal
-} from 'lucide-react';
-import { motion, AnimatePresence } from 'framer-motion';
-import { cn } from "@/utils/cn.util";
-import { Transaction } from "@/types/app.types";
-import { StatusBadge } from "@/components/ui/status-badge.ui";
-import { DiffViewer } from "@/components/ui/diff-viewer.ui";
-import { useStore } from "@/store/root.store";
+import { StateCreator } from 'zustand';
+import { RootState } from '../root.store';
 
-export const TransactionCard = ({ tx }: { tx: Transaction }) => {
-  const expandedId = useStore((state) => state.expandedId);
-  const setExpandedId = useStore((state) => state.setExpandedId);
-  const approveTransaction = useStore((state) => state.approveTransaction);
-  const expanded = expandedId === tx.id;
-  
-  const [activeTab, setActiveTab] = useState<'reasoning' | 'diff'>('diff');
-  const [selectedFileIndex, setSelectedFileIndex] = useState(0);
+export interface UiSlice {
+  isCmdOpen: boolean;
+  setCmdOpen: (open: boolean) => void;
+  toggleCmd: () => void;
+}
 
-  const onToggle = () => setExpandedId(expanded ? null : tx.id);
-  const selectedFile = tx.files[selectedFileIndex];
+export const createUiSlice: StateCreator<RootState, [], [], UiSlice> = (set) => ({
+  isCmdOpen: false,
+  setCmdOpen: (open) => set({ isCmdOpen: open }),
+  toggleCmd: () => set((state) => ({ isCmdOpen: !state.isCmdOpen })),
+});
+````
 
-  const handleApprove = (e: React.MouseEvent) => {
-    e.stopPropagation();
-    approveTransaction(tx.id);
-  };
+## File: src/store/root.store.ts
+````typescript
+import { create } from 'zustand';
+import { createUiSlice, UiSlice } from './slices/ui.slice';
+import { createTransactionSlice, TransactionSlice } from './slices/transaction.slice';
 
-  return (
-    <motion.div 
-      initial={{ opacity: 0, y: 20 }}
-      animate={{ opacity: 1, y: 0 }}
-      layout
-      className={cn(
-        "group border rounded-xl transition-all duration-300 overflow-hidden relative",
-        expanded 
-          ? "bg-zinc-950 border-indigo-500/30 shadow-2xl shadow-black/50 ring-1 ring-indigo-500/20 z-10" 
-          : "bg-zinc-900/30 border-zinc-800/60 hover:bg-zinc-900/60 hover:border-zinc-700"
-      )}
-    >
-      {/* Background Highlight for Active State */}
-      {expanded && <div className="absolute inset-0 bg-gradient-to-b from-indigo-500/5 to-transparent pointer-events-none" />}
+export type RootState = UiSlice & TransactionSlice;
 
-      {/* Card Header */}
-      <div 
-        onClick={onToggle}
-        className="p-4 cursor-pointer flex items-start md:items-center gap-4 relative z-10"
-      >
-        <button 
-          className={cn(
-            "hidden md:flex p-1 rounded-md transition-colors mt-1 md:mt-0",
-            expanded ? "bg-indigo-500/20 text-indigo-400" : "text-zinc-500 hover:text-zinc-300"
-          )}
-        >
-          {expanded ? <ChevronDown className="w-4 h-4" /> : <ChevronRight className="w-4 h-4" />}
-        </button>
+export const useStore = create<RootState>()((...a) => ({
+  ...createUiSlice(...a),
+  ...createTransactionSlice(...a),
+}));
 
-        <div className="flex-1 min-w-0 space-y-2 md:space-y-0 md:flex md:items-center md:gap-4">
-          <div className="flex items-center gap-3 justify-between md:justify-start">
-             <StatusBadge status={tx.status} />
-             <span className="text-xs text-zinc-500 md:hidden">{tx.timestamp}</span>
-          </div>
-         
-          <div className="flex-1 min-w-0">
-            <h3 className="text-sm font-medium text-zinc-200 leading-snug">{tx.description}</h3>
-            <div className="flex items-center gap-3 mt-1.5 md:mt-1 text-xs text-zinc-500">
-              <span className="font-mono bg-zinc-900 px-1.5 py-0.5 rounded border border-zinc-800 text-[10px]">{tx.id}</span>
-              <span className="hidden md:inline">•</span>
-              <span className="hidden md:inline">{tx.timestamp}</span>
-              <span className="hidden md:inline">•</span>
-              <span className="flex items-center gap-1">
-                <FileCode className="w-3 h-3" />
-                {tx.files.length} files
-              </span>
-            </div>
-          </div>
-        </div>
+// Export specialized selectors for cleaner global usage
+export const useUiActions = () => useStore((state) => ({
+  setCmdOpen: state.setCmdOpen,
+  toggleCmd: state.toggleCmd,
+}));
 
-        {/* Desktop Actions */}
-        <div className="hidden md:flex items-center gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
-          {tx.status === 'PENDING' && (
-            <button onClick={handleApprove} className="px-3 py-1.5 bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-medium rounded-md shadow-lg shadow-emerald-900/20 transition-all flex items-center gap-1.5 transform hover:scale-105 active:scale-95">
-              <CheckCircle2 className="w-3.5 h-3.5" />
-              Approve
-            </button>
-          )}
-          {tx.status === 'FAILED' && (
-             <button className="px-3 py-1.5 bg-indigo-600 hover:bg-indigo-500 text-white text-xs font-medium rounded-md shadow-lg shadow-indigo-900/20 transition-all flex items-center gap-1.5 transform hover:scale-105 active:scale-95">
-              <RefreshCw className="w-3.5 h-3.5" />
-              Repair
-            </button>
-          )}
-          <button className="p-1.5 text-zinc-400 hover:text-white hover:bg-zinc-800 rounded">
-            <MoreHorizontal className="w-4 h-4" />
-          </button>
-        </div>
-      </div>
+export const useTransactionActions = () => useStore((state) => ({
+  setExpandedId: state.setExpandedId,
+  toggleWatching: state.toggleWatching,
+  fetchTransactions: state.fetchTransactions,
+}));
+````
 
-      {/* Expanded Content */}
-      <AnimatePresence>
-        {expanded && (
-          <motion.div
-            initial={{ height: 0, opacity: 0 }}
-            animate={{ height: "auto", opacity: 1 }}
-            exit={{ height: 0, opacity: 0 }}
-            className="border-t border-zinc-800/50 relative z-10"
-          >
-            <div className="grid grid-cols-1 md:grid-cols-[240px_1fr] min-h-[400px]">
-              
-              {/* Left Sidebar: File Explorer & Meta */}
-              <div className="bg-zinc-900/30 border-r border-zinc-800/50 p-3 flex flex-col gap-4">
-                
-                {/* Mode Switcher */}
-                <div className="flex bg-zinc-900 p-1 rounded-lg border border-zinc-800">
-                  <button 
-                    onClick={() => setActiveTab('diff')}
-                    className={cn(
-                      "flex-1 flex items-center justify-center gap-2 py-1.5 text-xs font-medium rounded-md transition-all",
-                      activeTab === 'diff' 
-                        ? "bg-zinc-800 text-white shadow-sm" 
-                        : "text-zinc-500 hover:text-zinc-300"
-                    )}
-                  >
-                    <FileDiff className="w-3.5 h-3.5" />
-                    Diffs
-                  </button>
-                  <button 
-                    onClick={() => setActiveTab('reasoning')}
-                    className={cn(
-                      "flex-1 flex items-center justify-center gap-2 py-1.5 text-xs font-medium rounded-md transition-all",
-                      activeTab === 'reasoning' 
-                        ? "bg-zinc-800 text-white shadow-sm" 
-                        : "text-zinc-500 hover:text-zinc-300"
-                    )}
-                  >
-                    <BrainCircuit className="w-3.5 h-3.5" />
-                    Logic
-                  </button>
-                </div>
+## File: src/services/api.service.ts
+````typescript
+import { Transaction, Prompt } from "@/types/app.types";
 
-                {/* File List */}
-                <div className="flex-1 overflow-y-auto">
-                  <div className="text-[10px] font-semibold text-zinc-500 uppercase tracking-wider mb-2 px-1">Files ({tx.files.length})</div>
-                  <div className="space-y-0.5">
-                    {tx.files.map((file, i) => (
-                      <button
-                        key={i}
-                        onClick={() => { setSelectedFileIndex(i); setActiveTab('diff'); }}
-                        className={cn(
-                          "w-full flex items-center gap-2 px-2 py-2 rounded-md text-xs text-left transition-colors border border-transparent",
-                          selectedFileIndex === i && activeTab === 'diff'
-                            ? "bg-indigo-500/10 text-indigo-300 border-indigo-500/20" 
-                            : "text-zinc-400 hover:bg-zinc-800/50 hover:text-zinc-200"
-                        )}
-                      >
-                        <FileCode className={cn(
-                          "w-3.5 h-3.5 flex-shrink-0",
-                          selectedFileIndex === i && activeTab === 'diff' ? "text-indigo-400" : "text-zinc-600"
-                        )} />
-                        <span className="truncate font-mono">{file.path.split('/').pop()}</span>
-                        {file.status === 'modified' && <span className="ml-auto w-1.5 h-1.5 rounded-full bg-amber-500/50" />}
-                        {file.status === 'created' && <span className="ml-auto w-1.5 h-1.5 rounded-full bg-emerald-500/50" />}
-                        {file.status === 'deleted' && <span className="ml-auto w-1.5 h-1.5 rounded-full bg-red-500/50" />}
-                      </button>
-                    ))}
-                  </div>
-                </div>
+// --- Mock Data ---
 
-                {/* AI Meta Info */}
-                <div className="pt-3 border-t border-zinc-800/50 space-y-2">
-                   <div className="text-[10px] font-semibold text-zinc-500 uppercase tracking-wider mb-2 px-1">Usage</div>
-                   <div className="grid grid-cols-2 gap-2">
-                      <div className="bg-zinc-900 border border-zinc-800 rounded p-2">
-                        <div className="text-[10px] text-zinc-500">Tokens</div>
-                        <div className="text-xs font-mono text-zinc-300">{tx.tokens}</div>
-                      </div>
-                      <div className="bg-zinc-900 border border-zinc-800 rounded p-2">
-                        <div className="text-[10px] text-zinc-500">Cost</div>
-                        <div className="text-xs font-mono text-zinc-300">{tx.cost}</div>
-                      </div>
-                   </div>
-                   <div className="flex items-center gap-1.5 text-[10px] text-zinc-500 px-1 pt-1">
-                      <Terminal className="w-3 h-3" />
-                      {tx.model}
-                   </div>
-                </div>
-              </div>
+// New: Mock Prompts Database
+const MOCK_PROMPTS: Prompt[] = [
+  {
+    id: 'prompt-1',
+    title: 'Refactor Authentication System',
+    content: 'Refactor authentication middleware to support JWT rotation and improve security.',
+    timestamp: '10 mins ago'
+  },
+  {
+    id: 'prompt-2',
+    title: 'Fix Race Conditions',
+    content: 'Fix race condition in user profile update and optimize database queries.',
+    timestamp: '2 hours ago'
+  },
+  {
+    id: 'prompt-3',
+    title: 'Project Initialization',
+    content: 'Initialize project structure with Vite, React, and Tailwind configuration.',
+    timestamp: '1 day ago'
+  }
+];
 
-              {/* Main Content Area */}
-              <div className="bg-zinc-950 flex flex-col overflow-hidden min-h-[400px]">
-                
-                {/* Content Header */}
-                <div className="h-10 border-b border-zinc-800 flex items-center justify-between px-4 bg-zinc-900/20">
-                   <div className="flex items-center gap-2">
-                      <span className="text-xs font-medium text-zinc-400">
-                        {activeTab === 'diff' ? selectedFile.path : 'AI Reasoning Strategy'}
-                      </span>
-                   </div>
-                   <div className="flex items-center gap-2">
-                      <button className="p-1 hover:bg-zinc-800 rounded text-zinc-500 hover:text-zinc-300">
-                        <Copy className="w-3.5 h-3.5" />
-                      </button>
-                      <button className="p-1 hover:bg-zinc-800 rounded text-zinc-500 hover:text-zinc-300">
-                        <Code2 className="w-3.5 h-3.5" />
-                      </button>
-                   </div>
-                </div>
+const MOCK_TRANSACTIONS: Transaction[] = [
+  {
+    id: 'tx-8f92a1',
+    status: 'PENDING',
+    description: 'Refactor authentication middleware to support JWT rotation',
+    timestamp: 'Just now',
+    createdAt: new Date().toISOString(),
+    promptId: 'prompt-1',
+    author: 'alice',
+    files: [
+      {
+        path: 'src/middleware/auth.ts',
+        status: 'modified',
+        language: 'typescript',
+        diff: `@@ -12,6 +12,14 @@
+ async function authMiddleware(req: Request, res: Response, next: NextFunction) {
+   const token = req.headers.authorization?.split(' ')[1];
+   
+   if (!token) {
+-    return res.status(401).json({ message: 'No token provided' });
++    // Check for refresh token in cookies
++    const refreshToken = req.cookies['refresh_token'];
++    if (!refreshToken) {
++      return res.status(401).json({ message: 'Authentication required' });
++    }
++    
++    // Rotate tokens
++    const newTokens = await rotateTokens(refreshToken);
+   }
+ }`
+      },
+      {
+        path: 'src/config/jwt.ts',
+        status: 'created',
+        language: 'typescript',
+        diff: `@@ -0,0 +1,8 @@
++export const JWT_CONFIG = {
++  secret: process.env.JWT_SECRET || 'dev-secret',
++  expiresIn: '15m',
++  refreshExpiresIn: '7d',
++  issuer: 'relaycode-api',
++  audience: 'relaycode-web'
++};`
+      }
+    ],
+        reasoning: `### Security Upgrade: JWT Rotation
+    The user requested robust JWT rotation. I am updating the authentication flow to support **sliding sessions**.
 
-                {/* Content Body */}
-                <div className="flex-1 overflow-auto custom-scrollbar">
-                   {activeTab === 'diff' ? (
-                     <DiffViewer 
-                        diff={selectedFile.diff} 
-                        language={selectedFile.language} 
-                        className="p-0"
-                     />
-                   ) : (
-                     <div className="p-6">
-                        <div className="prose prose-invert prose-sm max-w-none">
-                           <div className="flex items-start gap-4">
-                              <div className="p-2 rounded-lg bg-zinc-900 border border-zinc-800">
-                                 <Zap className="w-5 h-5 text-amber-500" />
-                              </div>
-                              <div className="space-y-4">
-                                 <p className="text-zinc-300 leading-relaxed text-sm">{tx.reasoning}</p>
-                                 <div className="bg-zinc-900/50 border border-zinc-800 rounded-lg p-4">
-                                    <h5 className="text-xs font-semibold text-zinc-500 uppercase tracking-wider mb-2">Change Strategy</h5>
-                                    <ul className="list-disc list-inside text-xs text-zinc-400 space-y-1">
-                                       <li>Analyze dependencies and imports</li>
-                                       <li>Apply changes using unified diff format</li>
-                                       <li>Verify syntax integrity post-patch</li>
-                                    </ul>
-                                 </div>
-                              </div>
-                           </div>
-                        </div>
-                     </div>
-                   )}
-                </div>
-              </div>
-            </div>
-          </motion.div>
-        )}
-      </AnimatePresence>
-    </motion.div>
-  );
+    **Key Changes:**
+    - Added \`rotateTokens\` logic to the auth middleware.
+    - If a valid access token is missing but a refresh token exists, we issue a new pair instantly.
+    - Updated the \`JWT_CONFIG\` to include strict audience and issuer validation.
+
+    > This ensures seamless user sessions without frequent re-logins while maintaining high security.`,
+    provider: 'Anthropic',
+    model: 'claude-3.5-sonnet',
+    cost: '$0.024',
+    tokens: '1,240'
+  },
+  {
+    id: 'tx-7b21c4',
+    status: 'FAILED',
+    description: 'Fix race condition in user profile update',
+    timestamp: '2 mins ago',
+    createdAt: new Date(Date.now() - 120000).toISOString(),
+    promptId: 'prompt-2',
+    author: 'bob',
+    files: [
+      {
+        path: 'src/services/userService.ts',
+        status: 'modified',
+        language: 'typescript',
+        diff: `@@ -45,7 +45,8 @@
+   async updateUser(id: string, data: Partial<User>) {
+     const user = await db.users.findUnique({ where: { id } });
+     
+-    return db.users.update({
++    // Fix: Add version check for optimistic locking
++    return db.users.update({
+       where: { id, version: user.version },
+       data: { ...data, version: user.version + 1 }
+     });`
+      }
+    ],
+    reasoning: 'Attempting to use optimistic locking on the user record update. However, the current schema does not support versioning, causing the patch to fail validation.',
+    provider: 'OpenAI',
+    model: 'gpt-4o',
+    cost: '$0.045',
+    tokens: '2,100'
+  },
+  {
+    id: 'tx-7b21c5',
+    status: 'APPLIED',
+    description: 'Optimize database connection pooling',
+    timestamp: '5 mins ago',
+    createdAt: new Date(Date.now() - 300000).toISOString(),
+    promptId: 'prompt-2',
+    author: 'alice',
+    files: [],
+    reasoning: 'Added connection pooling to reduce latency.',
+    provider: 'Anthropic',
+    model: 'claude-3.5-sonnet',
+    cost: '$0.015',
+    tokens: '900'
+  },
+  {
+    id: 'tx-3d55e2',
+    status: 'APPLIED',
+    description: 'Add Tailwind CSS configuration for dark mode',
+    timestamp: '15 mins ago',
+    createdAt: new Date(Date.now() - 900000).toISOString(),
+    promptId: 'prompt-3',
+    author: 'system',
+    files: [
+      {
+        path: 'tailwind.config.js',
+        status: 'modified',
+        language: 'javascript',
+        diff: `@@ -4,6 +4,7 @@
+   content: ["./src/**/*.{ts,tsx}"],
+   theme: {
+     extend: {},
+   },
++  darkMode: "class",
+   plugins: [],
+ }`
+      }
+    ],
+    reasoning: 'Enabling class-based dark mode in Tailwind config and adding base styles for the dark theme.',
+    provider: 'Anthropic',
+    model: 'claude-3.5-sonnet',
+    cost: '$0.012',
+    tokens: '850'
+  },
+  {
+    id: 'tx-1a99f3',
+    status: 'COMMITTED',
+    description: 'Initialize project structure with Vite + React',
+    timestamp: '1 hour ago',
+    createdAt: new Date(Date.now() - 3600000).toISOString(),
+    promptId: 'prompt-3',
+    author: 'system',
+    files: [
+      {
+        path: 'package.json',
+        status: 'created',
+        language: 'json',
+        diff: `@@ -0,0 +1,25 @@
++{
++  "name": "new-project",
++  "version": "0.0.1",
++  "type": "module"
++}`
+      }
+    ],
+    reasoning: 'Setting up the initial scaffold based on user requirements. Created base configuration files and entry points.',
+    provider: 'OpenRouter',
+    model: 'mistral-large',
+    cost: '$0.008',
+    tokens: '400'
+  },
+  {
+    id: 'tx-9c88b2',
+    status: 'REVERTED',
+    description: 'Temporary logging for debug (Reverted)',
+    timestamp: '2 hours ago',
+    createdAt: new Date(Date.now() - 7200000).toISOString(),
+    promptId: 'prompt-2',
+    author: 'charlie',
+    files: [
+      {
+        path: 'src/utils/logger.ts',
+        status: 'modified',
+        language: 'typescript',
+        diff: `@@ -20,4 +20,4 @@
+   warn: (msg: string) => console.warn(msg),
+   error: (msg: string) => console.error(msg),
+-  debug: (msg: string) => console.debug(msg),
++  // debug: (msg: string) => console.debug(msg), // Reverting debug log
+ }`
+      }
+    ],
+    reasoning: 'Added verbose logging to trace a connection issue. Issue resolved, reverting changes to keep production log volume low.',
+    provider: 'Anthropic',
+    model: 'claude-3.5-haiku',
+    cost: '$0.005',
+    tokens: '320'
+  }
+];
+
+// --- Event System for "Live" Simulation ---
+type TransactionCallback = (tx: Transaction) => void;
+
+class TransactionSocket {
+  private subscribers: TransactionCallback[] = [];
+  private interval: any;
+
+  subscribe(callback: TransactionCallback) {
+    this.subscribers.push(callback);
+    return () => {
+      this.subscribers = this.subscribers.filter(cb => cb !== callback);
+    };
+  }
+
+  // Simulates finding a new patch in the clipboard
+  startEmitting() {
+    if (this.interval) return;
+    const prompts = ['prompt-1', 'prompt-2', 'prompt-3'];
+    this.interval = setInterval(() => {
+      // In a real app, this would be data from the backend/clipboard
+      const randomTx = MOCK_TRANSACTIONS[Math.floor(Math.random() * MOCK_TRANSACTIONS.length)];
+      const newTx = { 
+        ...randomTx, 
+        id: `tx-${Math.random().toString(36).substr(2, 6)}`, 
+        promptId: prompts[Math.floor(Math.random() * prompts.length)],
+        timestamp: 'Just now', 
+        createdAt: new Date().toISOString(),
+        status: 'PENDING' as const 
+      };
+      this.subscribers.forEach(cb => cb(newTx));
+    }, 8000); // New patch every 8 seconds
+  }
+
+  stopEmitting() {
+    clearInterval(this.interval);
+    this.interval = null;
+  }
+}
+
+// --- API Client ---
+export const api = {
+  socket: new TransactionSocket(),
+  transactions: {
+    list: async (): Promise<Transaction[]> => {
+      return MOCK_TRANSACTIONS;
+    },
+    prompts: {
+      list: async (): Promise<Prompt[]> => MOCK_PROMPTS,
+      get: async (id: string) => MOCK_PROMPTS.find(p => p.id === id)
+    },
+    updateStatus: async (id: string, status: Transaction['status']) => {
+      console.log(`[API] Updating transaction ${id} to ${status}`);
+      return { success: true };
+    }
+  }
 };
 ````
 
-## File: src/pages/dashboard.page.tsx
+## File: src/styles/main.style.css
+````css
+@import "tailwindcss";
+@plugin "@tailwindcss/typography";
+
+@layer utilities {
+  .custom-scrollbar::-webkit-scrollbar {
+    width: 10px;
+    height: 10px;
+  }
+  
+  .custom-scrollbar::-webkit-scrollbar-track {
+    background: #09090b; /* zinc-950 */
+  }
+  
+  .custom-scrollbar::-webkit-scrollbar-thumb {
+    background: #27272a; /* zinc-800 */
+    border-radius: 5px;
+    border: 2px solid #09090b; /* zinc-950 */
+  }
+  
+  .custom-scrollbar::-webkit-scrollbar-thumb:hover {
+    background: #3f3f46; /* zinc-700 */
+  }
+
+  /* Hide scrollbar but keep scroll functionality */
+  .scrollbar-hide {
+    -ms-overflow-style: none;
+    scrollbar-width: none;
+  }
+  
+  .scrollbar-hide::-webkit-scrollbar {
+    display: none;
+  }
+
+  .pb-safe {
+    padding-bottom: env(safe-area-inset-bottom);
+  }
+}
+
+/* Typography & Prose Overrides */
+.prose {
+  --tw-prose-body: var(--color-zinc-300);
+  --tw-prose-headings: var(--color-white);
+  --tw-prose-links: var(--color-indigo-400);
+  --tw-prose-bold: var(--color-zinc-100);
+  --tw-prose-counters: var(--color-zinc-500);
+  --tw-prose-bullets: var(--color-zinc-600);
+  --tw-prose-hr: var(--color-zinc-800);
+  --tw-prose-quotes: var(--color-zinc-200);
+  --tw-prose-quote-borders: var(--color-zinc-700);
+  --tw-prose-captions: var(--color-zinc-400);
+  --tw-prose-code: var(--color-indigo-300);
+  --tw-prose-pre-code: var(--color-zinc-200);
+  --tw-prose-pre-bg: var(--color-zinc-900);
+  --tw-prose-th-borders: var(--color-zinc-700);
+  --tw-prose-td-borders: var(--color-zinc-800);
+}
+
+/* Custom Scrollbar Thin */
+.custom-scrollbar-thin::-webkit-scrollbar {
+  width: 4px;
+  height: 4px;
+}
+
+.custom-scrollbar-thin::-webkit-scrollbar-thumb {
+  background: #3f3f46;
+  border-radius: 10px;
+}
+````
+
+## File: vite.config.ts
 ````typescript
+import path from "path";
+import { fileURLToPath } from "url";
+import tailwindcss from "@tailwindcss/vite";
+import { defineConfig } from "vite";
+import { reactRouter } from "@react-router/dev/vite";
+
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
+
+// https://vite.dev/config/
+export default defineConfig({
+  plugins: [reactRouter(), tailwindcss()],
+  resolve: {
+    alias: {
+      "@": path.resolve(__dirname, "src"),
+    },
+  },
+});
+````
+
+## File: docs/relay.md
+````markdown
+I see the `standard-diff` failed again on the Dashboard file. Since the architecture changes from Part 1 were successfully applied in the previous step, I will now proceed with **Part 2 (Revised)** using the `replace` strategy for the Dashboard and the new utility file to ensure perfect application.
+
+### 1. Create Grouping Utility
+This utility handles the dynamic grouping logic required by the UI.
+
+```typescript // src/utils/group.util.ts
+import { Transaction, Prompt, GroupByStrategy } from '@/types/app.types';
+
+export interface GroupedData {
+  id: string;
+  label: string;
+  count: number;
+  transactions: Transaction[];
+}
+
+// Helper to get relative date
+const getRelativeDate = (dateStr: string): string => {
+  const date = new Date(dateStr);
+  const now = new Date();
+  const diffDays = Math.floor((now.getTime() - date.getTime()) / (1000 * 60 * 60 * 24));
+
+  if (diffDays === 0) return 'Today';
+  if (diffDays === 1) return 'Yesterday';
+  if (diffDays < 7) return 'This Week';
+  if (diffDays < 30) return 'This Month';
+  return 'Older';
+};
+
+export function groupTransactions(
+  transactions: Transaction[],
+  prompts: Prompt[],
+  strategy: GroupByStrategy
+): GroupedData[] {
+  if (strategy === 'none' || !transactions.length) {
+    return [{
+      id: 'all',
+      label: 'All Transactions',
+      count: transactions.length,
+      transactions
+    }];
+  }
+
+  const groups = new Map<string, { label: string; transactions: Transaction[] }>();
+
+  // 1. Sort transactions by date first for consistent ordering
+  const sorted = [...transactions].sort((a, b) => 
+    new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
+  );
+
+  sorted.forEach(tx => {
+    let key = 'unknown';
+    let label = 'Unknown';
+
+    switch (strategy) {
+      case 'prompt': {
+        key = tx.promptId;
+        const prompt = prompts.find(p => p.id === tx.promptId);
+        label = prompt?.title || 'Orphaned Transactions';
+        break;
+      }
+      case 'date': {
+        key = getRelativeDate(tx.createdAt);
+        label = key;
+        break;
+      }
+      case 'author': {
+        key = tx.author || 'unknown';
+        label = tx.author ? `@${tx.author}` : 'Unknown Author';
+        break;
+      }
+      case 'status': {
+        key = tx.status;
+        label = tx.status.charAt(0) + tx.status.slice(1).toLowerCase();
+        break;
+      }
+      case 'files': {
+        // Group by the first file path or "No Files"
+        const firstFile = tx.files[0];
+        key = firstFile?.path || 'no-files';
+        label = firstFile?.path || 'No Files Attached';
+        break;
+      }
+    }
+
+    if (!groups.has(key)) {
+      groups.set(key, { label, transactions: [] });
+    }
+    groups.get(key)!.transactions.push(tx);
+  });
+
+  // Convert map to array and calculate counts
+  return Array.from(groups.entries()).map(([id, data]) => ({
+    id,
+    label: data.label,
+    count: data.transactions.length,
+    transactions: data.transactions
+  }));
+}
+```
+
+### 2. Update Dashboard Page
+Replacing the entire file to inject the grouping controls and grouped list rendering logic reliably.
+
+```typescript // src/pages/dashboard.page.tsx
 import { useEffect } from 'react';
-import { Play, Pause, Activity, RefreshCw, Filter, Terminal, Command } from 'lucide-react';
+import { Play, Pause, Activity, RefreshCw, Filter, Terminal, Command, Layers, Calendar, User, FileCode, CheckCircle2 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { cn } from "@/utils/cn.util";
 import { useStore } from "@/store/root.store";
 import { TransactionCard } from "@/features/transactions/components/transaction-card.component";
+import { groupTransactions } from "@/utils/group.util";
+import { GroupByStrategy } from "@/types/app.types";
 
 export const Dashboard = () => {
   const transactions = useStore((state) => state.transactions);
+  const prompts = useStore((state) => state.prompts);
+  const groupBy = useStore((state) => state.groupBy);
+  const setGroupBy = useStore((state) => state.setGroupBy);
   const fetchTransactions = useStore((state) => state.fetchTransactions);
   const isWatching = useStore((state) => state.isWatching);
   const toggleWatching = useStore((state) => state.toggleWatching);
@@ -1513,11 +1397,23 @@ export const Dashboard = () => {
   }, [fetchTransactions]);
 
   const hasTransactions = transactions.length > 0;
+  
+  // Derived Grouped Data
+  const groupedData = groupTransactions(transactions, prompts, groupBy);
+
+  const groupOptions: { id: GroupByStrategy; icon: React.ElementType; label: string }[] = [
+    { id: 'prompt', icon: Layers, label: 'Prompt' },
+    { id: 'date', icon: Calendar, label: 'Date' },
+    { id: 'author', icon: User, label: 'Author' },
+    { id: 'status', icon: CheckCircle2, label: 'Status' },
+    { id: 'files', icon: FileCode, label: 'Files' },
+    { id: 'none', icon: Filter, label: 'None' },
+  ];
 
   return (
     <div className="p-4 md:p-6 lg:p-8 max-w-[1600px] mx-auto space-y-6 md:space-y-8 pb-32">
       
-      {/* Hero Status Bar - Compact if active, large if empty */}
+      {/* Hero Status Bar */}
       <div className="grid grid-cols-1 lg:grid-cols-4 gap-4 md:gap-6">
         <motion.div 
           layout
@@ -1570,7 +1466,7 @@ export const Dashboard = () => {
           <div className="absolute right-0 top-0 h-full w-2/3 bg-gradient-to-l from-indigo-500/5 to-transparent pointer-events-none" />
         </motion.div>
 
-        {/* Stats Card - Only visible when we have data to show context */}
+        {/* Stats Card */}
         {hasTransactions && (
           <motion.div 
             initial={{ opacity: 0, x: 20 }}
@@ -1598,18 +1494,43 @@ export const Dashboard = () => {
       {/* Transactions List */}
       <div className="space-y-4">
         {hasTransactions && (
-          <div className="sticky top-0 z-20 bg-zinc-950/95 backdrop-blur-xl py-4 -my-4 md:static md:bg-transparent md:backdrop-blur-none md:p-0 md:m-0 flex items-center justify-between border-b border-zinc-800/50 md:border-none px-1 md:px-0">
-            <div className="flex items-center gap-3">
-              <Terminal className="w-5 h-5 text-zinc-500" />
-              <h3 className="text-lg font-semibold text-white">Event Log</h3>
-              <span className="text-xs font-mono text-zinc-500 bg-zinc-900 px-2 py-0.5 rounded-full border border-zinc-800">{transactions.length}</span>
+          <div className="sticky top-0 z-20 bg-zinc-950/95 backdrop-blur-xl py-4 -my-4 md:static md:bg-transparent md:backdrop-blur-none md:p-0 md:m-0 flex flex-col md:flex-row md:items-center justify-between border-b border-zinc-800/50 md:border-none px-1 md:px-0 gap-4">
+            
+            <div className="flex items-center justify-between w-full md:w-auto flex-1">
+              <div className="flex items-center gap-3">
+                <Terminal className="w-5 h-5 text-zinc-500" />
+                <h3 className="text-lg font-semibold text-white">Event Log</h3>
+                <span className="text-xs font-mono text-zinc-500 bg-zinc-900 px-2 py-0.5 rounded-full border border-zinc-800">{transactions.length}</span>
+              </div>
+              
+              {/* Mobile Filter Toggle */}
+              <button className="md:hidden p-2 rounded-lg bg-zinc-800 text-zinc-300">
+                 <Filter className="w-4 h-4" />
+              </button>
+            </div>
+
+            {/* Grouping Controls */}
+            <div className="flex items-center gap-2 w-full md:w-auto overflow-x-auto pb-2 md:pb-0 custom-scrollbar-thin">
+              <span className="text-xs text-zinc-500 hidden md:block mr-2">Group by:</span>
+              {groupOptions.map((opt) => (
+                <button
+                  key={opt.id}
+                  onClick={() => setGroupBy(opt.id)}
+                  className={cn(
+                    "flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium border transition-all whitespace-nowrap",
+                    groupBy === opt.id 
+                      ? "bg-indigo-500/20 text-indigo-300 border-indigo-500/30" 
+                      : "bg-zinc-900/50 text-zinc-400 border-zinc-800 hover:bg-zinc-800 hover:text-zinc-200"
+                  )}
+                >
+                  <opt.icon className="w-3.5 h-3.5" />
+                  {opt.label}
+                </button>
+              ))}
             </div>
             
-            <div className="flex items-center gap-2">
-              <button className="text-xs flex items-center gap-1.5 text-zinc-400 hover:text-white px-3 py-1.5 rounded-md hover:bg-zinc-800 transition-colors">
-                  <Filter className="w-3.5 h-3.5" /> Filter
-              </button>
-              <div className="h-4 w-px bg-zinc-800" />
+            {/* Secondary Actions */}
+            <div className="hidden md:flex items-center gap-2">
               <button className="text-xs flex items-center gap-1.5 text-zinc-400 hover:text-white px-3 py-1.5 rounded-md hover:bg-zinc-800 transition-colors">
                   <RefreshCw className="w-3.5 h-3.5" /> Refresh
               </button>
@@ -1620,12 +1541,549 @@ export const Dashboard = () => {
         <div className="space-y-3 pt-2 md:pt-0 min-h-[300px]">
           <AnimatePresence mode='popLayout'>
             {hasTransactions ? (
-              transactions.map((tx) => (
-                <TransactionCard 
-                  key={tx.id} 
-                  tx={tx} 
-                />
+              groupedData.map((group) => (
+                <div key={group.id} className="space-y-3">
+                  {/* Group Header */}
+                  <div className="flex items-center gap-3 pt-4 first:pt-0">
+                    <div className="h-px flex-1 bg-zinc-800/50" />
+                    <div className="flex items-center gap-2 px-3 py-1 rounded-full bg-zinc-900 border border-zinc-800">
+                       <span className="text-xs font-medium text-zinc-300">{group.label}</span>
+                       <span className="text-[10px] font-mono text-zinc-500 bg-zinc-800 px-1.5 py-0.5 rounded-full">{group.count}</span>
+                    </div>
+                    <div className="h-px flex-1 bg-zinc-800/50" />
+                  </div>
+                  
+                  {/* Group Items */}
+                  <div className="space-y-3 pl-0 md:pl-2 border-l-0 md:border-l border-zinc-800/50 ml-3">
+                    {group.transactions.map((tx) => (
+                      <TransactionCard 
+                        key={tx.id} 
+                        tx={tx} 
+                      />
+                    ))}
+                  </div>
+                </div>
               ))
+            ) : (
+              <motion.div 
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                className="flex flex-col items-center justify-center py-20 text-zinc-500 border-2 border-dashed border-zinc-800/50 rounded-2xl bg-zinc-900/20"
+              >
+                <div className="w-16 h-16 bg-zinc-900 rounded-full flex items-center justify-center mb-4 shadow-xl">
+                   <Command className="w-8 h-8 text-zinc-600" />
+                </div>
+                <h3 className="text-lg font-medium text-zinc-300 mb-2">No patches detected yet</h3>
+                <p className="max-w-sm text-center text-sm mb-6">
+                  Copy any AI-generated code block (Claude, GPT, etc.) to your clipboard to see it appear here instantly.
+                </p>
+                <button 
+                  onClick={toggleWatching}
+                  className="px-4 py-2 bg-zinc-800 hover:bg-zinc-700 text-zinc-300 rounded-lg text-sm font-medium transition-colors"
+                >
+                  {isWatching ? 'Waiting for clipboard events...' : 'Start Monitoring'}
+                </button>
+              </motion.div>
+            )}
+          </AnimatePresence>
+        </div>
+      </div>
+    </div>
+  );
+};
+```
+
+```yaml
+projectId: react-vite-tailwind
+uuid: d4e5f6a7-b8c9-0d1e-2f3a-4b5c6d7e8f9a
+changeSummary:
+  - new: src/utils/group.util.ts
+  - replace: src/pages/dashboard.page.tsx
+promptSummary: Implemented UI for transaction grouping (Part 2/2 Revised). Added grouping utility and updated Dashboard with group selector controls and grouped list rendering using replace strategy.
+gitCommitMsg: >-
+  feat(ui): implement transaction grouping
+
+  - Create group.util.ts for grouping logic.
+  - Add group selector tabs to Dashboard header.
+  - Render transactions in collapsible groups.
+  - Support grouping by prompt, date, author, status, and files.
+```
+````
+
+## File: src/features/transactions/components/transaction-card.component.tsx
+````typescript
+import ReactMarkdown from 'react-markdown';
+import remarkGfm from 'remark-gfm';
+import { 
+  CheckCircle2, 
+  RefreshCw, 
+  MoreHorizontal, 
+  ChevronDown, 
+  FileCode, 
+  Zap, 
+  Copy, 
+  Terminal,
+  Cpu,
+  Coins,
+  History
+} from 'lucide-react';
+import { motion, AnimatePresence } from 'framer-motion';
+import { cn } from "@/utils/cn.util";
+import { Transaction } from "@/types/app.types";
+import { StatusBadge } from "@/components/ui/status-badge.ui";
+import { DiffViewer } from "@/components/ui/diff-viewer.ui.tsx";
+import { useStore } from "@/store/root.store";
+import { getDiffStats } from "@/utils/diff.util";
+
+interface TransactionCardProps {
+  tx: Transaction;
+  isNew?: boolean;
+}
+
+export const TransactionCard = ({ tx, isNew = false }: TransactionCardProps) => {
+  const expandedId = useStore((state) => state.expandedId);
+  const setExpandedId = useStore((state) => state.setExpandedId);
+  const approveTransaction = useStore((state) => state.approveTransaction);
+  const expanded = expandedId === tx.id;
+  
+  const onToggle = () => setExpandedId(expanded ? null : tx.id);
+
+  const handleApprove = (e: React.MouseEvent) => {
+    e.stopPropagation();
+    approveTransaction(tx.id);
+  };
+
+  return (
+    <motion.div 
+      initial={isNew ? { opacity: 0, y: 20 } : false}
+      animate={{ opacity: 1, y: 0 }}
+      layout
+      className={cn(
+        "group border rounded-2xl transition-all duration-500 relative",
+        expanded 
+          ? "bg-zinc-950 border-zinc-700/50 shadow-2xl z-10 my-8" 
+          : "bg-zinc-900/40 border-zinc-800/60 hover:bg-zinc-900/60 hover:border-zinc-700"
+      )}
+    >
+      {/* STICKY HEADER: The Control Bar */}
+      <div 
+        onClick={onToggle}
+        className={cn(
+          "z-30 transition-all duration-300 cursor-pointer rounded-t-2xl",
+          expanded 
+            ? "sticky top-[-1px] bg-zinc-950/90 backdrop-blur-xl border-b border-zinc-800/80 px-6 py-4" 
+            : "p-4"
+        )}
+      >
+        <div className="flex items-center gap-4">
+          <div className={cn(
+            "p-1 rounded-md transition-colors",
+            expanded ? "bg-indigo-500/10 text-indigo-400" : "text-zinc-600"
+          )}>
+            <ChevronDown className={cn("w-4 h-4 transition-transform", expanded ? "rotate-0" : "-rotate-90")} />
+          </div>
+
+          <div className="flex-1 flex items-center gap-4 min-w-0">
+            <StatusBadge status={tx.status} />
+            <div className="flex-1 min-w-0">
+              <h3 className={cn(
+                "text-sm font-semibold truncate",
+                expanded ? "text-white" : "text-zinc-300"
+              )}>
+                {tx.description}
+              </h3>
+              <div className="flex items-center gap-2 mt-0.5 text-[10px] text-zinc-500 font-mono">
+                <History className="w-3 h-3" /> {tx.timestamp}
+                <span>•</span>
+                <span className="text-zinc-600">ID: {tx.id.split('-').pop()}</span>
+              </div>
+            </div>
+          </div>
+
+          <div className="flex items-center gap-2">
+            <AnimatePresence>
+              {expanded && tx.status === 'PENDING' && (
+                <motion.button 
+                  initial={{ opacity: 0, scale: 0.9 }}
+                  animate={{ opacity: 1, scale: 1 }}
+                  onClick={handleApprove} 
+                  className="flex items-center gap-2 px-4 py-1.5 bg-emerald-600 hover:bg-emerald-500 text-white text-[11px] font-bold uppercase tracking-wider rounded-lg shadow-lg shadow-emerald-900/20 transition-all active:scale-95"
+                >
+                  <CheckCircle2 className="w-3.5 h-3.5" />
+                  Apply
+                </motion.button>
+              )}
+            </AnimatePresence>
+            <button className="p-2 text-zinc-600 hover:text-white transition-colors">
+              <MoreHorizontal className="w-4 h-4" />
+            </button>
+          </div>
+        </div>
+      </div>
+
+      {/* DOCUMENT CONTENT */}
+      <AnimatePresence>
+        {expanded && (
+          <motion.div
+            initial={{ height: 0, opacity: 0 }}
+            animate={{ height: "auto", opacity: 1 }}
+            exit={{ height: 0, opacity: 0 }}
+            className="overflow-hidden"
+          >
+            {/* Observability Strip */}
+            <div className="flex items-center gap-6 px-8 py-3 bg-zinc-900/40 border-b border-zinc-800/50 overflow-x-auto scrollbar-hide">
+               <MetaItem icon={Cpu} label="Engine" value={`${tx.provider} / ${tx.model}`} color="text-indigo-400" />
+               <MetaItem icon={Terminal} label="Resources" value={`${tx.tokens} tokens`} color="text-emerald-400" />
+               <MetaItem icon={Coins} label="Cost" value={tx.cost} color="text-amber-400" />
+            </div>
+
+            <div className="p-8 space-y-12 max-w-5xl mx-auto">
+              {/* Reasoning Section */}
+              <section className="space-y-4">
+                <div className="flex items-center gap-2 text-zinc-500">
+                   <Zap className="w-4 h-4 text-amber-500" />
+                   <h4 className="text-[10px] uppercase font-bold tracking-widest">Architectural Intent</h4>
+                </div>
+                <div className="prose prose-zinc prose-invert prose-sm max-w-none">
+                  <ReactMarkdown remarkPlugins={[remarkGfm]}>
+                    {tx.reasoning}
+                  </ReactMarkdown>
+                </div>
+              </section>
+
+              {/* Implementation / File Stream */}
+              <section className="space-y-6 pb-8">
+                 <div className="flex items-center gap-2 text-zinc-500">
+                   <FileCode className="w-4 h-4 text-indigo-500" />
+                   <h4 className="text-[10px] uppercase font-bold tracking-widest">Implementation Details ({tx.files.length} Files)</h4>
+                </div>
+                
+                <div className="space-y-10">
+                  {tx.files.map((file, i) => {
+                    const stats = getDiffStats(file.diff);
+                    return (
+                      <div key={i} className="group/file border border-zinc-800/80 rounded-xl overflow-hidden bg-zinc-950 shadow-2xl">
+                         {/* File Header with +/- Stats */}
+                         <div className="flex items-center justify-between px-4 py-2 bg-zinc-900/80 border-b border-zinc-800/80">
+                            <div className="flex items-center gap-3">
+                               <div className={cn(
+                                 "w-1.5 h-1.5 rounded-full",
+                                 file.status === 'modified' ? "bg-amber-500" : 
+                                 file.status === 'created' ? "bg-emerald-500" : "bg-red-500"
+                               )} />
+                               <span className="text-[11px] font-mono text-zinc-300 truncate max-w-[200px] md:max-w-none">{file.path}</span>
+                            </div>
+                            <div className="flex items-center gap-4">
+                               <div className="flex items-center gap-2 font-mono text-[10px]">
+                                  <span className="text-emerald-500">+{stats.adds}</span>
+                                  <span className="text-red-500">-{stats.subs}</span>
+                               </div>
+                               <div className="h-3 w-px bg-zinc-800" />
+                               <button className="p-1 text-zinc-600 hover:text-white transition-colors">
+                                  <Copy className="w-3.5 h-3.5" />
+                               </button>
+                            </div>
+                         </div>
+                         <DiffViewer diff={file.diff} language={file.language} className="max-h-[400px]" />
+                      </div>
+                    );
+                  })}
+                </div>
+              </section>
+            </div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+    </motion.div>
+  );
+};
+
+const MetaItem = ({ icon: Icon, label, value, color }: any) => (
+  <div className="flex items-center gap-2 shrink-0">
+    <div className={cn("p-1.5 rounded bg-zinc-800/50 border border-zinc-700/50", color)}>
+      <Icon className="w-3 h-3" />
+    </div>
+    <div className="flex flex-col">
+      <span className="text-[9px] text-zinc-500 uppercase font-bold tracking-tighter leading-none mb-0.5">{label}</span>
+      <span className="text-[11px] font-mono text-zinc-300 leading-none">{value}</span>
+    </div>
+  </div>
+);
+````
+
+## File: src/pages/dashboard.page.tsx
+````typescript
+import { useEffect, useState, useRef } from 'react';
+import { Play, Pause, Activity, RefreshCw, Filter, Terminal, Command, Layers, Calendar, User, FileCode, CheckCircle2, ChevronDown, ChevronRight } from 'lucide-react';
+import { motion, AnimatePresence } from 'framer-motion';
+import { useSearchParams } from 'react-router';
+import { cn } from "@/utils/cn.util";
+import { useStore } from "@/store/root.store";
+import { TransactionCard } from "@/features/transactions/components/transaction-card.component";
+import { groupTransactions } from "@/utils/group.util";
+import { GroupByStrategy } from "@/types/app.types";
+
+const DEFAULT_GROUP_BY: GroupByStrategy = 'prompt';
+const VALID_GROUP_STRATEGIES: GroupByStrategy[] = ['prompt', 'date', 'author', 'status', 'files', 'none'];
+
+export const Dashboard = () => {
+  const [searchParams, setSearchParams] = useSearchParams();
+  
+  const transactions = useStore((state) => state.transactions);
+  const prompts = useStore((state) => state.prompts);
+  const fetchTransactions = useStore((state) => state.fetchTransactions);
+  const isWatching = useStore((state) => state.isWatching);
+  const toggleWatching = useStore((state) => state.toggleWatching);
+  
+  // Get groupBy from URL search params
+  const groupByParam = searchParams.get('groupBy');
+  const groupBy: GroupByStrategy = VALID_GROUP_STRATEGIES.includes(groupByParam as GroupByStrategy) 
+    ? (groupByParam as GroupByStrategy) 
+    : DEFAULT_GROUP_BY;
+  
+  const setGroupBy = (strategy: GroupByStrategy) => {
+    setSearchParams(prev => {
+      prev.set('groupBy', strategy);
+      return prev;
+    });
+  };
+
+  // Track collapsed state of each group
+  const [collapsedGroups, setCollapsedGroups] = useState<Set<string>>(new Set());
+  
+  // Track seen transaction IDs to identify new ones (prevents flicker on regroup)
+  const seenTransactionIdsRef = useRef<Set<string>>(new Set());
+  const [seenTransactionIds, setSeenTransactionIds] = useState<Set<string>>(new Set());
+  
+  // Update seen transactions when transactions change (with delay for animation)
+  useEffect(() => {
+    const newIds = new Set<string>();
+    
+    transactions.forEach(tx => {
+      if (!seenTransactionIdsRef.current.has(tx.id)) {
+        newIds.add(tx.id);
+      }
+    });
+    
+    if (newIds.size > 0) {
+      // Delay marking as seen to allow enter animation to complete
+      const timer = setTimeout(() => {
+        newIds.forEach(id => seenTransactionIdsRef.current.add(id));
+        setSeenTransactionIds(new Set(seenTransactionIdsRef.current));
+      }, 500); // Wait for animation to complete
+      
+      return () => clearTimeout(timer);
+    }
+  }, [transactions]);
+
+  const toggleGroupCollapse = (groupId: string) => {
+    setCollapsedGroups((prev) => {
+      const next = new Set(prev);
+      if (next.has(groupId)) {
+        next.delete(groupId);
+      } else {
+        next.add(groupId);
+      }
+      return next;
+    });
+  };
+
+  useEffect(() => {
+    fetchTransactions();
+  }, [fetchTransactions]);
+
+  const hasTransactions = transactions.length > 0;
+  
+  // Derived Grouped Data
+  const groupedData = groupTransactions(transactions, prompts, groupBy);
+
+  const groupOptions: { id: GroupByStrategy; icon: React.ElementType; label: string }[] = [
+    { id: 'prompt', icon: Layers, label: 'Prompt' },
+    { id: 'date', icon: Calendar, label: 'Date' },
+    { id: 'author', icon: User, label: 'Author' },
+    { id: 'status', icon: CheckCircle2, label: 'Status' },
+    { id: 'files', icon: FileCode, label: 'Files' },
+    { id: 'none', icon: Filter, label: 'None' },
+  ];
+
+  return (
+    <div className="p-4 md:p-6 lg:p-8 max-w-[1600px] mx-auto space-y-6 md:space-y-8 pb-32">
+      
+      {/* Hero Status Bar */}
+      <div className="grid grid-cols-1 lg:grid-cols-4 gap-4 md:gap-6">
+        <motion.div 
+          layout
+          className={cn(
+            "relative overflow-hidden rounded-2xl border border-zinc-800/60 bg-gradient-to-br from-zinc-900 to-zinc-950 shadow-2xl group transition-all duration-500",
+            hasTransactions ? "lg:col-span-3 p-6" : "lg:col-span-4 p-12 py-20"
+          )}
+        >
+          <div className="relative z-10 flex flex-col md:flex-row md:items-center justify-between gap-6 h-full">
+            <div>
+              <div className="flex items-center gap-3 mb-3">
+                <span className={cn("relative flex h-3 w-3")}>
+                  <span className={cn("animate-ping absolute inline-flex h-full w-full rounded-full opacity-75", isWatching ? "bg-emerald-500" : "bg-amber-500")}></span>
+                  <span className={cn("relative inline-flex rounded-full h-3 w-3", isWatching ? "bg-emerald-500" : "bg-amber-500")}></span>
+                </span>
+                <h2 className={cn("text-xs font-bold uppercase tracking-widest", isWatching ? "text-emerald-500" : "text-amber-500")}>
+                  {isWatching ? 'System Active' : 'System Paused'}
+                </h2>
+              </div>
+              <h1 className={cn("font-bold text-white mb-2 tracking-tight transition-all", hasTransactions ? "text-xl md:text-2xl" : "text-3xl md:text-4xl")}>
+                {isWatching ? 'Monitoring Clipboard Stream' : 'Ready to Intercept Patches'}
+              </h1>
+              <p className={cn("text-zinc-500 transition-all leading-relaxed", hasTransactions ? "text-sm max-w-lg" : "text-base max-w-2xl")}>
+                {isWatching 
+                  ? 'Relaycode is actively scanning for AI code blocks. Patches will appear below automatically.' 
+                  : 'Resume monitoring to detect new AI patches from your clipboard.'}
+              </p>
+            </div>
+
+            <div className="flex flex-wrap items-center gap-4">
+              <button 
+                onClick={toggleWatching}
+                className={cn(
+                  "px-6 py-3 rounded-xl font-bold text-sm flex items-center gap-2 transition-all transform active:scale-95 shadow-xl",
+                  isWatching 
+                    ? "bg-zinc-800 hover:bg-zinc-700 text-zinc-200 border border-zinc-700"
+                    : "bg-emerald-600 hover:bg-emerald-500 text-white shadow-emerald-900/20 ring-1 ring-emerald-500/50"
+                )}
+              >
+                {isWatching ? (
+                  <><Pause className="w-4 h-4 fill-current" /> Pause Watcher</>
+                ) : (
+                  <><Play className="w-4 h-4 fill-current" /> Start Monitoring</>
+                )}
+              </button>
+            </div>
+          </div>
+          
+          {/* Decorative Elements */}
+          <div className="absolute right-0 top-0 h-full w-2/3 bg-gradient-to-l from-indigo-500/5 to-transparent pointer-events-none" />
+        </motion.div>
+
+        {/* Stats Card */}
+        {hasTransactions && (
+          <motion.div 
+            initial={{ opacity: 0, x: 20 }}
+            animate={{ opacity: 1, x: 0 }}
+            className="lg:col-span-1 rounded-2xl border border-zinc-800/60 bg-zinc-900/40 p-6 flex flex-col justify-center gap-4 backdrop-blur-sm"
+          >
+             <div className="flex items-center justify-between mb-2">
+                <span className="text-xs text-zinc-500 font-medium uppercase tracking-wider">Session Stats</span>
+                <Activity className="w-4 h-4 text-emerald-500" />
+             </div>
+             <div className="grid grid-cols-2 gap-4">
+                <div>
+                   <div className="text-2xl font-bold text-white">{transactions.length}</div>
+                   <div className="text-xs text-zinc-500">Events Captured</div>
+                </div>
+                <div>
+                   <div className="text-2xl font-bold text-zinc-300">92%</div>
+                   <div className="text-xs text-zinc-500">Auto-Success</div>
+                </div>
+             </div>
+          </motion.div>
+        )}
+      </div>
+
+      {/* Transactions List */}
+      <div className="space-y-6">
+        {hasTransactions && (
+          <div className="sticky top-0 z-20 bg-zinc-950/95 backdrop-blur-xl py-4 -my-4 md:static md:bg-transparent md:backdrop-blur-none md:p-0 md:m-0 flex flex-col md:flex-row md:items-center justify-between border-b border-zinc-800/50 md:border-none px-1 md:px-0 gap-4">
+            
+            <div className="flex items-center justify-between w-full md:w-auto flex-1">
+              <div className="flex items-center gap-3">
+                <Terminal className="w-5 h-5 text-zinc-500" />
+                <h3 className="text-lg font-semibold text-white">Event Log</h3>
+                <span className="text-xs font-mono text-zinc-500 bg-zinc-900 px-2 py-0.5 rounded-full border border-zinc-800">{transactions.length}</span>
+              </div>
+              
+              {/* Mobile Filter Toggle */}
+              <button className="md:hidden p-2 rounded-lg bg-zinc-800 text-zinc-300">
+                 <Filter className="w-4 h-4" />
+              </button>
+            </div>
+
+            {/* Grouping Controls */}
+            <div className="flex items-center gap-2 w-full md:w-auto overflow-x-auto pb-2 md:pb-0 scrollbar-hide">
+              <span className="text-xs text-zinc-500 hidden md:block mr-2">Group by:</span>
+              {groupOptions.map((opt) => (
+                <button
+                  key={opt.id}
+                  onClick={() => setGroupBy(opt.id)}
+                  className={cn(
+                    "flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium border transition-all whitespace-nowrap",
+                    groupBy === opt.id 
+                      ? "bg-indigo-500/20 text-indigo-300 border-indigo-500/30" 
+                      : "bg-zinc-900/50 text-zinc-400 border-zinc-800 hover:bg-zinc-800 hover:text-zinc-200"
+                  )}
+                >
+                  <opt.icon className="w-3.5 h-3.5" />
+                  {opt.label}
+                </button>
+              ))}
+            </div>
+            
+            {/* Secondary Actions */}
+            <div className="hidden md:flex items-center gap-2">
+              <button className="text-xs flex items-center gap-1.5 text-zinc-400 hover:text-white px-3 py-1.5 rounded-md hover:bg-zinc-800 transition-colors">
+                  <RefreshCw className="w-3.5 h-3.5" /> Refresh
+              </button>
+            </div>
+          </div>
+        )}
+
+        <div className="space-y-3 min-h-[300px] mt-8">
+          <AnimatePresence mode='popLayout'>
+            {hasTransactions ? (
+              groupedData.map((group) => {
+                const isCollapsed = collapsedGroups.has(group.id);
+                return (
+                  <div key={group.id} className="space-y-3">
+                    {/* Group Header - Clickable */}
+                    <button
+                      onClick={() => toggleGroupCollapse(group.id)}
+                      className="flex items-center gap-3 pt-4 first:pt-0 w-full group/header"
+                    >
+                      <div className="h-px flex-1 bg-zinc-800/50" />
+                      <div className="flex items-center gap-2 px-3 py-1 rounded-full bg-zinc-900 border border-zinc-800 hover:border-zinc-700 transition-colors">
+                        {isCollapsed ? (
+                          <ChevronRight className="w-3 h-3 text-zinc-500 group-hover/header:text-zinc-300 transition-colors" />
+                        ) : (
+                          <ChevronDown className="w-3 h-3 text-zinc-500 group-hover/header:text-zinc-300 transition-colors" />
+                        )}
+                        <span className="text-xs font-medium text-zinc-300">{group.label}</span>
+                        <span className="text-[10px] font-mono text-zinc-500 bg-zinc-800 px-1.5 py-0.5 rounded-full">{group.count}</span>
+                      </div>
+                      <div className="h-px flex-1 bg-zinc-800/50" />
+                    </button>
+                    
+                    {/* Group Items - Collapsible */}
+                    <AnimatePresence>
+                      {!isCollapsed && (
+                        <motion.div
+                          initial={{ height: 0, opacity: 0 }}
+                          animate={{ height: 'auto', opacity: 1 }}
+                          exit={{ height: 0, opacity: 0 }}
+                          transition={{ duration: 0.2, ease: 'easeInOut' }}
+                          className="overflow-hidden"
+                        >
+                          <div className="space-y-3 pl-0 md:pl-2 border-l-0 md:border-l border-zinc-800/50 ml-3">
+                            {group.transactions.map((tx) => (
+                              <TransactionCard 
+                                key={tx.id} 
+                                tx={tx}
+                                isNew={!seenTransactionIds.has(tx.id)} 
+                              />
+                            ))}
+                          </div>
+                        </motion.div>
+                      )}
+                    </AnimatePresence>
+                  </div>
+                );
+              })
             ) : (
               <motion.div 
                 initial={{ opacity: 0 }}
@@ -1655,221 +2113,16 @@ export const Dashboard = () => {
 };
 ````
 
-## File: src/services/api.service.ts
-````typescript
-import { Transaction } from "@/types/app.types";
-
-// --- Mock Data (Moved from App.tsx) ---
-const MOCK_TRANSACTIONS: Transaction[] = [
-  {
-    id: 'tx-8f92a1',
-    status: 'PENDING',
-    description: 'Refactor authentication middleware to support JWT rotation',
-    timestamp: 'Just now',
-    files: [
-      {
-        path: 'src/middleware/auth.ts',
-        status: 'modified',
-        language: 'typescript',
-        diff: `@@ -12,6 +12,14 @@
- async function authMiddleware(req: Request, res: Response, next: NextFunction) {
-   const token = req.headers.authorization?.split(' ')[1];
-   
-   if (!token) {
--    return res.status(401).json({ message: 'No token provided' });
-+    // Check for refresh token in cookies
-+    const refreshToken = req.cookies['refresh_token'];
-+    if (!refreshToken) {
-+      return res.status(401).json({ message: 'Authentication required' });
-+    }
-+    
-+    // Rotate tokens
-+    const newTokens = await rotateTokens(refreshToken);
-   }
- }`
-      },
-      {
-        path: 'src/config/jwt.ts',
-        status: 'created',
-        language: 'typescript',
-        diff: `@@ -0,0 +1,8 @@
-+export const JWT_CONFIG = {
-+  secret: process.env.JWT_SECRET || 'dev-secret',
-+  expiresIn: '15m',
-+  refreshExpiresIn: '7d',
-+  issuer: 'relaycode-api',
-+  audience: 'relaycode-web'
-+};`
-      }
-    ],
-    reasoning: 'The user requested JWT rotation. I am updating the auth middleware to check for an expiring token and issue a new one if within the refresh window. This ensures seamless user sessions without frequent re-logins.',
-    provider: 'Anthropic',
-    model: 'claude-3.5-sonnet',
-    cost: '$0.024',
-    tokens: '1,240'
-  },
-  {
-    id: 'tx-7b21c4',
-    status: 'FAILED',
-    description: 'Fix race condition in user profile update',
-    timestamp: '2 mins ago',
-    files: [
-      {
-        path: 'src/services/userService.ts',
-        status: 'modified',
-        language: 'typescript',
-        diff: `@@ -45,7 +45,8 @@
-   async updateUser(id: string, data: Partial<User>) {
-     const user = await db.users.findUnique({ where: { id } });
-     
--    return db.users.update({
-+    // Fix: Add version check for optimistic locking
-+    return db.users.update({
-       where: { id, version: user.version },
-       data: { ...data, version: user.version + 1 }
-     });`
-      }
-    ],
-    reasoning: 'Attempting to use optimistic locking on the user record update. However, the current schema does not support versioning, causing the patch to fail validation.',
-    provider: 'OpenAI',
-    model: 'gpt-4o',
-    cost: '$0.045',
-    tokens: '2,100'
-  },
-  {
-    id: 'tx-3d55e2',
-    status: 'APPLIED',
-    description: 'Add Tailwind CSS configuration for dark mode',
-    timestamp: '15 mins ago',
-    files: [
-      {
-        path: 'tailwind.config.js',
-        status: 'modified',
-        language: 'javascript',
-        diff: `@@ -4,6 +4,7 @@
-   content: ["./src/**/*.{ts,tsx}"],
-   theme: {
-     extend: {},
-   },
-+  darkMode: "class",
-   plugins: [],
- }`
-      }
-    ],
-    reasoning: 'Enabling class-based dark mode in Tailwind config and adding base styles for the dark theme.',
-    provider: 'Anthropic',
-    model: 'claude-3.5-sonnet',
-    cost: '$0.012',
-    tokens: '850'
-  },
-  {
-    id: 'tx-1a99f3',
-    status: 'COMMITTED',
-    description: 'Initialize project structure with Vite + React',
-    timestamp: '1 hour ago',
-    files: [
-      {
-        path: 'package.json',
-        status: 'created',
-        language: 'json',
-        diff: `@@ -0,0 +1,25 @@
-+{
-+  "name": "new-project",
-+  "version": "0.0.1",
-+  "type": "module"
-+}`
-      }
-    ],
-    reasoning: 'Setting up the initial scaffold based on user requirements. Created base configuration files and entry points.',
-    provider: 'OpenRouter',
-    model: 'mistral-large',
-    cost: '$0.008',
-    tokens: '400'
-  },
-  {
-    id: 'tx-9c88b2',
-    status: 'REVERTED',
-    description: 'Temporary logging for debug (Reverted)',
-    timestamp: '2 hours ago',
-    files: [
-      {
-        path: 'src/utils/logger.ts',
-        status: 'modified',
-        language: 'typescript',
-        diff: `@@ -20,4 +20,4 @@
-   warn: (msg: string) => console.warn(msg),
-   error: (msg: string) => console.error(msg),
--  debug: (msg: string) => console.debug(msg),
-+  // debug: (msg: string) => console.debug(msg), // Reverting debug log
- }`
-      }
-    ],
-    reasoning: 'Added verbose logging to trace a connection issue. Issue resolved, reverting changes to keep production log volume low.',
-    provider: 'Anthropic',
-    model: 'claude-3.5-haiku',
-    cost: '$0.005',
-    tokens: '320'
-  }
-];
-
-// --- Event System for "Live" Simulation ---
-type TransactionCallback = (tx: Transaction) => void;
-
-class TransactionSocket {
-  private subscribers: TransactionCallback[] = [];
-  private interval: any;
-
-  subscribe(callback: TransactionCallback) {
-    this.subscribers.push(callback);
-    return () => {
-      this.subscribers = this.subscribers.filter(cb => cb !== callback);
-    };
-  }
-
-  // Simulates finding a new patch in the clipboard
-  startEmitting() {
-    if (this.interval) return;
-    this.interval = setInterval(() => {
-      // In a real app, this would be data from the backend/clipboard
-      const randomTx = MOCK_TRANSACTIONS[Math.floor(Math.random() * MOCK_TRANSACTIONS.length)];
-      const newTx = { ...randomTx, id: `tx-${Math.random().toString(36).substr(2, 6)}`, timestamp: 'Just now', status: 'PENDING' as const };
-      this.subscribers.forEach(cb => cb(newTx));
-    }, 8000); // New patch every 8 seconds
-  }
-
-  stopEmitting() {
-    clearInterval(this.interval);
-    this.interval = null;
-  }
-}
-
-// --- Elysia Client Stub ---
-// In a real app, this would use fetch/axios or the official Elysia Eden client
-export const api = {
-  socket: new TransactionSocket(),
-  transactions: {
-    list: async (): Promise<Transaction[]> => {
-      // Simulate network delay
-      // await new Promise(resolve => setTimeout(resolve, 500));
-      return MOCK_TRANSACTIONS;
-    },
-    updateStatus: async (id: string, status: Transaction['status']) => {
-      console.log(`[API] Updating transaction ${id} to ${status}`);
-      return { success: true };
-    }
-  }
-};
-````
-
 ## File: src/store/slices/transaction.slice.ts
 ````typescript
 import { StateCreator } from 'zustand';
-import { Transaction } from '@/types/app.types';
+import { Transaction, Prompt } from '@/types/app.types';
 import { api } from '@/services/api.service';
 import { RootState } from '../root.store';
 
 export interface TransactionSlice {
   transactions: Transaction[];
+  prompts: Prompt[]; // Store prompts for lookup
   isLoading: boolean;
   expandedId: string | null;
   isWatching: boolean;
@@ -1882,6 +2135,7 @@ export interface TransactionSlice {
 
 export const createTransactionSlice: StateCreator<RootState, [], [], TransactionSlice> = (set, get) => ({
   transactions: [],
+  prompts: [],
   isLoading: false,
   expandedId: null,
   isWatching: false, // Default to false to show the "Start" state
@@ -1915,7 +2169,8 @@ export const createTransactionSlice: StateCreator<RootState, [], [], Transaction
     set({ isLoading: true });
     try {
       const data = await api.transactions.list();
-      set({ transactions: data });
+      const prompts = await api.transactions.prompts.list();
+      set({ transactions: data, prompts });
     } catch (error) {
       console.error('Failed to fetch transactions', error);
     }
@@ -1931,46 +2186,6 @@ export const createTransactionSlice: StateCreator<RootState, [], [], Transaction
 });
 ````
 
-## File: src/styles/main.style.css
-````css
-@import "tailwindcss";
-
-@layer utilities {
-  .custom-scrollbar::-webkit-scrollbar {
-    width: 10px;
-    height: 10px;
-  }
-  
-  .custom-scrollbar::-webkit-scrollbar-track {
-    background: #09090b; /* zinc-950 */
-  }
-  
-  .custom-scrollbar::-webkit-scrollbar-thumb {
-    background: #27272a; /* zinc-800 */
-    border-radius: 5px;
-    border: 2px solid #09090b; /* zinc-950 */
-  }
-  
-  .custom-scrollbar::-webkit-scrollbar-thumb:hover {
-    background: #3f3f46; /* zinc-700 */
-  }
-
-  .pb-safe {
-    padding-bottom: env(safe-area-inset-bottom);
-  }
-}
-
-/* Animations */
-@keyframes pulse-slow {
-  0%, 100% { opacity: 0.4; }
-  50% { opacity: 0.1; }
-}
-
-.animate-pulse-slow {
-  animation: pulse-slow 4s cubic-bezier(0.4, 0, 0.6, 1) infinite;
-}
-````
-
 ## File: src/types/app.types.ts
 ````typescript
 export type TransactionStatus = 'PENDING' | 'APPLIED' | 'COMMITTED' | 'REVERTED' | 'FAILED';
@@ -1982,11 +2197,22 @@ export interface TransactionFile {
   diff: string;
 }
 
+// New: Prompt entity to support grouping
+export interface Prompt {
+  id: string;
+  title: string;
+  content: string;
+  timestamp: string;
+}
+
 export interface Transaction {
   id: string;
   status: TransactionStatus;
   description: string;
-  timestamp: string;
+  timestamp: string; // Display string (e.g., "Just now")
+  createdAt: string; // ISO Date string for grouping/sorting
+  promptId: string;  // Foreign key to Prompt
+  author: string;    // For grouping by commit author
   files: TransactionFile[];
   reasoning: string;
   provider: string;
@@ -1995,60 +2221,8 @@ export interface Transaction {
   tokens: string;
 }
 
-export type AppTab = 'dashboard' | 'history' | 'settings';
-````
-
-## File: src/main.tsx
-````typescript
-import { StrictMode } from "react";
-import { createRoot } from "react-dom/client";
-import "./styles/main.style.css";
-import { App } from "./app.component";
-
-createRoot(document.getElementById("root")!).render(
-  <StrictMode>
-    <App />
-  </StrictMode>
-);
-````
-
-## File: index.html
-````html
-<!doctype html>
-<html lang="en">
-  <head>
-    <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Relay | AI Patch Stream</title>
-  </head>
-  <body>
-    <div id="root"></div>
-    <script type="module" src="/src/main.tsx"></script>
-  </body>
-</html>
-````
-
-## File: vite.config.ts
-````typescript
-import path from "path";
-import { fileURLToPath } from "url";
-import tailwindcss from "@tailwindcss/vite";
-import react from "@vitejs/plugin-react-swc";
-import { defineConfig } from "vite";
-import { viteSingleFile } from "vite-plugin-singlefile";
-
-const __filename = fileURLToPath(import.meta.url);
-const __dirname = path.dirname(__filename);
-
-// https://vite.dev/config/
-export default defineConfig({
-  plugins: [react(), tailwindcss(), viteSingleFile()],
-  resolve: {
-    alias: {
-      "@": path.resolve(__dirname, "src"),
-    },
-  },
-});
+// New: Grouping Strategies
+export type GroupByStrategy = 'prompt' | 'date' | 'author' | 'status' | 'files' | 'none';
 ````
 
 ## File: package.json
@@ -2059,16 +2233,24 @@ export default defineConfig({
   "version": "1.0.0",
   "type": "module",
   "scripts": {
-    "dev": "vite",
-    "build": "vite build",
-    "preview": "vite preview"
+    "dev": "react-router dev",
+    "build": "react-router build",
+    "preview": "react-router-serve ./build/server/index.js"
   },
   "dependencies": {
+    "@react-router/dev": "^7.13.0",
+    "@react-router/node": "^7.13.0",
+    "@react-router/serve": "^7.13.0",
+    "@tailwindcss/typography": "^0.5.19",
     "clsx": "2.1.1",
     "framer-motion": "^12.34.0",
+    "isbot": "^5",
     "lucide-react": "^0.563.0",
     "react": "19.2.3",
     "react-dom": "19.2.3",
+    "react-markdown": "^10.0.0",
+    "react-router": "^7.13.0",
+    "remark-gfm": "^4.0.0",
     "tailwind-merge": "3.4.0",
     "zustand": "^5.0.0"
   },

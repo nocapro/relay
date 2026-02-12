@@ -41,7 +41,7 @@ export function Layout({ children }: { children: React.ReactNode }) {
         <div className="min-h-screen bg-zinc-950 text-zinc-100 font-sans selection:bg-indigo-500/30 selection:text-indigo-200 overflow-x-hidden">
           <CommandPalette />
           <Navigation />
-          <div className={cn("flex flex-col min-h-screen transition-all duration-300", isMobile ? "pb-20" : "pl-64")}>
+          <div className={cn("flex flex-col min-h-screen transition-all duration-300 isolate", isMobile ? "pb-20" : "pl-64")}>
             <Header />
             <main className="flex-1 relative">
               {children}

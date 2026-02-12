@@ -15,20 +15,25 @@ export interface Prompt {
   timestamp: string;
 }
 
+export type TransactionBlock =
+  | { type: 'markdown'; content: string }
+  | { type: 'file'; file: TransactionFile };
+
 export interface Transaction {
   id: string;
   status: TransactionStatus;
   description: string;
-  timestamp: string; // Display string (e.g., "Just now")
-  createdAt: string; // ISO Date string for grouping/sorting
-  promptId: string;  // Foreign key to Prompt
-  author: string;    // For grouping by commit author
-  files: TransactionFile[];
-  reasoning: string;
+  timestamp: string;
+  createdAt: string;
+  promptId: string;
+  author: string;
+  blocks: TransactionBlock[]; // New narrative structure
+  files: TransactionFile[];   // Keep for compatibility/summaries
   provider: string;
   model: string;
   cost: string;
   tokens: string;
+  reasoning: string; // Legacy fallback
 }
 
 // New: Grouping Strategies

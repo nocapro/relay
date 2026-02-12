@@ -10,9 +10,9 @@ interface DiffViewerProps {
 
 export const DiffViewer = ({ diff, language, className }: DiffViewerProps) => {
   const lines = useMemo(() => parseDiff(diff), [diff]);
-
+  
   return (
-    <div className={cn("font-mono text-xs overflow-x-auto", className)}>
+    <div className={cn("font-mono text-[11px] md:text-xs overflow-x-auto relative", className)}>
       <div className="min-w-full inline-block">
         {lines.map((line, i) => (
           <LineRow key={i} line={line} />
@@ -40,15 +40,15 @@ const LineRow = ({ line }: { line: DiffLine }) => {
   const gutterClass = 
     line.type === 'add' ? 'bg-emerald-500/20 text-emerald-500' :
     line.type === 'remove' ? 'bg-red-500/20 text-red-500' :
-    'text-zinc-600';
+    'text-zinc-700';
 
   return (
-    <div className={cn("flex w-full group hover:bg-white/5", bgClass)}>
+    <div className={cn("flex w-full group/line hover:bg-white/5 transition-colors", bgClass)}>
       {/* Line Numbers */}
-      <div className={cn("w-12 flex-shrink-0 select-none text-right pr-3 py-0.5 border-r border-white/5", gutterClass)}>
+      <div className={cn("w-10 md:w-12 flex-shrink-0 select-none text-right pr-2 md:pr-3 py-0.5 border-r border-white/5 font-mono opacity-40 group-hover/line:opacity-100 transition-opacity", gutterClass)}>
         {line.oldLine || ' '}
       </div>
-      <div className={cn("w-12 flex-shrink-0 select-none text-right pr-3 py-0.5 border-r border-white/5", gutterClass)}>
+      <div className={cn("w-10 md:w-12 flex-shrink-0 select-none text-right pr-2 md:pr-3 py-0.5 border-r border-white/5 font-mono opacity-40 group-hover/line:opacity-100 transition-opacity", gutterClass)}>
         {line.newLine || ' '}
       </div>
       

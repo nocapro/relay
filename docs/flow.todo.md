@@ -26,9 +26,17 @@ we need multi select feature for transaction list
 
 ===
 
-update transaction card UI UX and cohesiveness because the content of the changes contains markdown like this docs/relay.md so I want basically showin rendered markdown but with interactive code block
+update transaction card UI UX to be simpler and cohesiveness because the content of the changes contains markdown like this docs/relay.md so I want basically showin rendered markdown but with interactive code block and cool observability
 
-=== 
+---
+
+1. no sticky part on scroll? 
+2. the examples or data should be as realistic as docs/relay.md, even between files there is reasoning text right?
+3. also should has many file changes per transaction, not 0 not below 5
+
+now give me the most comprehensive detailed diff patches with very valid accurate format and strategy in x parts... now start with part 1/x 
+
+=== DONE
 
 add grouping feature to transaction list.
 
@@ -70,6 +78,6 @@ give me the most comprehensive detailed diff patches with very valid accurate fo
 give me the most comprehensive detailed diff patches with very valid accurate format and strategy in x parts... now start with part 1/x
 
 
-===
+=== DONE
 
 setup this as proper monorepoed project with amazing architecture and filenaming pattern, pages, with placeholders stubs of elysiajs client services to communicate with backend, zustand stores slices management, all without causing ui look regression... give me super valid diff patches

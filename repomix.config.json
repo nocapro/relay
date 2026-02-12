@@ -28,12 +28,13 @@
     }
   },
   "include": [
-    "readme.md",
+ //   "readme.md",
     "src/",
     "index.html",
     "package.json",
     "tsconfig.json",
-    "vite.config.ts"
+    "vite.config.ts",
+    "docs/relay.md"
   ],
   "ignore": {
     "useGitignore": true,
