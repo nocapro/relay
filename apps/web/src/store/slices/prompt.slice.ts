@@ -13,8 +13,10 @@ export const createPromptSlice: StateCreator<RootState, [], [], PromptSlice> = (
   prompts: [],
   fetchPrompts: async () => {
     try {
-      const data = await api.transactions.prompts.list();
-      set({ prompts: data });
+      // Eden Treaty: GET /api/prompts
+      const { data, error } = await api.api.prompts.get();
+      if (error) throw error;
+      if (data) set({ prompts: data });
     } catch (error) {
       console.error('Failed to fetch prompts', error);
     }

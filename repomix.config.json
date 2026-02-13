@@ -28,15 +28,13 @@
     }
   },
   "include": [
- //   "readme.md",
-    "src/",
-    "index.html",
-    "package.json",
-    "tsconfig.json",
-    "vite.config.ts",
-  //  "src/features/transactions/components",
-  //  "src/styles"
- //   "docs/relay.md"
+    "apps/web/src/",
+    "apps/web/package.json",
+    "apps/web/vite.config.ts",
+    "apps/web/tsconfig.json",
+    "apps/api/src/",
+    "apps/api/package.json",
+    "package.json"
   ],
   "ignore": {
     "useGitignore": true,

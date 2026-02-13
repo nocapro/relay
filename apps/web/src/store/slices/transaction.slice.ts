@@ -37,12 +37,7 @@ export const createTransactionSlice: StateCreator<RootState, [], [], Transaction
   toggleWatching: () => {
     const isNowWatching = !get().isWatching;
     set({ isWatching: isNowWatching });
-    
-    if (isNowWatching) {
-      api.socket.startEmitting();
-    } else {
-      api.socket.stopEmitting();
-    }
+    // Real websocket implementation would go here
   },
 
   addTransaction: (tx) => set((state) => ({ 
@@ -50,45 +45,57 @@ export const createTransactionSlice: StateCreator<RootState, [], [], Transaction
   })),
 
   applyTransactionChanges: async (id) => {
-    // 1. Transition to APPLYING
+    // 1. Optimistic Update: Transition to APPLYING
     set((state) => ({
       transactions: state.transactions.map((t) => 
         t.id === id ? { ...t, status: 'APPLYING' as const } : t
       )
     }));
 
-    // 2. Simulate disk I/O / worker latency
-    // Bumped to 3s to ensure individual file timers (max 2s) can finish visually
-    await new Promise(resolve => setTimeout(resolve, 3000));
+    try {
+      // 2. Call API (backend handles latency simulation)
+      const { data, error } = await api.api.transactions[id].status.patch({
+        status: 'APPLIED'
+      });
 
-    // 3. Finalize to APPLIED
-    set((state) => ({
-      transactions: state.transactions.map((t) => 
-        t.id === id ? { ...t, status: 'APPLIED' as const } : t
-      )
-    }));
+      if (error) throw error;
+
+      // 3. Finalize with server response
+      if (data) {
+        set((state) => ({
+          transactions: state.transactions.map((t) => 
+            t.id === id ? data : t
+          )
+        }));
+      }
+    } catch (err) {
+      console.error('Failed to apply transaction', err);
+      // Revert on error
+      set((state) => ({
+        transactions: state.transactions.map((t) => 
+          t.id === id ? { ...t, status: 'PENDING' as const } : t
+        )
+      }));
+    }
   },
 
   fetchTransactions: async () => {
     set({ isLoading: true, page: 1, hasMore: true });
     try {
-      // Pass pagination params to API
-      const data = await api.transactions.list({ page: 1, limit: 15 });
-      set({ transactions: data, hasMore: data.length === 15 });
+      // Eden Treaty: GET /api/transactions
+      const { data, error } = await api.api.transactions.get({
+        $query: { page: '1', limit: '15' }
+      });
+      
+      if (error) throw error;
+
+      if (data) {
+        set({ transactions: data, hasMore: data.length === 15 });
+      }
     } catch (error) {
       console.error('Failed to fetch transactions', error);
     }
     set({ isLoading: false });
-
-    // Setup subscription (once)
-    if (!(window as any).__apiSubscribed) {
-      api.socket.subscribe((newTx) => {
-        if (get().isWatching) {
-          get().addTransaction(newTx);
-        }
-      });
-      (window as any).__apiSubscribed = true;
-    }
   },
 
   fetchNextPage: async () => {
@@ -98,9 +105,13 @@ export const createTransactionSlice: StateCreator<RootState, [], [], Transaction
     set({ isFetchingNextPage: true });
     try {
       const nextPage = page + 1;
-      const data = await api.transactions.list({ page: nextPage, limit: 15 });
+      const { data, error } = await api.api.transactions.get({
+        $query: { page: nextPage.toString(), limit: '15' }
+      });
       
-      if (data.length > 0) {
+      if (error) throw error;
+
+      if (data && data.length > 0) {
         set({ 
           transactions: [...transactions, ...data], 
           page: nextPage,

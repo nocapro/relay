@@ -2,7 +2,6 @@
   channel = "stable-24.05";
   packages = [
     pkgs.bun
-    pkgs.nodejs_20
   ];
   idx.extensions = [
     "svelte.svelte-vscode"
@@ -14,6 +13,23 @@
         command = [
           "bun"
           "run"
+          "--filter"
+          "relay"
+          "dev"
+          "--"
+          "--port"
+          "$PORT"
+          "--host"
+          "0.0.0.0"
+        ];
+        manager = "web";
+      };
+      api = {
+        command = [
+          "bun"
+          "run"
+          "--filter"
+          "@relaycode/api"
           "dev"
           "--"
           "--port"

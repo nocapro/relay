@@ -1,0 +1,42 @@
+{
+  "name": "relay",
+  "private": true,
+  "version": "1.0.0",
+  "type": "module",
+  "scripts": {
+    "dev": "react-router dev",
+    "build": "react-router build",
+    "preview": "react-router-serve ./build/server/index.js"
+  },
+  "dependencies": {
+    "@relaycode/api": "workspace:*",
+    "@react-router/dev": "^7.13.0",
+    "@react-router/node": "^7.13.0",
+    "@react-router/serve": "^7.13.0",
+    "@tailwindcss/typography": "^0.5.19",
+    "clsx": "2.1.1",
+    "framer-motion": "^12.34.0",
+    "isbot": "^5",
+    "lucide-react": "^0.563.0",
+    "react": "19.2.3",
+    "react-dom": "19.2.3",
+    "react-markdown": "^10.0.0",
+    "react-router": "^7.13.0",
+    "remark-gfm": "^4.0.0",
+    "tailwind-merge": "3.4.0",
+    "zustand": "^5.0.0",
+    "elysia": "latest",
+    "@elysiajs/eden": "latest"
+  },
+  "devDependencies": {
+    "@tailwindcss/vite": "4.1.17",
+    "@types/node": "^22.0.0",
+    "@types/react": "19.2.7",
+    "@types/react-dom": "19.2.3",
+    "@vitejs/plugin-react-swc": "3.8.0",
+    "tailwindcss": "4.1.17",
+    "typescript": "5.9.3",
+    "vite": "6.2.0",
+    "vite-plugin-singlefile": "2.3.0"
+  }
+}
