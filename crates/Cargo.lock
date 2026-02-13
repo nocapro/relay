@@ -646,7 +646,7 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "a96887878f22d7bad8a3b6dc5b7440e0ada9a245242924394987b21cf2210a4c"
 
 [[package]]
-name = "relay-api"
+name = "relaycode-api"
 version = "1.0.0"
 dependencies = [
  "async-stream",
@@ -654,6 +654,8 @@ dependencies = [
  "chrono",
  "futures",
  "rand",
+ "relaycode-core",
+ "relaycode-schema",
  "serde",
  "serde_json",
  "tokio",
@@ -664,6 +666,25 @@ dependencies = [
  "tracing-subscriber",
  "utoipa",
  "utoipa-scalar",
+]
+
+[[package]]
+name = "relaycode-core"
+version = "1.0.0"
+dependencies = [
+ "rand",
+ "relaycode-schema",
+ "serde",
+ "serde_json",
+ "tokio",
+]
+
+[[package]]
+name = "relaycode-schema"
+version = "1.0.0"
+dependencies = [
+ "serde",
+ "utoipa",
 ]
 
 [[package]]

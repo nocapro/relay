@@ -9,7 +9,8 @@
     "build": "bun --filter \"*\" build",
     "check": "bun run check:ts && bun run check:rust",
     "check:ts": "bun --filter \"*\" typecheck",
-    "check:rust": "cd apps/api && cargo check"
+    "check:rust": "cd crates/relaycode-api && cargo check",
+    "postinstall": "cargo build --manifest-path crates/relaycode-api/Cargo.toml"
   },
   "devDependencies": {
     "typescript": "^5.7.0"

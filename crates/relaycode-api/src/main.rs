@@ -1,6 +1,4 @@
-pub mod models;
 pub mod routes;
-pub mod store;
 
 use std::fs;
 
@@ -23,18 +21,18 @@ use utoipa_scalar::{Scalar, Servable};
     ),
     components(
         schemas(
-            models::Transaction,
-            models::TransactionStatus,
-            models::TransactionBlock,
-            models::TransactionFile,
-            models::FileStatus,
-            models::BulkActionRequest,
-            models::BulkActionResponse,
-            models::Prompt,
-            models::PromptStatus,
-            models::SimulationEvent,
-            models::UpdateStatusRequest,
-            models::SimulationScenario,
+            relaycode_schema::Transaction,
+            relaycode_schema::TransactionStatus,
+            relaycode_schema::TransactionBlock,
+            relaycode_schema::TransactionFile,
+            relaycode_schema::FileStatus,
+            relaycode_schema::BulkActionRequest,
+            relaycode_schema::BulkActionResponse,
+            relaycode_schema::Prompt,
+            relaycode_schema::PromptStatus,
+            relaycode_schema::SimulationEvent,
+            relaycode_schema::UpdateStatusRequest,
+            relaycode_schema::SimulationScenario,
         )
     ),
     info(
@@ -51,7 +49,7 @@ async fn main() {
     let openapi = ApiDoc::openapi();
     fs::write("openapi.json", openapi.to_pretty_json().unwrap()).unwrap();
 
-    store::STORE.load_data();
+    relaycode_core::STORE.load_data();
 
     let cors = CorsLayer::new()
         .allow_origin(Any)

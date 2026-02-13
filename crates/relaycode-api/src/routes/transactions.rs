@@ -1,5 +1,5 @@
-use crate::models::{BulkActionRequest, BulkActionResponse, Transaction, UpdateStatusRequest};
-use crate::store::{start_simulation, STORE};
+use relaycode_schema::{BulkActionRequest, BulkActionResponse, Transaction, UpdateStatusRequest};
+use relaycode_core::{start_simulation, STORE};
 use axum::{
     extract::Query,
     routing::{get, patch, post},
@@ -67,7 +67,7 @@ pub async fn update_transaction_status(
     axum::extract::Path(id): axum::extract::Path<String>,
     Json(body): Json<UpdateStatusRequest>,
 ) -> Result<Json<Transaction>, axum::http::StatusCode> {
-    if body.status == crate::models::TransactionStatus::Applying {
+    if body.status == relaycode_schema::TransactionStatus::Applying {
         start_simulation(id.clone(), body.scenario.clone());
         
         if let Some(tx) = STORE.get_transaction(&id) {

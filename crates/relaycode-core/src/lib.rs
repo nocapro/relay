@@ -1,4 +1,4 @@
-use crate::models::{SimulationScenario, Transaction, TransactionStatus, Prompt};
+use relaycode_schema::{SimulationScenario, Transaction, TransactionStatus, Prompt};
 use std::sync::{Arc, RwLock};
 use tokio::sync::broadcast;
 

@@ -1,0 +1,7 @@
+[workspace]
+resolver = "2"
+members = [
+    "relaycode-schema",
+    "relaycode-core",
+    "relaycode-api",
+]

@@ -1,5 +1,5 @@
-use crate::models::Prompt;
-use crate::store::STORE;
+use relaycode_schema::Prompt;
+use relaycode_core::STORE;
 use axum::{routing::get, Json, Router};
 
 #[utoipa::path(
