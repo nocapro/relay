@@ -18,7 +18,18 @@ export default defineConfig({
   server: {
     port: 5173,
     proxy: {
-      '/api': 'http://localhost:3000'
+      '/api': {
+        target: 'http://localhost:3000',
+        changeOrigin: true,
+        // Handle upgrade for WebSocket/SSE connections
+        ws: true,
+        // Preserve the original headers (important for EventSource)
+        headers: {
+          'Connection': 'keep-alive',
+        },
+        // Configure timeout for SSE connections
+        timeout: 0,
+      }
     }
   }
 });

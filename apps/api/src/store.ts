@@ -73,8 +73,8 @@ class Store {
     });
   }
 
-  // Simulation engine: triggers async state transition PENDING -> APPLYING -> APPLIED
-  async startSimulation(id: string): Promise<void> {
+  // Simulation engine: triggers async state transition based on scenario
+  async startSimulation(id: string, scenario?: 'fast-success' | 'simulated-failure' | 'long-running'): Promise<void> {
     // Prevent duplicate simulations for the same transaction
     if (this.activeSimulations.has(id)) {
       return;
@@ -91,13 +91,23 @@ class Store {
     tx.status = 'APPLYING';
     this.notify(tx);
 
-    // Simulate work duration: random between 2-6 seconds
-    const duration = 2000 + Math.random() * 4000;
-    
+    // Determine duration based on scenario
+    let duration = 2000 + Math.random() * 4000; // Default 2-6 seconds
+    if (scenario === 'fast-success') {
+      duration = 500 + Math.random() * 500; // 0.5-1 seconds
+    } else if (scenario === 'long-running') {
+      duration = 8000 + Math.random() * 4000; // 8-12 seconds
+    }
+
     await new Promise(resolve => setTimeout(resolve, duration));
 
-    // Transition to APPLIED
-    tx.status = 'APPLIED';
+    // Determine final status based on scenario
+    if (scenario === 'simulated-failure') {
+      tx.status = 'FAILED';
+    } else {
+      tx.status = 'APPLIED';
+    }
+    
     this.notify(tx);
     this.activeSimulations.delete(id);
   }

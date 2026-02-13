@@ -16,11 +16,11 @@ export const transactionsRoutes = new Elysia({ prefix: '/transactions' })
     }),
     response: t.Array(Transaction)
   })
-  .patch('/:id/status', async ({ params: { id }, body: { status } }) => {
+  .patch('/:id/status', async ({ params: { id }, body: { status, scenario } }) => {
     // If transitioning to APPLYING, start the background simulation instead of immediate update
     if (status === 'APPLYING') {
-      // Trigger the async simulation (runs in background, returns immediately)
-      db.startSimulation(id);
+      // Trigger the async simulation with optional scenario (runs in background, returns immediately)
+      db.startSimulation(id, scenario);
       
       // Return the transaction in its current state (now APPLYING)
       const tx = db.getTransactions(1, 1).find((t: any) => t.id === id);
@@ -34,6 +34,13 @@ export const transactionsRoutes = new Elysia({ prefix: '/transactions' })
     
     return updated;
   }, {
-    body: t.Object({ status: TransactionStatus }),
+    body: t.Object({ 
+      status: TransactionStatus,
+      scenario: t.Optional(t.Union([
+        t.Literal('fast-success'),
+        t.Literal('simulated-failure'),
+        t.Literal('long-running')
+      ]))
+    }),
     response: Transaction
   });

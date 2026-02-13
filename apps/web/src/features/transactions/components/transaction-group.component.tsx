@@ -25,9 +25,10 @@ export const TransactionGroup = ({ group, isCollapsed, onToggle, seenIds }: Tran
       <div className="h-px flex-1 bg-zinc-800/50" />
     </button>
     
-    <AnimatePresence>
+    <AnimatePresence mode="wait">
       {!isCollapsed && (
         <motion.div
+          key="content"
           initial={{ height: 0, opacity: 0 }}
           animate={{ height: 'auto', opacity: 1 }}
           exit={{ height: 0, opacity: 0 }}

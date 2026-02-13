@@ -83,3 +83,14 @@ export const SimulationEvent = t.Object({
   progress: t.Optional(t.Number())
 });
 export type SimulationEvent = Static<typeof SimulationEvent>;
+
+// Simulation Scenarios for testing different backend behaviors
+// - fast-success: Quick completion (0.5-1s) for rapid testing
+// - simulated-failure: Triggers FAILED status to test error handling
+// - long-running: Extended duration (8-12s) to test loading states
+export const SimulationScenario = t.Union([
+  t.Literal('fast-success'),
+  t.Literal('simulated-failure'),
+  t.Literal('long-running')
+]);
+export type SimulationScenario = Static<typeof SimulationScenario>;

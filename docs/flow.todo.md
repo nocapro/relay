@@ -22,7 +22,7 @@ gitCommitMsg: "feat: enhance dashboard UI with TUI-inspired stream view and shor
 
 === 
 
-we need multi select feature for transaction list. 
+we need multi select feature for transaction list. so that user can having very granular actions like revert, super granular copy (deep granular metadata), etc. make sure the UI amazing and the feature has super cohesive UX
 
 ===
 
@@ -41,6 +41,10 @@ we dont need transaction history page, change with prompt management page (kanba
 based on readme.md, we need amazing onboarding/initialization page. make sure UI amazing and UX super cohesive.
 
 ===
+
+if astro has floating action bar for dev to debug or control things, we should have it to control the scenarios, so we can prepare the frontend to be production ready
+
+=== DONE
 
 lets separate the concern, simulated backend with json mock data, logic , and services , real elysiajs server and client trough swagger and auto-generated openapi client. monorepoed backend frontend structure. should be no backend logic at all in frontend . now its time to delegate to backend departement to work on backend simulation so frontend be ready for production
 

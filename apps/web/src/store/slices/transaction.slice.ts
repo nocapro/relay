@@ -11,15 +11,15 @@ export interface TransactionSlice {
   page: number;
   expandedId: string | null;
   hoveredChainId: string | null;
-  isWatching: boolean;
+  isConnected: boolean;
   setExpandedId: (id: string | null) => void;
   setHoveredChain: (id: string | null) => void;
-  toggleWatching: () => void;
+  init: () => (() => void);
   fetchTransactions: (params?: { search?: string; status?: string }) => Promise<void>;
   searchTransactions: (query: string) => Promise<Transaction[]>;
   fetchNextPage: () => Promise<void>;
   addTransaction: (tx: Transaction) => void;
-  applyTransactionChanges: (id: string) => Promise<void>;
+  applyTransactionChanges: (id: string, scenario?: 'fast-success' | 'simulated-failure' | 'long-running') => Promise<void>;
   subscribeToUpdates: () => (() => void);
 }
 
@@ -33,50 +33,44 @@ export const createTransactionSlice: StateCreator<RootState, [], [], Transaction
   page: 1,
   expandedId: null,
   hoveredChainId: null,
-  isWatching: false,
+  isConnected: false,
 
   setExpandedId: (id) => set({ expandedId: id }),
   setHoveredChain: (id) => set({ hoveredChainId: id }),
   
-  toggleWatching: () => {
-    const isNowWatching = !get().isWatching;
-    set({ isWatching: isNowWatching });
-    
-    if (isNowWatching) {
-      // Start listening to SSE updates when monitoring begins
+  init: () => {
+    // Initialize SSE connection on app load (idempotent)
+    if (!unsubscribeFromStream) {
       const unsubscribe = get().subscribeToUpdates();
       unsubscribeFromStream = unsubscribe;
-    } else {
-      // Stop listening when monitoring pauses
+      
+      // Also fetch initial data immediately
+      get().fetchTransactions();
+    }
+    // Return cleanup function for root unmount
+    return () => {
       if (unsubscribeFromStream) {
         unsubscribeFromStream();
         unsubscribeFromStream = null;
       }
-    }
+    };
   },
 
   addTransaction: (tx) => set((state) => ({ 
     transactions: [tx, ...state.transactions] 
   })),
 
-  applyTransactionChanges: async (id) => {
+  applyTransactionChanges: async (id, scenario) => {
     try {
-      // Trigger backend simulation - backend handles the state transitions
-      const { data, error } = await api.api.transactions[id].status.patch({
-        status: 'APPLYING'
+      // Trigger backend simulation - rely exclusively on SSE to update local state
+      // This prevents race conditions between PATCH response and SSE events
+      const { error } = await api.api.transactions[id].status.patch({
+        status: 'APPLYING',
+        scenario
       });
 
       if (error) throw error;
-
-      // Initial update: transaction is now APPLYING
-      if (data) {
-        set((state) => ({
-          transactions: state.transactions.map((t) => 
-            t.id === id ? data : t
-          )
-        }));
-      }
-      // Note: Further updates (APPLIED) will come via SSE stream
+      // State updates (APPLYING -> APPLIED/FAILED) will arrive via SSE stream
     } catch (err) {
       console.error('Failed to apply transaction', err);
     }
@@ -84,15 +78,29 @@ export const createTransactionSlice: StateCreator<RootState, [], [], Transaction
 
   subscribeToUpdates: () => {
     // Connect to SSE and update transactions when backend pushes updates
-    const unsubscribe = connectToSimulationStream((event) => {
-      set((state) => ({
-        transactions: state.transactions.map((t) => 
-          t.id === event.transactionId 
-            ? { ...t, status: event.status }
-            : t
-        )
-      }));
-    });
+    const unsubscribe = connectToSimulationStream(
+      (event) => {
+        // Merge incoming event data into existing transaction list
+        set((state) => ({
+          transactions: state.transactions.map((t) => 
+            t.id === event.transactionId 
+              ? { ...t, status: event.status }
+              : t
+          )
+        }));
+      },
+      (isConnected) => {
+        // Track connection state for UI feedback
+        set({ isConnected });
+      },
+      (_error, isNetworkError) => {
+        if (isNetworkError) {
+          console.error('Network connection lost, attempting to reconnect...');
+        } else {
+          console.warn('SSE server timeout or error');
+        }
+      }
+    );
 
     return unsubscribe;
   },

@@ -1,5 +1,5 @@
 import { useEffect, useState, useRef, useMemo } from 'react';
-import { Play, Pause, Activity, RefreshCw, Filter, Terminal, Command, Layers, Calendar, User, FileCode, CheckCircle2 } from 'lucide-react';
+import { Activity, RefreshCw, Filter, Terminal, Command, Layers, Calendar, User, FileCode, CheckCircle2 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useSearchParams } from 'react-router';
 import { cn } from "@/utils/cn.util";
@@ -18,9 +18,7 @@ export const Dashboard = () => {
   const prompts = useStore((state) => state.prompts);
   const fetchTransactions = useStore((state) => state.fetchTransactions);
   const fetchPrompts = useStore((state) => state.fetchPrompts);
-  const isWatching = useStore((state) => state.isWatching);
-  const toggleWatching = useStore((state) => state.toggleWatching);
-  const subscribeToUpdates = useStore((state) => state.subscribeToUpdates);
+  const isConnected = useStore((state) => state.isConnected);
   
   // Get groupBy from URL search params
   const groupByParam = searchParams.get('groupBy');
@@ -61,14 +59,6 @@ export const Dashboard = () => {
       return () => clearTimeout(timer);
     }
   }, [transactions]);
-
-  // Connect to real-time updates when monitoring is active
-  useEffect(() => {
-    if (isWatching) {
-      const unsubscribe = subscribeToUpdates();
-      return () => unsubscribe();
-    }
-  }, [isWatching, subscribeToUpdates]);
 
   const toggleGroupCollapse = (groupId: string) => {
     setCollapsedGroups((prev) => {
@@ -142,38 +132,29 @@ export const Dashboard = () => {
             <div>
               <div className="flex items-center gap-3 mb-3">
                 <span className={cn("relative flex h-3 w-3")}>
-                  <span className={cn("animate-ping absolute inline-flex h-full w-full rounded-full opacity-75", isWatching ? "bg-emerald-500" : "bg-amber-500")}></span>
-                  <span className={cn("relative inline-flex rounded-full h-3 w-3", isWatching ? "bg-emerald-500" : "bg-amber-500")}></span>
+                  <span className={cn("animate-ping absolute inline-flex h-full w-full rounded-full opacity-75", isConnected ? "bg-emerald-500" : "bg-red-500")}></span>
+                  <span className={cn("relative inline-flex rounded-full h-3 w-3", isConnected ? "bg-emerald-500" : "bg-red-500")}></span>
                 </span>
-                <h2 className={cn("text-xs font-bold uppercase tracking-widest", isWatching ? "text-emerald-500" : "text-amber-500")}>
-                  {isWatching ? 'System Active' : 'System Paused'}
+                <h2 className={cn("text-xs font-bold uppercase tracking-widest", isConnected ? "text-emerald-500" : "text-red-500")}>
+                  {isConnected ? 'System Connected' : 'Disconnected'}
                 </h2>
               </div>
               <h1 className={cn("font-bold text-white mb-2 tracking-tight transition-all", hasTransactions ? "text-xl md:text-2xl" : "text-3xl md:text-4xl")}>
-                {isWatching ? 'Monitoring Clipboard Stream' : 'Ready to Intercept Patches'}
+                {isConnected ? 'Listening for Events' : 'Connection Lost'}
               </h1>
               <p className={cn("text-zinc-500 transition-all leading-relaxed", hasTransactions ? "text-sm max-w-lg" : "text-base max-w-2xl")}>
-                {isWatching 
-                  ? 'Relaycode is actively scanning for AI code blocks. Patches will appear below automatically.' 
-                  : 'Resume monitoring to detect new AI patches from your clipboard.'}
+                {isConnected 
+                  ? 'Relaycode is connected to the backend event stream. Real-time updates are active.' 
+                  : 'Attempting to reconnect to the backend...'}
               </p>
             </div>
 
             <div className="flex flex-wrap items-center gap-4">
               <button 
-                onClick={toggleWatching}
-                className={cn(
-                  "px-6 py-3 rounded-xl font-bold text-sm flex items-center gap-2 transition-all transform active:scale-95 shadow-xl",
-                  isWatching 
-                    ? "bg-zinc-800 hover:bg-zinc-700 text-zinc-200 border border-zinc-700"
-                    : "bg-emerald-600 hover:bg-emerald-500 text-white shadow-emerald-900/20 ring-1 ring-emerald-500/50"
-                )}
+                onClick={() => fetchTransactions()}
+                className="px-6 py-3 rounded-xl font-bold text-sm flex items-center gap-2 transition-all transform active:scale-95 shadow-xl bg-zinc-800 hover:bg-zinc-700 text-zinc-200 border border-zinc-700"
               >
-                {isWatching ? (
-                  <><Pause className="w-4 h-4 fill-current" /> Pause Watcher</>
-                ) : (
-                  <><Play className="w-4 h-4 fill-current" /> Start Monitoring</>
-                )}
+                <RefreshCw className="w-4 h-4" /> Refresh
               </button>
             </div>
           </div>
@@ -296,12 +277,9 @@ export const Dashboard = () => {
                 <p className="max-w-sm text-center text-sm mb-6">
                   Copy any AI-generated code block (Claude, GPT, etc.) to your clipboard to see it appear here instantly.
                 </p>
-                <button 
-                  onClick={toggleWatching}
-                  className="px-4 py-2 bg-zinc-800 hover:bg-zinc-700 text-zinc-300 rounded-lg text-sm font-medium transition-colors"
-                >
-                  {isWatching ? 'Waiting for clipboard events...' : 'Start Monitoring'}
-                </button>
+                <div className="px-4 py-2 bg-zinc-800/50 text-zinc-500 rounded-lg text-sm font-medium border border-zinc-800">
+                  {isConnected ? 'Waiting for events...' : 'Reconnecting...'}
+                </div>
               </motion.div>
             )}
           </AnimatePresence>

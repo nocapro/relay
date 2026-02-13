@@ -16,6 +16,26 @@ export function Layout({ children }: { children: React.ReactNode }) {
   const setCmdOpen = useStore((state) => state.setCmdOpen);
   const isMobile = useIsMobile();
 
+  // Initialize persistent SSE connection on app load
+  useEffect(() => {
+    const unsubscribe = useStore.getState().init();
+    
+    // Handle page visibility changes - reconnect when tab becomes visible
+    const handleVisibilityChange = () => {
+      if (document.visibilityState === 'visible') {
+        // Re-init if not connected (init is idempotent)
+        useStore.getState().init();
+      }
+    };
+    
+    document.addEventListener('visibilitychange', handleVisibilityChange);
+    
+    return () => {
+      unsubscribe();
+      document.removeEventListener('visibilitychange', handleVisibilityChange);
+    };
+  }, []);
+
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
       if ((e.metaKey || e.ctrlKey) && e.key === 'k') {

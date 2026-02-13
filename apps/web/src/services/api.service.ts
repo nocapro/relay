@@ -14,30 +14,74 @@ const api: ReturnType<typeof edenTreaty<App>> = edenTreaty<App>(getBaseUrl());
 // SSE Connection for real-time simulation updates
 export const connectToSimulationStream = (
   onEvent: (event: SimulationEvent) => void,
-  onError?: (error: Event) => void
+  onConnectionChange?: (isConnected: boolean) => void,
+  onError?: (error: Event, isNetworkError: boolean) => void
 ): (() => void) => {
   const baseUrl = getBaseUrl();
-  const eventSource = new EventSource(`${baseUrl}/api/events`);
+  let eventSource: EventSource | null = null;
+  let reconnectAttempts = 0;
+  let reconnectTimeout: NodeJS.Timeout | null = null;
+  const maxReconnectAttempts = 5;
+  const baseReconnectDelay = 1000;
+  let intentionalClose = false;
 
-  eventSource.onmessage = (event) => {
-    try {
-      const data: SimulationEvent = JSON.parse(event.data);
-      onEvent(data);
-    } catch (err) {
-      console.error('Failed to parse SSE event:', err);
+  const connect = () => {
+    if (eventSource) {
+      eventSource.close();
     }
+
+    eventSource = new EventSource(`${baseUrl}/api/events`);
+    
+    eventSource.onopen = () => {
+      reconnectAttempts = 0;
+      onConnectionChange?.(true);
+    };
+
+    eventSource.onmessage = (event) => {
+      try {
+        const data: SimulationEvent = JSON.parse(event.data);
+        onEvent(data);
+      } catch (err) {
+        console.error('Failed to parse SSE event:', err);
+      }
+    };
+
+    eventSource.onerror = (error) => {
+      // Check if eventSource is closed (network error) or just no data (server timeout)
+      const isNetworkError = eventSource?.readyState === EventSource.CLOSED;
+      
+      if (!intentionalClose) {
+        onConnectionChange?.(false);
+      }
+      
+      if (onError) onError(error, isNetworkError);
+      
+      // Attempt to reconnect with exponential backoff (only for network errors)
+      if (isNetworkError && !intentionalClose && reconnectAttempts < maxReconnectAttempts) {
+        const delay = Math.min(baseReconnectDelay * Math.pow(2, reconnectAttempts), 30000);
+        reconnectAttempts++;
+        
+        if (reconnectTimeout) clearTimeout(reconnectTimeout);
+        reconnectTimeout = setTimeout(() => {
+          console.log(`Attempting to reconnect... (${reconnectAttempts}/${maxReconnectAttempts})`);
+          connect();
+        }, delay);
+      } else if (reconnectAttempts >= maxReconnectAttempts) {
+        console.error('Max reconnection attempts reached');
+      }
+    };
   };
 
-  eventSource.onerror = (error) => {
-    console.error('SSE connection error:', error);
-    if (onError) onError(error);
-    // Auto-reconnect is handled by EventSource by default, 
-    // but we can add custom reconnection logic here if needed
-  };
+  connect();
 
   // Return cleanup function
   return () => {
-    eventSource.close();
+    intentionalClose = true;
+    if (reconnectTimeout) clearTimeout(reconnectTimeout);
+    if (eventSource) {
+      eventSource.close();
+      eventSource = null;
+    }
   };
 };
 

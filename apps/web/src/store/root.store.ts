@@ -20,6 +20,6 @@ export const useUiActions = () => useStore((state) => ({
 export const useTransactionActions = () => useStore((state) => ({
   setExpandedId: state.setExpandedId,
   setHoveredChain: state.setHoveredChain,
-  toggleWatching: state.toggleWatching,
+  init: state.init,
   fetchTransactions: state.fetchTransactions,
 }));
