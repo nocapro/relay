@@ -798,11 +798,8 @@ import { db } from '../store';
 import type { SimulationEvent } from '../models';
 
 export const eventsRoutes = new Elysia({ prefix: '/events' })
-  .get('/', ({ set }) => {
-    // Set SSE headers
-    set.headers['Content-Type'] = 'text/event-stream';
-    set.headers['Cache-Control'] = 'no-cache';
-    set.headers['Connection'] = 'keep-alive';
+  .get('/', () => {
+    let unsubscribe: (() => void) | null = null;
 
     const stream = new ReadableStream({
       start(controller) {
@@ -819,14 +816,23 @@ export const eventsRoutes = new Elysia({ prefix: '/events' })
           controller.enqueue(new TextEncoder().encode(data));
         });
 
-        // Cleanup on close
-        return () => {
+      },
+      cancel() {
+        // Cleanup on client disconnect
+        if (unsubscribe) {
           unsubscribe();
-        };
+          unsubscribe = null;
+        }
       },
     });
 
-    return new Response(stream);
+    return new Response(stream, {
+      headers: {
+        'Content-Type': 'text/event-stream',
+        'Cache-Control': 'no-cache',
+        'Connection': 'keep-alive',
+      },
+    });
   });
 ```
 
@@ -1875,61 +1881,6 @@ export const TransactionCard = memo(({
 });
 ```
 
-## File: apps/web/src/features/transactions/components/transaction-group.component.tsx
-```typescript
-import { motion, AnimatePresence } from 'framer-motion';
-import { ChevronDown, ChevronRight } from 'lucide-react';
-import { TransactionCard } from './transaction-card.component';
-import { GroupedData } from '@/utils/group.util';
-
-interface TransactionGroupProps {
-  group: GroupedData;
-  isCollapsed: boolean;
-  onToggle: (id: string) => void;
-  seenIds: Set<string>;
-}
-
-export const TransactionGroup = ({ group, isCollapsed, onToggle, seenIds }: TransactionGroupProps) => (
-  <div className="space-y-6">
-    <button
-      onClick={() => onToggle(group.id)}
-      className="flex items-center gap-3 pt-12 first:pt-0 w-full group/header"
-    >
-      <div className="h-px flex-1 bg-zinc-800/50" />
-      <div className="flex items-center gap-2 px-3 py-1 rounded-full bg-zinc-900 border border-zinc-800 hover:border-zinc-700 transition-colors">
-        {isCollapsed ? <ChevronRight className="w-3 h-3 text-zinc-500" /> : <ChevronDown className="w-3 h-3 text-zinc-500" />}
-        <span className="text-xs font-medium text-zinc-300">{group.label}</span>
-        <span className="text-[10px] font-mono text-zinc-500 bg-zinc-800 px-1.5 py-0.5 rounded-full">{group.count}</span>
-      </div>
-      <div className="h-px flex-1 bg-zinc-800/50" />
-    </button>
-    
-    <AnimatePresence>
-      {!isCollapsed && (
-        <motion.div
-          initial={{ height: 0, opacity: 0 }}
-          animate={{ height: 'auto', opacity: 1 }}
-          exit={{ height: 0, opacity: 0 }}
-          transition={{ duration: 0.2, ease: 'easeInOut' }}
-          className="overflow-visible"
-        >
-          <div className="space-y-6 pl-0 md:pl-2 ml-3 relative">
-            {group.transactions.map((tx) => (
-              <TransactionCard 
-                key={tx.id} 
-                {...tx}
-                isNew={!seenIds.has(tx.id)}
-                depth={tx.depth}
-              />
-            ))}
-          </div>
-        </motion.div>
-      )}
-    </AnimatePresence>
-  </div>
-);
-```
-
 ## File: apps/web/src/hooks/mobile.hook.ts
 ```typescript
 import { useState, useEffect } from 'react';
@@ -2075,35 +2026,6 @@ export const createUiSlice: StateCreator<RootState, [], [], UiSlice> = (set) => 
   setCmdOpen: (open) => set({ isCmdOpen: open }),
   toggleCmd: () => set((state) => ({ isCmdOpen: !state.isCmdOpen })),
 });
-```
-
-## File: apps/web/src/store/root.store.ts
-```typescript
-import { create } from 'zustand';
-import { createUiSlice, UiSlice } from './slices/ui.slice';
-import { createTransactionSlice, TransactionSlice } from './slices/transaction.slice';
-import { createPromptSlice, PromptSlice } from './slices/prompt.slice';
-
-export type RootState = UiSlice & TransactionSlice & PromptSlice;
-
-export const useStore = create<RootState>()((...a) => ({
-  ...createUiSlice(...a),
-  ...createTransactionSlice(...a),
-  ...createPromptSlice(...a),
-}));
-
-// Export specialized selectors for cleaner global usage
-export const useUiActions = () => useStore((state) => ({
-  setCmdOpen: state.setCmdOpen,
-  toggleCmd: state.toggleCmd,
-}));
-
-export const useTransactionActions = () => useStore((state) => ({
-  setExpandedId: state.setExpandedId,
-  setHoveredChain: state.setHoveredChain,
-  toggleWatching: state.toggleWatching,
-  fetchTransactions: state.fetchTransactions,
-}));
 ```
 
 ## File: apps/web/src/styles/main.style.css
@@ -2573,69 +2495,6 @@ export function groupTransactions(
 }
 ```
 
-## File: apps/web/src/root.tsx
-```typescript
-import { Links, Meta, Scripts, ScrollRestoration, Outlet } from 'react-router';
-import type { LinksFunction } from 'react-router';
-import { useEffect } from 'react';
-import { cn } from '@/utils/cn.util';
-import { useStore } from '@/store/root.store';
-import { CommandPalette } from '@/components/layout/command-palette.layout';
-import { Navigation } from '@/components/layout/navigation.layout';
-import { Header } from '@/components/layout/header.layout';
-import { useIsMobile } from '@/hooks/mobile.hook';
-
-import '@/styles/main.style.css';
-
-export const links: LinksFunction = () => [];
-
-export function Layout({ children }: { children: React.ReactNode }) {
-  const setCmdOpen = useStore((state) => state.setCmdOpen);
-  const isMobile = useIsMobile();
-
-  useEffect(() => {
-    const handleKeyDown = (e: KeyboardEvent) => {
-      if ((e.metaKey || e.ctrlKey) && e.key === 'k') {
-        e.preventDefault();
-        setCmdOpen(true);
-      }
-      if (e.key === 'Escape') setCmdOpen(false);
-    };
-    window.addEventListener('keydown', handleKeyDown);
-    return () => window.removeEventListener('keydown', handleKeyDown);
-  }, [setCmdOpen]);
-
-  return (
-    <html lang="en">
-      <head>
-        <meta charSet="utf-8" />
-        <meta name="viewport" content="width=device-width, initial-scale=1" />
-        <Meta />
-        <Links />
-      </head>
-      <body className="antialiased min-h-screen bg-zinc-950 text-zinc-100 font-sans selection:bg-indigo-500/30 selection:text-indigo-200">
-        <div className="min-h-screen">
-          <CommandPalette />
-          <Navigation />
-          <div className={cn("flex flex-col min-h-screen transition-all duration-300", isMobile ? "pb-20" : "pl-64")}>
-            <Header />
-            <main className="flex-1">
-              {children}
-            </main>
-          </div>
-        </div>
-        <ScrollRestoration />
-        <Scripts />
-      </body>
-    </html>
-  );
-}
-
-export default function App() {
-  return <Outlet />;
-}
-```
-
 ## File: apps/web/src/routes.ts
 ```typescript
 import { type RouteConfig, index, route } from '@react-router/dev/routes';
@@ -2727,34 +2586,6 @@ export default [
     { "path": "../api" }
   ]
 }
-```
-
-## File: apps/web/vite.config.ts
-```typescript
-import path from "path";
-import { fileURLToPath } from "url";
-import tailwindcss from "@tailwindcss/vite";
-import { defineConfig } from "vite";
-import { reactRouter } from "@react-router/dev/vite";
-
-const __filename = fileURLToPath(import.meta.url);
-const __dirname = path.dirname(__filename);
-
-// https://vite.dev/config/
-export default defineConfig({
-  plugins: [reactRouter(), tailwindcss()],
-  resolve: {
-    alias: {
-      "@": path.resolve(__dirname, "./src"),
-    },
-  },
-  server: {
-    port: 5173,
-    proxy: {
-      '/api': 'http://localhost:3000'
-    }
-  }
-});
 ```
 
 ## File: apps/web/src/components/layout/command-palette.layout.tsx
@@ -2963,10 +2794,274 @@ export const FileSection = memo(({ file, isApplying }: { file: TransactionFile; 
 });
 ```
 
+## File: apps/web/src/features/transactions/components/transaction-group.component.tsx
+```typescript
+import { motion, AnimatePresence } from 'framer-motion';
+import { ChevronDown, ChevronRight } from 'lucide-react';
+import { TransactionCard } from './transaction-card.component';
+import { GroupedData } from '@/utils/group.util';
+
+interface TransactionGroupProps {
+  group: GroupedData;
+  isCollapsed: boolean;
+  onToggle: (id: string) => void;
+  seenIds: Set<string>;
+}
+
+export const TransactionGroup = ({ group, isCollapsed, onToggle, seenIds }: TransactionGroupProps) => (
+  <div className="space-y-6">
+    <button
+      onClick={() => onToggle(group.id)}
+      className="flex items-center gap-3 pt-12 first:pt-0 w-full group/header"
+    >
+      <div className="h-px flex-1 bg-zinc-800/50" />
+      <div className="flex items-center gap-2 px-3 py-1 rounded-full bg-zinc-900 border border-zinc-800 hover:border-zinc-700 transition-colors">
+        {isCollapsed ? <ChevronRight className="w-3 h-3 text-zinc-500" /> : <ChevronDown className="w-3 h-3 text-zinc-500" />}
+        <span className="text-xs font-medium text-zinc-300">{group.label}</span>
+        <span className="text-[10px] font-mono text-zinc-500 bg-zinc-800 px-1.5 py-0.5 rounded-full">{group.count}</span>
+      </div>
+      <div className="h-px flex-1 bg-zinc-800/50" />
+    </button>
+    
+    <AnimatePresence mode="wait">
+      {!isCollapsed && (
+        <motion.div
+          key="content"
+          initial={{ height: 0, opacity: 0 }}
+          animate={{ height: 'auto', opacity: 1 }}
+          exit={{ height: 0, opacity: 0 }}
+          transition={{ duration: 0.2, ease: 'easeInOut' }}
+          className="overflow-visible"
+        >
+          <div className="space-y-6 pl-0 md:pl-2 ml-3 relative">
+            {group.transactions.map((tx) => (
+              <TransactionCard 
+                key={tx.id} 
+                {...tx}
+                isNew={!seenIds.has(tx.id)}
+                depth={tx.depth}
+              />
+            ))}
+          </div>
+        </motion.div>
+      )}
+    </AnimatePresence>
+  </div>
+);
+```
+
+## File: apps/web/src/store/root.store.ts
+```typescript
+import { create } from 'zustand';
+import { createUiSlice, UiSlice } from './slices/ui.slice';
+import { createTransactionSlice, TransactionSlice } from './slices/transaction.slice';
+import { createPromptSlice, PromptSlice } from './slices/prompt.slice';
+
+export type RootState = UiSlice & TransactionSlice & PromptSlice;
+
+export const useStore = create<RootState>()((...a) => ({
+  ...createUiSlice(...a),
+  ...createTransactionSlice(...a),
+  ...createPromptSlice(...a),
+}));
+
+// Export specialized selectors for cleaner global usage
+export const useUiActions = () => useStore((state) => ({
+  setCmdOpen: state.setCmdOpen,
+  toggleCmd: state.toggleCmd,
+}));
+
+export const useTransactionActions = () => useStore((state) => ({
+  setExpandedId: state.setExpandedId,
+  setHoveredChain: state.setHoveredChain,
+  init: state.init,
+  fetchTransactions: state.fetchTransactions,
+}));
+```
+
+## File: apps/web/src/types/app.types.ts
+```typescript
+import { 
+  CheckCircle2, 
+  XCircle, 
+  Loader2, 
+  GitCommit, 
+  RotateCcw,
+  PlusCircle,
+  FileEdit,
+  Trash2,
+  RefreshCw,
+  LucideIcon
+} from 'lucide-react';
+import type { 
+  TransactionStatus, 
+  TransactionFile, 
+  PromptStatus, 
+  Prompt, 
+  TransactionBlock, 
+  Transaction 
+} from '@relaycode/api';
+
+export type { 
+  TransactionStatus, 
+  TransactionFile, 
+  PromptStatus, 
+  Prompt, 
+  TransactionBlock, 
+  Transaction 
+};
+
+export const STATUS_CONFIG: Record<TransactionStatus, { 
+  icon: LucideIcon; 
+  color: string; 
+  border: string; 
+  animate?: boolean;
+}> = {
+  PENDING:   { icon: Loader2,      color: 'text-amber-500',   border: 'border-amber-500/20 bg-amber-500/5', animate: true },
+  APPLYING:  { icon: RefreshCw,    color: 'text-indigo-400',  border: 'border-indigo-500/20 bg-indigo-500/10', animate: true },
+  APPLIED:   { icon: CheckCircle2, color: 'text-emerald-500', border: 'border-emerald-500/20 bg-emerald-500/5' },
+  COMMITTED: { icon: GitCommit,    color: 'text-blue-500',    border: 'border-blue-500/20 bg-blue-500/5' },
+  REVERTED:  { icon: RotateCcw,    color: 'text-zinc-400',    border: 'border-zinc-500/20 bg-zinc-500/5' },
+  FAILED:    { icon: XCircle,      color: 'text-red-500',     border: 'border-red-500/20 bg-red-500/5' },
+};
+
+export const FILE_STATUS_CONFIG = {
+  created:  { color: 'bg-emerald-500', icon: PlusCircle, label: 'Added' },
+  modified: { color: 'bg-amber-500',   icon: FileEdit,   label: 'Modified' },
+  deleted:  { color: 'bg-red-500',     icon: Trash2,     label: 'Deleted' },
+  renamed:  { color: 'bg-blue-500',    icon: RefreshCw,  label: 'Renamed' },
+} as const;
+
+// New: Grouping Strategies
+export type GroupByStrategy = 'prompt' | 'date' | 'author' | 'status' | 'files' | 'none';
+```
+
+## File: apps/web/src/root.tsx
+```typescript
+import { Links, Meta, Scripts, ScrollRestoration, Outlet } from 'react-router';
+import type { LinksFunction } from 'react-router';
+import { useEffect } from 'react';
+import { cn } from '@/utils/cn.util';
+import { useStore } from '@/store/root.store';
+import { CommandPalette } from '@/components/layout/command-palette.layout';
+import { Navigation } from '@/components/layout/navigation.layout';
+import { Header } from '@/components/layout/header.layout';
+import { useIsMobile } from '@/hooks/mobile.hook';
+
+import '@/styles/main.style.css';
+
+export const links: LinksFunction = () => [];
+
+export function Layout({ children }: { children: React.ReactNode }) {
+  const setCmdOpen = useStore((state) => state.setCmdOpen);
+  const isMobile = useIsMobile();
+
+  // Initialize persistent SSE connection on app load
+  useEffect(() => {
+    const unsubscribe = useStore.getState().init();
+    
+    // Handle page visibility changes - reconnect when tab becomes visible
+    const handleVisibilityChange = () => {
+      if (document.visibilityState === 'visible') {
+        // Re-init if not connected (init is idempotent)
+        useStore.getState().init();
+      }
+    };
+    
+    document.addEventListener('visibilitychange', handleVisibilityChange);
+    
+    return () => {
+      unsubscribe();
+      document.removeEventListener('visibilitychange', handleVisibilityChange);
+    };
+  }, []);
+
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if ((e.metaKey || e.ctrlKey) && e.key === 'k') {
+        e.preventDefault();
+        setCmdOpen(true);
+      }
+      if (e.key === 'Escape') setCmdOpen(false);
+    };
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [setCmdOpen]);
+
+  return (
+    <html lang="en">
+      <head>
+        <meta charSet="utf-8" />
+        <meta name="viewport" content="width=device-width, initial-scale=1" />
+        <Meta />
+        <Links />
+      </head>
+      <body className="antialiased min-h-screen bg-zinc-950 text-zinc-100 font-sans selection:bg-indigo-500/30 selection:text-indigo-200">
+        <div className="min-h-screen">
+          <CommandPalette />
+          <Navigation />
+          <div className={cn("flex flex-col min-h-screen transition-all duration-300", isMobile ? "pb-20" : "pl-64")}>
+            <Header />
+            <main className="flex-1">
+              {children}
+            </main>
+          </div>
+        </div>
+        <ScrollRestoration />
+        <Scripts />
+      </body>
+    </html>
+  );
+}
+
+export default function App() {
+  return <Outlet />;
+}
+```
+
+## File: apps/web/vite.config.ts
+```typescript
+import path from "path";
+import { fileURLToPath } from "url";
+import tailwindcss from "@tailwindcss/vite";
+import { defineConfig } from "vite";
+import { reactRouter } from "@react-router/dev/vite";
+
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
+
+// https://vite.dev/config/
+export default defineConfig({
+  plugins: [reactRouter(), tailwindcss()],
+  resolve: {
+    alias: {
+      "@": path.resolve(__dirname, "./src"),
+    },
+  },
+  server: {
+    port: 5173,
+    proxy: {
+      '/api': {
+        target: 'http://localhost:3000',
+        changeOrigin: true,
+        // Handle upgrade for WebSocket/SSE connections
+        ws: true,
+        // Preserve the original headers (important for EventSource)
+        headers: {
+          'Connection': 'keep-alive',
+        },
+        // Configure timeout for SSE connections
+        timeout: 0,
+      }
+    }
+  }
+});
+```
+
 ## File: apps/web/src/pages/dashboard.page.tsx
 ```typescript
 import { useEffect, useState, useRef, useMemo } from 'react';
-import { Play, Pause, Activity, RefreshCw, Filter, Terminal, Command, Layers, Calendar, User, FileCode, CheckCircle2 } from 'lucide-react';
+import { Activity, RefreshCw, Filter, Terminal, Command, Layers, Calendar, User, FileCode, CheckCircle2 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useSearchParams } from 'react-router';
 import { cn } from "@/utils/cn.util";
@@ -2985,9 +3080,7 @@ export const Dashboard = () => {
   const prompts = useStore((state) => state.prompts);
   const fetchTransactions = useStore((state) => state.fetchTransactions);
   const fetchPrompts = useStore((state) => state.fetchPrompts);
-  const isWatching = useStore((state) => state.isWatching);
-  const toggleWatching = useStore((state) => state.toggleWatching);
-  const subscribeToUpdates = useStore((state) => state.subscribeToUpdates);
+  const isConnected = useStore((state) => state.isConnected);
   
   // Get groupBy from URL search params
   const groupByParam = searchParams.get('groupBy');
@@ -3028,14 +3121,6 @@ export const Dashboard = () => {
       return () => clearTimeout(timer);
     }
   }, [transactions]);
-
-  // Connect to real-time updates when monitoring is active
-  useEffect(() => {
-    if (isWatching) {
-      const unsubscribe = subscribeToUpdates();
-      return () => unsubscribe();
-    }
-  }, [isWatching, subscribeToUpdates]);
 
   const toggleGroupCollapse = (groupId: string) => {
     setCollapsedGroups((prev) => {
@@ -3109,38 +3194,29 @@ export const Dashboard = () => {
             <div>
               <div className="flex items-center gap-3 mb-3">
                 <span className={cn("relative flex h-3 w-3")}>
-                  <span className={cn("animate-ping absolute inline-flex h-full w-full rounded-full opacity-75", isWatching ? "bg-emerald-500" : "bg-amber-500")}></span>
-                  <span className={cn("relative inline-flex rounded-full h-3 w-3", isWatching ? "bg-emerald-500" : "bg-amber-500")}></span>
+                  <span className={cn("animate-ping absolute inline-flex h-full w-full rounded-full opacity-75", isConnected ? "bg-emerald-500" : "bg-red-500")}></span>
+                  <span className={cn("relative inline-flex rounded-full h-3 w-3", isConnected ? "bg-emerald-500" : "bg-red-500")}></span>
                 </span>
-                <h2 className={cn("text-xs font-bold uppercase tracking-widest", isWatching ? "text-emerald-500" : "text-amber-500")}>
-                  {isWatching ? 'System Active' : 'System Paused'}
+                <h2 className={cn("text-xs font-bold uppercase tracking-widest", isConnected ? "text-emerald-500" : "text-red-500")}>
+                  {isConnected ? 'System Connected' : 'Disconnected'}
                 </h2>
               </div>
               <h1 className={cn("font-bold text-white mb-2 tracking-tight transition-all", hasTransactions ? "text-xl md:text-2xl" : "text-3xl md:text-4xl")}>
-                {isWatching ? 'Monitoring Clipboard Stream' : 'Ready to Intercept Patches'}
+                {isConnected ? 'Listening for Events' : 'Connection Lost'}
               </h1>
               <p className={cn("text-zinc-500 transition-all leading-relaxed", hasTransactions ? "text-sm max-w-lg" : "text-base max-w-2xl")}>
-                {isWatching 
-                  ? 'Relaycode is actively scanning for AI code blocks. Patches will appear below automatically.' 
-                  : 'Resume monitoring to detect new AI patches from your clipboard.'}
+                {isConnected 
+                  ? 'Relaycode is connected to the backend event stream. Real-time updates are active.' 
+                  : 'Attempting to reconnect to the backend...'}
               </p>
             </div>
 
             <div className="flex flex-wrap items-center gap-4">
               <button 
-                onClick={toggleWatching}
-                className={cn(
-                  "px-6 py-3 rounded-xl font-bold text-sm flex items-center gap-2 transition-all transform active:scale-95 shadow-xl",
-                  isWatching 
-                    ? "bg-zinc-800 hover:bg-zinc-700 text-zinc-200 border border-zinc-700"
-                    : "bg-emerald-600 hover:bg-emerald-500 text-white shadow-emerald-900/20 ring-1 ring-emerald-500/50"
-                )}
+                onClick={() => fetchTransactions()}
+                className="px-6 py-3 rounded-xl font-bold text-sm flex items-center gap-2 transition-all transform active:scale-95 shadow-xl bg-zinc-800 hover:bg-zinc-700 text-zinc-200 border border-zinc-700"
               >
-                {isWatching ? (
-                  <><Pause className="w-4 h-4 fill-current" /> Pause Watcher</>
-                ) : (
-                  <><Play className="w-4 h-4 fill-current" /> Start Monitoring</>
-                )}
+                <RefreshCw className="w-4 h-4" /> Refresh
               </button>
             </div>
           </div>
@@ -3263,12 +3339,9 @@ export const Dashboard = () => {
                 <p className="max-w-sm text-center text-sm mb-6">
                   Copy any AI-generated code block (Claude, GPT, etc.) to your clipboard to see it appear here instantly.
                 </p>
-                <button 
-                  onClick={toggleWatching}
-                  className="px-4 py-2 bg-zinc-800 hover:bg-zinc-700 text-zinc-300 rounded-lg text-sm font-medium transition-colors"
-                >
-                  {isWatching ? 'Waiting for clipboard events...' : 'Start Monitoring'}
-                </button>
+                <div className="px-4 py-2 bg-zinc-800/50 text-zinc-500 rounded-lg text-sm font-medium border border-zinc-800">
+                  {isConnected ? 'Waiting for events...' : 'Reconnecting...'}
+                </div>
               </motion.div>
             )}
           </AnimatePresence>
@@ -3277,63 +3350,6 @@ export const Dashboard = () => {
     </div>
   );
 };
-```
-
-## File: apps/web/src/types/app.types.ts
-```typescript
-import { 
-  CheckCircle2, 
-  XCircle, 
-  Loader2, 
-  GitCommit, 
-  RotateCcw,
-  PlusCircle,
-  FileEdit,
-  Trash2,
-  RefreshCw,
-  LucideIcon
-} from 'lucide-react';
-import type { 
-  TransactionStatus, 
-  TransactionFile, 
-  PromptStatus, 
-  Prompt, 
-  TransactionBlock, 
-  Transaction 
-} from '@relaycode/api';
-
-export type { 
-  TransactionStatus, 
-  TransactionFile, 
-  PromptStatus, 
-  Prompt, 
-  TransactionBlock, 
-  Transaction 
-};
-
-export const STATUS_CONFIG: Record<TransactionStatus, { 
-  icon: LucideIcon; 
-  color: string; 
-  border: string; 
-  animate?: boolean;
-}> = {
-  PENDING:   { icon: Loader2,      color: 'text-amber-500',   border: 'border-amber-500/20 bg-amber-500/5', animate: true },
-  APPLYING:  { icon: RefreshCw,    color: 'text-indigo-400',  border: 'border-indigo-500/20 bg-indigo-500/10', animate: true },
-  APPLIED:   { icon: CheckCircle2, color: 'text-emerald-500', border: 'border-emerald-500/20 bg-emerald-500/5' },
-  COMMITTED: { icon: GitCommit,    color: 'text-blue-500',    border: 'border-blue-500/20 bg-blue-500/5' },
-  REVERTED:  { icon: RotateCcw,    color: 'text-zinc-400',    border: 'border-zinc-500/20 bg-zinc-500/5' },
-  FAILED:    { icon: XCircle,      color: 'text-red-500',     border: 'border-red-500/20 bg-red-500/5' },
-};
-
-export const FILE_STATUS_CONFIG = {
-  created:  { color: 'bg-emerald-500', icon: PlusCircle, label: 'Added' },
-  modified: { color: 'bg-amber-500',   icon: FileEdit,   label: 'Modified' },
-  deleted:  { color: 'bg-red-500',     icon: Trash2,     label: 'Deleted' },
-  renamed:  { color: 'bg-blue-500',    icon: RefreshCw,  label: 'Renamed' },
-} as const;
-
-// New: Grouping Strategies
-export type GroupByStrategy = 'prompt' | 'date' | 'author' | 'status' | 'files' | 'none';
 ```
 
 ## File: apps/api/src/routes/transactions.ts
@@ -3356,11 +3372,11 @@ export const transactionsRoutes = new Elysia({ prefix: '/transactions' })
     }),
     response: t.Array(Transaction)
   })
-  .patch('/:id/status', async ({ params: { id }, body: { status } }) => {
+  .patch('/:id/status', async ({ params: { id }, body: { status, scenario } }) => {
     // If transitioning to APPLYING, start the background simulation instead of immediate update
     if (status === 'APPLYING') {
-      // Trigger the async simulation (runs in background, returns immediately)
-      db.startSimulation(id);
+      // Trigger the async simulation with optional scenario (runs in background, returns immediately)
+      db.startSimulation(id, scenario);
       
       // Return the transaction in its current state (now APPLYING)
       const tx = db.getTransactions(1, 1).find((t: any) => t.id === id);
@@ -3374,9 +3390,56 @@ export const transactionsRoutes = new Elysia({ prefix: '/transactions' })
     
     return updated;
   }, {
-    body: t.Object({ status: TransactionStatus }),
+    body: t.Object({ 
+      status: TransactionStatus,
+      scenario: t.Optional(t.Union([
+        t.Literal('fast-success'),
+        t.Literal('simulated-failure'),
+        t.Literal('long-running')
+      ]))
+    }),
     response: Transaction
   });
+```
+
+## File: apps/api/src/index.ts
+```typescript
+import { Elysia } from 'elysia';
+import { cors } from '@elysiajs/cors';
+import { swagger } from '@elysiajs/swagger';
+import { transactionsRoutes } from './routes/transactions';
+import { promptsRoutes } from './routes/prompts';
+import { eventsRoutes } from './routes/events';
+
+const port = Number(process.env.PORT) || 3000;
+const host = process.env.HOST || 'localhost';
+
+const app = new Elysia()
+  .use(cors())
+  .use(swagger({
+    documentation: {
+      info: {
+        title: 'Relaycode API Documentation',
+        version: '1.0.0'
+      }
+    }
+  }))
+  .get('/health', () => ({ status: 'ok', timestamp: new Date().toISOString() }))
+  .group('/api', (app) => 
+    app
+      .get('/version', () => ({ version: '1.2.4', environment: 'stable' }))
+      .use(transactionsRoutes)
+      .use(promptsRoutes)
+      .use(eventsRoutes)
+  )
+  .listen({ port, hostname: host });
+
+console.log(
+  `🦊 Elysia is running at ${app.server?.hostname}:${app.server?.port}`
+);
+
+export type App = typeof app;
+export * from './models';
 ```
 
 ## File: apps/api/src/models.ts
@@ -3466,6 +3529,17 @@ export const SimulationEvent = t.Object({
   progress: t.Optional(t.Number())
 });
 export type SimulationEvent = Static<typeof SimulationEvent>;
+
+// Simulation Scenarios for testing different backend behaviors
+// - fast-success: Quick completion (0.5-1s) for rapid testing
+// - simulated-failure: Triggers FAILED status to test error handling
+// - long-running: Extended duration (8-12s) to test loading states
+export const SimulationScenario = t.Union([
+  t.Literal('fast-success'),
+  t.Literal('simulated-failure'),
+  t.Literal('long-running')
+]);
+export type SimulationScenario = Static<typeof SimulationScenario>;
 ```
 
 ## File: apps/api/src/store.ts
@@ -3545,8 +3619,8 @@ class Store {
     });
   }
 
-  // Simulation engine: triggers async state transition PENDING -> APPLYING -> APPLIED
-  async startSimulation(id: string): Promise<void> {
+  // Simulation engine: triggers async state transition based on scenario
+  async startSimulation(id: string, scenario?: 'fast-success' | 'simulated-failure' | 'long-running'): Promise<void> {
     // Prevent duplicate simulations for the same transaction
     if (this.activeSimulations.has(id)) {
       return;
@@ -3563,13 +3637,23 @@ class Store {
     tx.status = 'APPLYING';
     this.notify(tx);
 
-    // Simulate work duration: random between 2-6 seconds
-    const duration = 2000 + Math.random() * 4000;
-    
+    // Determine duration based on scenario
+    let duration = 2000 + Math.random() * 4000; // Default 2-6 seconds
+    if (scenario === 'fast-success') {
+      duration = 500 + Math.random() * 500; // 0.5-1 seconds
+    } else if (scenario === 'long-running') {
+      duration = 8000 + Math.random() * 4000; // 8-12 seconds
+    }
+
     await new Promise(resolve => setTimeout(resolve, duration));
 
-    // Transition to APPLIED
-    tx.status = 'APPLIED';
+    // Determine final status based on scenario
+    if (scenario === 'simulated-failure') {
+      tx.status = 'FAILED';
+    } else {
+      tx.status = 'APPLIED';
+    }
+    
     this.notify(tx);
     this.activeSimulations.delete(id);
   }
@@ -3596,30 +3680,74 @@ const api: ReturnType<typeof edenTreaty<App>> = edenTreaty<App>(getBaseUrl());
 // SSE Connection for real-time simulation updates
 export const connectToSimulationStream = (
   onEvent: (event: SimulationEvent) => void,
-  onError?: (error: Event) => void
+  onConnectionChange?: (isConnected: boolean) => void,
+  onError?: (error: Event, isNetworkError: boolean) => void
 ): (() => void) => {
   const baseUrl = getBaseUrl();
-  const eventSource = new EventSource(`${baseUrl}/api/events`);
+  let eventSource: EventSource | null = null;
+  let reconnectAttempts = 0;
+  let reconnectTimeout: NodeJS.Timeout | null = null;
+  const maxReconnectAttempts = 5;
+  const baseReconnectDelay = 1000;
+  let intentionalClose = false;
 
-  eventSource.onmessage = (event) => {
-    try {
-      const data: SimulationEvent = JSON.parse(event.data);
-      onEvent(data);
-    } catch (err) {
-      console.error('Failed to parse SSE event:', err);
+  const connect = () => {
+    if (eventSource) {
+      eventSource.close();
     }
+
+    eventSource = new EventSource(`${baseUrl}/api/events`);
+    
+    eventSource.onopen = () => {
+      reconnectAttempts = 0;
+      onConnectionChange?.(true);
+    };
+
+    eventSource.onmessage = (event) => {
+      try {
+        const data: SimulationEvent = JSON.parse(event.data);
+        onEvent(data);
+      } catch (err) {
+        console.error('Failed to parse SSE event:', err);
+      }
+    };
+
+    eventSource.onerror = (error) => {
+      // Check if eventSource is closed (network error) or just no data (server timeout)
+      const isNetworkError = eventSource?.readyState === EventSource.CLOSED;
+      
+      if (!intentionalClose) {
+        onConnectionChange?.(false);
+      }
+      
+      if (onError) onError(error, isNetworkError);
+      
+      // Attempt to reconnect with exponential backoff (only for network errors)
+      if (isNetworkError && !intentionalClose && reconnectAttempts < maxReconnectAttempts) {
+        const delay = Math.min(baseReconnectDelay * Math.pow(2, reconnectAttempts), 30000);
+        reconnectAttempts++;
+        
+        if (reconnectTimeout) clearTimeout(reconnectTimeout);
+        reconnectTimeout = setTimeout(() => {
+          console.log(`Attempting to reconnect... (${reconnectAttempts}/${maxReconnectAttempts})`);
+          connect();
+        }, delay);
+      } else if (reconnectAttempts >= maxReconnectAttempts) {
+        console.error('Max reconnection attempts reached');
+      }
+    };
   };
 
-  eventSource.onerror = (error) => {
-    console.error('SSE connection error:', error);
-    if (onError) onError(error);
-    // Auto-reconnect is handled by EventSource by default, 
-    // but we can add custom reconnection logic here if needed
-  };
+  connect();
 
   // Return cleanup function
   return () => {
-    eventSource.close();
+    intentionalClose = true;
+    if (reconnectTimeout) clearTimeout(reconnectTimeout);
+    if (eventSource) {
+      eventSource.close();
+      eventSource = null;
+    }
   };
 };
 
@@ -3641,15 +3769,15 @@ export interface TransactionSlice {
   page: number;
   expandedId: string | null;
   hoveredChainId: string | null;
-  isWatching: boolean;
+  isConnected: boolean;
   setExpandedId: (id: string | null) => void;
   setHoveredChain: (id: string | null) => void;
-  toggleWatching: () => void;
+  init: () => (() => void);
   fetchTransactions: (params?: { search?: string; status?: string }) => Promise<void>;
   searchTransactions: (query: string) => Promise<Transaction[]>;
   fetchNextPage: () => Promise<void>;
   addTransaction: (tx: Transaction) => void;
-  applyTransactionChanges: (id: string) => Promise<void>;
+  applyTransactionChanges: (id: string, scenario?: 'fast-success' | 'simulated-failure' | 'long-running') => Promise<void>;
   subscribeToUpdates: () => (() => void);
 }
 
@@ -3663,50 +3791,44 @@ export const createTransactionSlice: StateCreator<RootState, [], [], Transaction
   page: 1,
   expandedId: null,
   hoveredChainId: null,
-  isWatching: false,
+  isConnected: false,
 
   setExpandedId: (id) => set({ expandedId: id }),
   setHoveredChain: (id) => set({ hoveredChainId: id }),
   
-  toggleWatching: () => {
-    const isNowWatching = !get().isWatching;
-    set({ isWatching: isNowWatching });
-    
-    if (isNowWatching) {
-      // Start listening to SSE updates when monitoring begins
+  init: () => {
+    // Initialize SSE connection on app load (idempotent)
+    if (!unsubscribeFromStream) {
       const unsubscribe = get().subscribeToUpdates();
       unsubscribeFromStream = unsubscribe;
-    } else {
-      // Stop listening when monitoring pauses
+      
+      // Also fetch initial data immediately
+      get().fetchTransactions();
+    }
+    // Return cleanup function for root unmount
+    return () => {
       if (unsubscribeFromStream) {
         unsubscribeFromStream();
         unsubscribeFromStream = null;
       }
-    }
+    };
   },
 
   addTransaction: (tx) => set((state) => ({ 
     transactions: [tx, ...state.transactions] 
   })),
 
-  applyTransactionChanges: async (id) => {
+  applyTransactionChanges: async (id, scenario) => {
     try {
-      // Trigger backend simulation - backend handles the state transitions
-      const { data, error } = await api.api.transactions[id].status.patch({
-        status: 'APPLYING'
+      // Trigger backend simulation - rely exclusively on SSE to update local state
+      // This prevents race conditions between PATCH response and SSE events
+      const { error } = await api.api.transactions[id].status.patch({
+        status: 'APPLYING',
+        scenario
       });
 
       if (error) throw error;
-
-      // Initial update: transaction is now APPLYING
-      if (data) {
-        set((state) => ({
-          transactions: state.transactions.map((t) => 
-            t.id === id ? data : t
-          )
-        }));
-      }
-      // Note: Further updates (APPLIED) will come via SSE stream
+      // State updates (APPLYING -> APPLIED/FAILED) will arrive via SSE stream
     } catch (err) {
       console.error('Failed to apply transaction', err);
     }
@@ -3714,15 +3836,29 @@ export const createTransactionSlice: StateCreator<RootState, [], [], Transaction
 
   subscribeToUpdates: () => {
     // Connect to SSE and update transactions when backend pushes updates
-    const unsubscribe = connectToSimulationStream((event) => {
-      set((state) => ({
-        transactions: state.transactions.map((t) => 
-          t.id === event.transactionId 
-            ? { ...t, status: event.status }
-            : t
-        )
-      }));
-    });
+    const unsubscribe = connectToSimulationStream(
+      (event) => {
+        // Merge incoming event data into existing transaction list
+        set((state) => ({
+          transactions: state.transactions.map((t) => 
+            t.id === event.transactionId 
+              ? { ...t, status: event.status }
+              : t
+          )
+        }));
+      },
+      (isConnected) => {
+        // Track connection state for UI feedback
+        set({ isConnected });
+      },
+      (_error, isNetworkError) => {
+        if (isNetworkError) {
+          console.error('Network connection lost, attempting to reconnect...');
+        } else {
+          console.warn('SSE server timeout or error');
+        }
+      }
+    );
 
     return unsubscribe;
   },
@@ -3792,46 +3928,6 @@ export const createTransactionSlice: StateCreator<RootState, [], [], Transaction
     set({ isFetchingNextPage: false });
   },
 });
-```
-
-## File: apps/api/src/index.ts
-```typescript
-import { Elysia } from 'elysia';
-import { cors } from '@elysiajs/cors';
-import { swagger } from '@elysiajs/swagger';
-import { transactionsRoutes } from './routes/transactions';
-import { promptsRoutes } from './routes/prompts';
-import { eventsRoutes } from './routes/events';
-
-const port = Number(process.env.PORT) || 3000;
-const host = process.env.HOST || 'localhost';
-
-const app = new Elysia()
-  .use(cors())
-  .use(swagger({
-    documentation: {
-      info: {
-        title: 'Relaycode API Documentation',
-        version: '1.0.0'
-      }
-    }
-  }))
-  .get('/health', () => ({ status: 'ok', timestamp: new Date().toISOString() }))
-  .group('/api', (app) => 
-    app
-      .get('/version', () => ({ version: '1.2.4', environment: 'stable' }))
-      .use(transactionsRoutes)
-      .use(promptsRoutes)
-      .use(eventsRoutes)
-  )
-  .listen({ port, hostname: host });
-
-console.log(
-  `🦊 Elysia is running at ${app.server?.hostname}:${app.server?.port}`
-);
-
-export type App = typeof app;
-export * from './models';
 ```
 
 ## File: package.json
