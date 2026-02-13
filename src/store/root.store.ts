@@ -1,12 +1,14 @@
 import { create } from 'zustand';
 import { createUiSlice, UiSlice } from './slices/ui.slice';
 import { createTransactionSlice, TransactionSlice } from './slices/transaction.slice';
+import { createPromptSlice, PromptSlice } from './slices/prompt.slice';
 
-export type RootState = UiSlice & TransactionSlice;
+export type RootState = UiSlice & TransactionSlice & PromptSlice;
 
 export const useStore = create<RootState>()((...a) => ({
   ...createUiSlice(...a),
   ...createTransactionSlice(...a),
+  ...createPromptSlice(...a),
 }));
 
 // Export specialized selectors for cleaner global usage

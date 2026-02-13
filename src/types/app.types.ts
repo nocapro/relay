@@ -41,12 +41,15 @@ export interface TransactionFile {
   diff: string;
 }
 
+export type PromptStatus = 'DRAFT' | 'ACTIVE' | 'COMPLETED' | 'ARCHIVED';
+
 // New: Prompt entity to support grouping
 export interface Prompt {
   id: string;
   title: string;
   content: string;
   timestamp: string;
+  status: PromptStatus;
 }
 
 export type TransactionBlock =

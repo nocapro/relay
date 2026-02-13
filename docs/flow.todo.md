@@ -26,7 +26,7 @@ we need multi select feature for transaction list.
 
 ===
 
-we dont need transaction history page, change with prompt management page that prompt relate also with transactions
+we dont need transaction history page, change with prompt management page (kanban based) that prompt relate also with transactions. think about the amazing UI and cohesive UX also 
 
 ===
 
@@ -34,6 +34,10 @@ we dont need transaction history page, change with prompt management page that p
 ===
 
 simulated backend with json mock data, logic , and services , real elysiajs server and client. monorepoed backend frontend structure. should be no backend logic at all in frontend
+
+===
+
+fix feature
 
 === DONE
 

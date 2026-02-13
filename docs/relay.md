@@ -1,97 +1,128 @@
-The reason the timer is stuck and the loading never finishes is a classic React `useEffect` dependency loop combined with a race condition in the simulation timings. 
+I will now fix the TypeScript errors by correcting the Lucide icon names and removing unused imports and dependencies.
 
-When you call `setLocalStatus('applying')` inside the effect, the effect re-runs because `localStatus` is in the dependency array. The cleanup function from the previous run immediately calls `clearInterval(timer)`, killing the timer before the first tick even happens. Furthermore, the global simulation in the store is shorter (1.8s) than the maximum possible file duration (2.0s), meaning the global status often reverts to "Idle" before the file can technically "Finish."
+### 1. Fix Navigation Layout
 
-Here is the fix using the hacker-news-approved "Ref-and-Effect" pattern for high-frequency timers.
+The icon `LayoutKanban` is missing; I'll use `Kanban` instead and remove the unused `LayoutKanban` import.
 
-### Part 1: Fix File Loading Logic & Dependencies
-We need to ensure the interval isn't killed by its own state changes and that the simulation in the store allows enough head-room for the UI animations to complete.
-
-```typescript // src/features/transactions/components/file-section.component.tsx search-replace
+```typescript // src/components/layout/navigation.layout.tsx search-replace
 <<<<<<< SEARCH
-  useEffect(() => {
-    if (isApplying && localStatus === 'idle') {
-      setLocalStatus('applying');
-      const startTime = performance.now();
-      
-      const timer = setInterval(() => {
-        const now = performance.now();
-        const diff = now - startTime;
-        
-        if (diff >= workDuration) {
-          setElapsed(workDuration);
-          setLocalStatus('completed');
-          clearInterval(timer);
-        } else {
-          setElapsed(diff);
-        }
-      }, 50);
-
-      return () => clearInterval(timer);
-    }
-    
-    if (!isApplying && localStatus !== 'idle') {
-      setLocalStatus('idle');
-      setElapsed(0);
-    }
-  }, [isApplying, localStatus, workDuration]);
+import { Activity, Settings, LayoutKanban, Terminal } from 'lucide-react';
 =======
-  useEffect(() => {
-    if (!isApplying) {
-      setLocalStatus('idle');
-      setElapsed(0);
-      return;
-    }
-
-    setLocalStatus('applying');
-    const startTime = performance.now();
-    
-    const timer = setInterval(() => {
-      const now = performance.now();
-      const diff = now - startTime;
-      
-      setElapsed(Math.min(diff, workDuration));
-
-      if (diff >= workDuration) {
-        setLocalStatus('completed');
-        clearInterval(timer);
-      }
-    }, 30); // Higher frequency for smoother 0.1s updates
-
-    return () => clearInterval(timer);
-  }, [isApplying, workDuration]); // Removed localStatus from dependencies to prevent reset loop
+import { Activity, Settings, Kanban, Terminal } from 'lucide-react';
+>>>>>>> REPLACE
+<<<<<<< SEARCH
+const navItems = [
+  { path: '/', icon: Activity, label: 'Stream' },
+  { path: '/prompts', icon: LayoutKanban, label: 'Prompts' },
+  { path: '/settings', icon: Settings, label: 'Settings' },
+] as const;
+=======
+const navItems = [
+  { path: '/', icon: Activity, label: 'Stream' },
+  { path: '/prompts', icon: Kanban, label: 'Prompts' },
+  { path: '/settings', icon: Settings, label: 'Settings' },
+] as const;
 >>>>>>> REPLACE
 ```
 
-### Part 2: Adjust Global Simulation Timing
-We'll bump the global simulation to 3 seconds. This ensures that even the "slowest" randomized file (2s) has a full second of "Completed" state visibility before the whole card transitions out of the applying state.
+### 2. Clean up Kanban Column Component
 
-```typescript // src/store/slices/transaction.slice.ts search-replace
+Removing the non-existent `@dnd-kit` import and unused variables.
+
+```typescript // src/features/prompts/components/kanban-column.component.tsx search-replace
 <<<<<<< SEARCH
-    // 2. Simulate disk I/O / worker latency
-    await new Promise(resolve => setTimeout(resolve, 1800));
-
-    // 3. Finalize to APPLIED
+import { useDroppable } from '@dnd-kit/core'; // We'll simulate DnD with motion for now as dnd-kit isn't in dependencies, but sticking to framer-motion as requested in plan
+import { motion } from 'framer-motion';
+import { Prompt, Transaction } from '@/types/app.types';
 =======
-    // 2. Simulate disk I/O / worker latency
-    // Bumped to 3s to ensure individual file timers (max 2s) can finish visually
-    await new Promise(resolve => setTimeout(resolve, 3000));
+import { Prompt, Transaction } from '@/types/app.types';
+>>>>>>> REPLACE
+<<<<<<< SEARCH
+export const KanbanColumn = ({ id, title, icon: Icon, color, prompts, transactions }: KanbanColumnProps) => {
+=======
+export const KanbanColumn = ({ title, icon: Icon, color, prompts, transactions }: KanbanColumnProps) => {
+>>>>>>> REPLACE
+```
 
-    // 3. Finalize to APPLIED
+### 3. Clean up Prompt Card Component
+
+Removing unused `MessageSquare` and `cn` imports.
+
+```typescript // src/features/prompts/components/prompt-card.component.tsx search-replace
+<<<<<<< SEARCH
+import { Clock, GitBranch, MessageSquare } from 'lucide-react';
+import { Prompt, Transaction } from '@/types/app.types';
+import { cn } from '@/utils/cn.util';
+=======
+import { Clock, GitBranch } from 'lucide-react';
+import { Prompt, Transaction } from '@/types/app.types';
+>>>>>>> REPLACE
+```
+
+### 4. Clean up File Section Component
+
+Removing unused `useRef`, `Loader2`, and `CheckCircle2`.
+
+```typescript // src/features/transactions/components/file-section.component.tsx search-replace
+<<<<<<< SEARCH
+import { memo, useState, useCallback, useMemo, useEffect, useRef } from 'react';
+import { motion, AnimatePresence } from 'framer-motion';
+import { ChevronDown, Copy, Loader2, CheckCircle2 } from 'lucide-react';
+=======
+import { memo, useState, useCallback, useMemo, useEffect } from 'react';
+import { motion, AnimatePresence } from 'framer-motion';
+import { ChevronDown, Copy } from 'lucide-react';
+>>>>>>> REPLACE
+```
+
+### 5. Fix Prompts Page
+
+Replacing `LayoutKanban` with `Kanban`.
+
+```typescript // src/pages/prompts.page.tsx search-replace
+<<<<<<< SEARCH
+import { useStore } from '@/store/root.store';
+import { KanbanBoard } from '@/features/prompts/components/kanban-board.component';
+import { LayoutKanban, Plus } from 'lucide-react';
+
+export const PromptsPage = () => {
+=======
+import { useStore } from '@/store/root.store';
+import { KanbanBoard } from '@/features/prompts/components/kanban-board.component';
+import { Kanban, Plus } from 'lucide-react';
+
+export const PromptsPage = () => {
+>>>>>>> REPLACE
+<<<<<<< SEARCH
+        <div className="flex items-center gap-3">
+          <div className="p-2.5 rounded-xl bg-zinc-900 border border-zinc-800">
+            <LayoutKanban className="w-5 h-5 text-indigo-400" />
+          </div>
+          <div>
+=======
+        <div className="flex items-center gap-3">
+          <div className="p-2.5 rounded-xl bg-zinc-900 border border-zinc-800">
+            <Kanban className="w-5 h-5 text-indigo-400" />
+          </div>
+          <div>
 >>>>>>> REPLACE
 ```
 
 ```yaml
 projectId: react-vite-tailwind
-uuid: b2c3d4e5-f6a7-4b5c-8d9e-0f1a2b3c4d5e
+uuid: 5a2b8c9d-1234-4e5f-a6b7-c8d9e0f1a2b3
 changeSummary:
+  - edit: src/components/layout/navigation.layout.tsx
+  - edit: src/features/prompts/components/kanban-column.component.tsx
+  - edit: src/features/prompts/components/prompt-card.component.tsx
   - edit: src/features/transactions/components/file-section.component.tsx
-  - edit: src/store/slices/transaction.slice.ts
-promptSummary: Fix timer dependency loop in FileSection and increase global simulation delay for better UI feedback.
+  - edit: src/pages/prompts.page.tsx
+promptSummary: Fix TypeScript errors related to missing icon exports and unused imports in the newly created Prompt Management and existing components.
 gitCommitMsg: >-
-  fix: resolve file-level timer stall and simulation race condition
+  fix: resolve typescript errors and cleanup unused imports
 
-  - Removed localStatus from useEffect dependencies to prevent interval clearing itself.
-  - Increased global application simulation delay to 3s to provide visual headroom for file completion.
-  - Increased timer frequency to 30ms for smoother telemetry updates.
+  - Replaced missing 'LayoutKanban' with 'Kanban' icon.
+  - Removed unused imports (useRef, Loader2, CheckCircle2, MessageSquare, useDroppable).
+  - Cleaned up unused variables in components.
+  - Removed non-existent '@dnd-kit/core' dependency import.
 ```

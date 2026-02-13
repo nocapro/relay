@@ -4,43 +4,50 @@
       "id": "prompt-cloud-infra",
       "title": "Migrate to Kubernetes & Helm",
       "content": "Transition the application from legacy VM deployment to a Kubernetes-native architecture using Helm charts for scalability and resilience.",
-      "timestamp": "12 mins ago"
+      "timestamp": "12 mins ago",
+      "status": "ACTIVE"
     },
     {
       "id": "prompt-security-oidc",
       "title": "Implement OIDC Authentication",
       "content": "Replace the internal JWT logic with a robust OpenID Connect flow via a third-party provider like Auth0 for better enterprise security and SSO capabilities.",
-      "timestamp": "45 mins ago"
+      "timestamp": "45 mins ago",
+      "status": "ACTIVE"
     },
     {
       "id": "prompt-backend-perf",
       "title": "Optimize Data Ingestion Layer",
       "content": "Improve database write performance by implementing a batching strategy and adding Redis as a write-behind cache to handle high-throughput scenarios.",
-      "timestamp": "3 hours ago"
+      "timestamp": "3 hours ago",
+      "status": "COMPLETED"
     },
     {
       "id": "prompt-cicd",
       "title": "Establish CI/CD Pipeline",
       "content": "Automate the build, test, and deployment process using GitHub Actions to improve reliability and development velocity.",
-      "timestamp": "5 hours ago"
+      "timestamp": "5 hours ago",
+      "status": "COMPLETED"
     },
     {
       "id": "prompt-feature-comments",
       "title": "Implement Transaction Commenting System",
       "content": "Develop a full-stack commenting feature for transactions, allowing users to collaborate and discuss specific code changes.",
-      "timestamp": "1 day ago"
+      "timestamp": "1 day ago",
+      "status": "DRAFT"
     },
     {
       "id": "prompt-ui-redesign",
       "title": "Modern Dashboard UI Overhaul",
       "content": "Redesign the dashboard with a modern, dark-themed UI using Tailwind CSS, Framer Motion animations, and improved accessibility.",
-      "timestamp": "2 days ago"
+      "timestamp": "2 days ago",
+      "status": "COMPLETED"
     },
     {
       "id": "prompt-api-graphql",
       "title": "GraphQL API Migration",
       "content": "Migrate REST endpoints to GraphQL to provide more flexible data fetching and reduce over-fetching issues.",
-      "timestamp": "3 days ago"
+      "timestamp": "3 days ago",
+      "status": "ARCHIVED"
     }
   ],
   "transactions": [

@@ -1,11 +1,10 @@
 import { StateCreator } from 'zustand';
-import { Transaction, Prompt } from '@/types/app.types';
+import { Transaction } from '@/types/app.types';
 import { api } from '@/services/api.service';
 import { RootState } from '../root.store';
 
 export interface TransactionSlice {
   transactions: Transaction[];
-  prompts: Prompt[]; // Store prompts for lookup
   isLoading: boolean;
   isFetchingNextPage: boolean;
   hasMore: boolean;
@@ -24,7 +23,6 @@ export interface TransactionSlice {
 
 export const createTransactionSlice: StateCreator<RootState, [], [], TransactionSlice> = (set, get) => ({
   transactions: [],
-  prompts: [],
   isLoading: false,
   isFetchingNextPage: false,
   hasMore: true,
@@ -76,8 +74,7 @@ export const createTransactionSlice: StateCreator<RootState, [], [], Transaction
     try {
       // Pass pagination params to API
       const data = await api.transactions.list({ page: 1, limit: 15 });
-      const prompts = await api.transactions.prompts.list();
-      set({ transactions: data, prompts, hasMore: data.length === 15 });
+      set({ transactions: data, hasMore: data.length === 15 });
     } catch (error) {
       console.error('Failed to fetch transactions', error);
     }

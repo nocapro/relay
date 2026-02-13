@@ -14,7 +14,7 @@ type Pages = {
   "/": {
     params: {};
   };
-  "/history": {
+  "/prompts": {
     params: {};
   };
   "/settings": {
@@ -25,15 +25,15 @@ type Pages = {
 type RouteFiles = {
   "root.tsx": {
     id: "root";
-    page: "/" | "/history" | "/settings";
+    page: "/" | "/prompts" | "/settings";
   };
   "routes/dashboard.tsx": {
     id: "routes/dashboard";
     page: "/";
   };
-  "routes/history.tsx": {
-    id: "routes/history";
-    page: "/history";
+  "routes/prompts.tsx": {
+    id: "routes/prompts";
+    page: "/prompts";
   };
   "routes/settings.tsx": {
     id: "routes/settings";
@@ -44,6 +44,6 @@ type RouteFiles = {
 type RouteModules = {
   "root": typeof import("./src/root.tsx");
   "routes/dashboard": typeof import("./src/routes/dashboard.tsx");
-  "routes/history": typeof import("./src/routes/history.tsx");
+  "routes/prompts": typeof import("./src/routes/prompts.tsx");
   "routes/settings": typeof import("./src/routes/settings.tsx");
 };

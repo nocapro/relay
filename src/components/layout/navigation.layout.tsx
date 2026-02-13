@@ -1,4 +1,4 @@
-import { Activity, Settings, Clock, Terminal } from 'lucide-react';
+import { Activity, Settings, Kanban, Terminal } from 'lucide-react';
 import { motion } from 'framer-motion';
 import { Link, useLocation } from 'react-router';
 import { cn } from "@/utils/cn.util";
@@ -6,7 +6,7 @@ import { useIsMobile } from "@/hooks/mobile.hook";
 
 const navItems = [
   { path: '/', icon: Activity, label: 'Stream' },
-  { path: '/history', icon: Clock, label: 'History' },
+  { path: '/prompts', icon: Kanban, label: 'Prompts' },
   { path: '/settings', icon: Settings, label: 'Settings' },
 ] as const;
 

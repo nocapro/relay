@@ -17,6 +17,7 @@ export const Dashboard = () => {
   const transactions = useStore((state) => state.transactions);
   const prompts = useStore((state) => state.prompts);
   const fetchTransactions = useStore((state) => state.fetchTransactions);
+  const fetchPrompts = useStore((state) => state.fetchPrompts);
   const isWatching = useStore((state) => state.isWatching);
   const toggleWatching = useStore((state) => state.toggleWatching);
   
@@ -75,7 +76,8 @@ export const Dashboard = () => {
 
   useEffect(() => {
     fetchTransactions();
-  }, [fetchTransactions]);
+    fetchPrompts();
+  }, [fetchTransactions, fetchPrompts]);
 
   const hasTransactions = transactions.length > 0;
   

@@ -1,6 +1,6 @@
-import { memo, useState, useCallback, useMemo, useEffect, useRef } from 'react';
+import { memo, useState, useCallback, useMemo, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { ChevronDown, Copy, Loader2, CheckCircle2 } from 'lucide-react';
+import { ChevronDown, Copy } from 'lucide-react';
 import { cn } from "@/utils/cn.util";
 import { TransactionFile, FILE_STATUS_CONFIG } from "@/types/app.types";
 import { DiffViewer } from "@/components/ui/diff-viewer.ui.tsx";
