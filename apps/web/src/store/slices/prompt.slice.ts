@@ -1,6 +1,6 @@
 import { StateCreator } from 'zustand';
 import { Prompt, PromptStatus } from '@/types/app.types';
-import { api } from '@/services/api.service';
+import { client } from '@/services/api.service';
 import { RootState } from '../root.store';
 
 export interface PromptSlice {
@@ -13,8 +13,7 @@ export const createPromptSlice: StateCreator<RootState, [], [], PromptSlice> = (
   prompts: [],
   fetchPrompts: async () => {
     try {
-      // Eden Treaty: GET /api/prompts
-      const { data, error } = await api.api.prompts.get();
+      const { data, error } = await client.GET('/api/prompts');
       if (error) throw error;
       if (data) set({ prompts: data });
     } catch (error) {

@@ -52,3 +52,6 @@ apps/**/*.d.ts.map
 
 # relay state
 /.relay/
+
+# Rust
+target/

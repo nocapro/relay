@@ -34,8 +34,7 @@ we need prompt detail page; opened as sheets in kanban page, it has amazing stat
 
 === DONE
 
-we dont need transaction history page, change with prompt management page (kanban based) that prompt relate also with transactions. think about the amazing UI and cohesive UX also 
-
+we dont need transaction history page, change with prompt management page (kanban based) that prompt relate also with transactions. think about the amazing UI and cohesive UX 
 ===
 
 based on readme.md, we need amazing onboarding/initialization page. make sure UI amazing and UX super cohesive.
@@ -43,6 +42,25 @@ based on readme.md, we need amazing onboarding/initialization page. make sure UI
 ===
 
 if astro has floating action bar for dev to debug or control things, we should have it to control the scenarios, so we can prepare the frontend to be production ready
+
+===
+
+I want the rust be monorepo like crates/relaycode-api crates/relaycode-core crates/relaycode-schema
+
+=== DONE
+
+lets ditch elysia, we want the backend to be below architecture
+
+┌─────────────────────┐         ┌──────────────────────────────┐
+│   Rust Backend      │         │   Frontend                   │
+│                     │◄────────│   - TypeScript               │
+│   - Axum/Actix      │  HTTP   │   - openapi-typescript       │
+│   - utoipa          │         │   - openapi-fetch (client)   │
+│   - Embedded Swagger│         │                              │
+└─────────────────────┘         └──────────────────────────────┘
+
+- we want E2E typesafety
+- so everytime bun dev should auto run the openapi generation
 
 === DONE
 

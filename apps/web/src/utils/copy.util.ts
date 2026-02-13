@@ -42,7 +42,7 @@ export const generateGranularReport = (
     // File Content / Diffs
     if (options.diffs && t.blocks) {
       const content = t.blocks.map(b => {
-        if (b.type === 'file') {
+        if (b.type === 'file' && b.file) {
           return `File: ${b.file.path}\n\`\`\`${b.file.language}\n${b.file.diff}\n\`\`\``;
         }
         return '';

@@ -39,12 +39,12 @@ interface TransactionCardProps {
   files?: TransactionFile[];
   isNew?: boolean;
   depth?: number;
-  parentId?: string;
+  parentId?: string | null;
 }
 
 // Helper to get file info with original block index
 interface FileInfo {
-  file: TransactionFile;
+  file: TransactionFile | null | undefined;
   blockIndex: number;
   fileIndex: number;
 }
@@ -152,7 +152,7 @@ export const TransactionCard = memo(({
     }
   }, []);
 
-  const stats = useMemo(() => calculateTotalStats(fileInfos.map(i => i.file)), [fileInfos]);
+  const stats = useMemo(() => calculateTotalStats(fileInfos.map(i => i.file).filter((f): f is NonNullable<typeof f> => f != null)), [fileInfos]);
 
   const isChainHovered = useMemo(() => {
     if (!hoveredChainId) return false;
@@ -331,7 +331,7 @@ export const TransactionCard = memo(({
                       </span>
                     </div>
                     <nav className="space-y-0.5 pb-4">
-                      {fileInfos.map((info) => {
+                      {fileInfos.filter((info): info is FileInfo & { file: NonNullable<typeof info.file> } => info.file != null).map((info) => {
                         const isActive = activeFileIndex === info.fileIndex;
                         return (
                           <button
@@ -363,51 +363,52 @@ export const TransactionCard = memo(({
 
               {/* MAIN CONTENT STREAM */}
               <div className="flex-1 space-y-12 min-w-0">
-                {blocks && blocks.length > 0 ? (
-                  // Render blocks with interleaved markdown and files
-                  blocks.map((block, blockIdx) => {
-                    if (block.type === 'markdown') {
+                  {blocks && blocks.length > 0 ? (
+                    // Render blocks with interleaved markdown and files
+                    blocks.map((block, blockIdx) => {
+                      if (block.type === 'markdown') {
+                        return (
+                          <div key={blockIdx} className="prose prose-zinc prose-invert prose-sm max-w-none px-4">
+                            <ReactMarkdown remarkPlugins={[remarkGfm]}>
+                              {block.content}
+                            </ReactMarkdown>
+                          </div>
+                        );
+                      }
+                      // Find the file index for this block
+                      const fileInfo = fileInfos.find(f => f.blockIndex === blockIdx);
+                      const fileIndex = fileInfo?.fileIndex ?? 0;
+                      if (!block.file) return null;
                       return (
-                        <div key={blockIdx} className="prose prose-zinc prose-invert prose-sm max-w-none px-4">
-                          <ReactMarkdown remarkPlugins={[remarkGfm]}>
-                            {block.content}
-                          </ReactMarkdown>
+                        <div 
+                          key={blockIdx}
+                          ref={(el) => {
+                            if (el) fileBlockRefs.current.set(blockIdx, el);
+                          }}
+                          data-file-index={fileIndex}
+                        >
+                          <FileSection file={block.file} isApplying={status === 'APPLYING'} />
                         </div>
                       );
-                    }
-                    // Find the file index for this block
-                    const fileInfo = fileInfos.find(f => f.blockIndex === blockIdx);
-                    const fileIndex = fileInfo?.fileIndex ?? 0;
-                    return (
+                    })
+                  ) : (fileInfos.length > 0 ? (
+                    // Fallback: render files only (no markdown blocks)
+                    fileInfos.filter((info): info is FileInfo & { file: NonNullable<typeof info.file> } => info.file != null).map((info) => (
                       <div 
-                        key={blockIdx}
+                        key={info.blockIndex}
                         ref={(el) => {
-                          if (el) fileBlockRefs.current.set(blockIdx, el);
+                          if (el) fileBlockRefs.current.set(info.blockIndex, el);
                         }}
-                        data-file-index={fileIndex}
+                        data-file-index={info.fileIndex}
                       >
-                        <FileSection file={block.file} isApplying={status === 'APPLYING'} />
+                        <FileSection file={info.file} isApplying={status === 'APPLYING'} />
                       </div>
-                    );
-                  })
-                ) : (fileInfos.length > 0 ? (
-                  // Fallback: render files only (no markdown blocks)
-                  fileInfos.map((info) => (
-                    <div 
-                      key={info.blockIndex}
-                      ref={(el) => {
-                        if (el) fileBlockRefs.current.set(info.blockIndex, el);
-                      }}
-                      data-file-index={info.fileIndex}
-                    >
-                      <FileSection file={info.file} isApplying={status === 'APPLYING'} />
+                    ))
+                  ) : (
+                    <div className="text-zinc-500 text-center py-8">
+                      No files to display
                     </div>
-                  ))
-                ) : (
-                  <div className="text-zinc-500 text-center py-8">
-                    No files to display
-                  </div>
-                ))}
+                  ))}
 
 
               </div>

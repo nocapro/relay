@@ -10,23 +10,14 @@ import {
   RefreshCw,
   LucideIcon
 } from 'lucide-react';
-import type { 
-  TransactionStatus, 
-  TransactionFile, 
-  PromptStatus, 
-  Prompt, 
-  TransactionBlock, 
-  Transaction 
-} from '@relaycode/api';
+import type { components } from './api';
 
-export type { 
-  TransactionStatus, 
-  TransactionFile, 
-  PromptStatus, 
-  Prompt, 
-  TransactionBlock, 
-  Transaction 
-};
+export type TransactionStatus = components["schemas"]["TransactionStatus"];
+export type TransactionFile = components["schemas"]["TransactionFile"];
+export type PromptStatus = components["schemas"]["PromptStatus"];
+export type Prompt = components["schemas"]["Prompt"];
+export type TransactionBlock = components["schemas"]["TransactionBlock"];
+export type Transaction = components["schemas"]["Transaction"];
 
 export const STATUS_CONFIG: Record<TransactionStatus, { 
   icon: LucideIcon; 
@@ -49,5 +40,4 @@ export const FILE_STATUS_CONFIG = {
   renamed:  { color: 'bg-blue-500',    icon: RefreshCw,  label: 'Renamed' },
 } as const;
 
-// New: Grouping Strategies
 export type GroupByStrategy = 'prompt' | 'date' | 'author' | 'status' | 'files' | 'none';

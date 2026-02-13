@@ -1,6 +1,15 @@
-import { edenTreaty } from '@elysiajs/eden';
-import type { App } from '@relaycode/api';
-import type { SimulationEvent } from '@relaycode/api';
+import { client } from '@/lib/api.client';
+import type { components } from '../types/api';
+
+export type Transaction = components["schemas"]["Transaction"];
+export type TransactionStatus = components["schemas"]["TransactionStatus"];
+
+export interface SimulationEvent {
+  transactionId: string;
+  status: TransactionStatus;
+  timestamp: string;
+  progress?: number;
+}
 
 const getBaseUrl = () => {
   if (typeof window !== 'undefined') {
@@ -9,9 +18,6 @@ const getBaseUrl = () => {
   return 'http://localhost:3000';
 };
 
-const api: ReturnType<typeof edenTreaty<App>> = edenTreaty<App>(getBaseUrl());
-
-// SSE Connection for real-time simulation updates
 export const connectToSimulationStream = (
   onEvent: (event: SimulationEvent) => void,
   onConnectionChange?: (isConnected: boolean) => void,
@@ -20,7 +26,7 @@ export const connectToSimulationStream = (
   const baseUrl = getBaseUrl();
   let eventSource: EventSource | null = null;
   let reconnectAttempts = 0;
-  let reconnectTimeout: NodeJS.Timeout | null = null;
+  let reconnectTimeout: ReturnType<typeof setTimeout> | null = null;
   const maxReconnectAttempts = 5;
   const baseReconnectDelay = 1000;
   let intentionalClose = false;
@@ -47,7 +53,6 @@ export const connectToSimulationStream = (
     };
 
     eventSource.onerror = (error) => {
-      // Check if eventSource is closed (network error) or just no data (server timeout)
       const isNetworkError = eventSource?.readyState === EventSource.CLOSED;
       
       if (!intentionalClose) {
@@ -56,7 +61,6 @@ export const connectToSimulationStream = (
       
       if (onError) onError(error, isNetworkError);
       
-      // Attempt to reconnect with exponential backoff (only for network errors)
       if (isNetworkError && !intentionalClose && reconnectAttempts < maxReconnectAttempts) {
         const delay = Math.min(baseReconnectDelay * Math.pow(2, reconnectAttempts), 30000);
         reconnectAttempts++;
@@ -74,7 +78,6 @@ export const connectToSimulationStream = (
 
   connect();
 
-  // Return cleanup function
   return () => {
     intentionalClose = true;
     if (reconnectTimeout) clearTimeout(reconnectTimeout);
@@ -85,4 +88,4 @@ export const connectToSimulationStream = (
   };
 };
 
-export { api };
+export { client };

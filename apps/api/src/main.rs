@@ -1,0 +1,91 @@
+pub mod models;
+pub mod routes;
+pub mod store;
+
+use std::fs;
+
+use axum::{
+    routing::get,
+    Router,
+};
+use tower_http::cors::{Any, CorsLayer};
+use utoipa::OpenApi;
+use utoipa_scalar::{Scalar, Servable};
+
+#[derive(OpenApi)]
+#[openapi(
+    paths(
+        routes::transactions::list_transactions,
+        routes::transactions::update_transaction_status,
+        routes::transactions::bulk_update_transactions,
+        routes::prompts::list_prompts,
+        routes::events::events_stream,
+    ),
+    components(
+        schemas(
+            models::Transaction,
+            models::TransactionStatus,
+            models::TransactionBlock,
+            models::TransactionFile,
+            models::FileStatus,
+            models::BulkActionRequest,
+            models::BulkActionResponse,
+            models::Prompt,
+            models::PromptStatus,
+            models::SimulationEvent,
+            models::UpdateStatusRequest,
+            models::SimulationScenario,
+        )
+    ),
+    info(
+        title = "Relaycode API",
+        version = "1.0.0",
+    )
+)]
+pub struct ApiDoc;
+
+#[tokio::main]
+async fn main() {
+    tracing_subscriber::fmt::init();
+
+    let openapi = ApiDoc::openapi();
+    fs::write("openapi.json", openapi.to_pretty_json().unwrap()).unwrap();
+
+    store::STORE.load_data();
+
+    let cors = CorsLayer::new()
+        .allow_origin(Any)
+        .allow_methods(Any)
+        .allow_headers(Any);
+
+    let scalar = Scalar::with_url("/scalar", ApiDoc::openapi());
+    
+    let app = Router::new()
+        .route("/health", get(health_check))
+        .route("/api/version", get(version))
+        .merge(scalar)
+        .nest("/api", routes::transactions::router())
+        .nest("/api", routes::prompts::router())
+        .nest("/api", routes::events::router())
+        .layer(cors);
+
+    let listener = tokio::net::TcpListener::bind("0.0.0.0:3000").await.unwrap();
+    tracing::info!("Server running on http://localhost:3000");
+    tracing::info!("Scalar API docs available at http://localhost:3000/scalar");
+    
+    axum::serve(listener, app).await.unwrap();
+}
+
+async fn health_check() -> axum::Json<serde_json::Value> {
+    axum::Json(serde_json::json!({
+        "status": "ok",
+        "timestamp": chrono::Utc::now().to_rfc3339()
+    }))
+}
+
+async fn version() -> axum::Json<serde_json::Value> {
+    axum::Json(serde_json::json!({
+        "version": "1.2.4",
+        "environment": "stable"
+    }))
+}

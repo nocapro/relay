@@ -25,8 +25,5 @@
     "noUnusedParameters": true,
     "noFallthroughCasesInSwitch": true
   },
-  "include": ["src", "vite.config.ts"],
-  "references": [
-    { "path": "../api" }
-  ]
+  "include": ["src", "vite.config.ts"]
 }

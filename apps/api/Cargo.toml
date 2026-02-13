@@ -1,0 +1,26 @@
+[package]
+name = "relay-api"
+version = "1.0.0"
+edition = "2021"
+
+[dependencies]
+axum = "0.8"
+tokio = { version = "1", features = ["full"] }
+serde = { version = "1", features = ["derive"] }
+serde_json = "1"
+utoipa = { version = "5", features = ["axum_extras"] }
+utoipa-scalar = { version = "0.3", features = ["axum"] }
+# Note: utoipa-swagger-ui 6.x uses utoipa 4.x
+tower = "0.4"
+tower-http = { version = "0.5", features = ["cors"] }
+futures = "0.3"
+tracing = "0.1"
+tracing-subscriber = "0.3"
+chrono = "0.4"
+async-stream = "0.3"
+tokio-stream = "0.1"
+rand = "0.8"
+
+[lib]
+name = "relay_api"
+path = "src/lib.rs"

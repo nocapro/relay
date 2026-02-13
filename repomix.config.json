@@ -28,15 +28,7 @@
     }
   },
   "include": [
-            "apps/api/src/index.ts",
-  "apps/api/src/models.ts",
-  "apps/api/src/routes/transactions.ts",
-  "apps/api/src/store.ts",
-  "apps/web/src/features/prompts/components/prompt-card.component.tsx",
-  "apps/web/src/features/transactions/components/file-section.component.tsx",
-  "apps/web/src/features/transactions/components/transaction-card.component.tsx",
-  "apps/web/src/hooks/mobile.hook.ts",
-  "apps/web/src/utils/cn.util.ts"
+            "apps/"
   ],
   "ignore": {
     "useGitignore": true,

@@ -6,7 +6,10 @@
   ],
   "scripts": {
     "dev": "bun --filter \"*\" dev",
-    "build": "bun --filter \"*\" build"
+    "build": "bun --filter \"*\" build",
+    "check": "bun run check:ts && bun run check:rust",
+    "check:ts": "bun --filter \"*\" typecheck",
+    "check:rust": "cd apps/api && cargo check"
   },
   "devDependencies": {
     "typescript": "^5.7.0"

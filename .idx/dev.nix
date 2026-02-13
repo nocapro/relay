@@ -13,7 +13,7 @@
         command = [
           "sh"
           "-c"
-          "bun run --filter '@relaycode/api' dev & sleep 2 && bun run --filter 'relay' dev -- --host 0.0.0.0"
+          "cd apps/api && cargo run & sleep 5 && bun run --filter 'relay' dev -- --host 0.0.0.0"
         ];
         manager = "web";
       };

@@ -1,6 +1,6 @@
 import { StateCreator } from 'zustand';
 import { Transaction, TransactionStatus } from '@/types/app.types';
-import { api, connectToSimulationStream } from '@/services/api.service';
+import { client, connectToSimulationStream } from '@/services/api.service';
 import { RootState } from '../root.store';
 
 export interface TransactionSlice {
@@ -52,15 +52,11 @@ export const createTransactionSlice: StateCreator<RootState, [], [], Transaction
   clearSelection: () => set({ selectedIds: [] }),
   
   init: () => {
-    // Initialize SSE connection on app load (idempotent)
     if (!unsubscribeFromStream) {
       const unsubscribe = get().subscribeToUpdates();
       unsubscribeFromStream = unsubscribe;
-      
-      // Also fetch initial data immediately
       get().fetchTransactions();
     }
-    // Return cleanup function for root unmount
     return () => {
       if (unsubscribeFromStream) {
         unsubscribeFromStream();
@@ -75,15 +71,12 @@ export const createTransactionSlice: StateCreator<RootState, [], [], Transaction
 
   applyTransactionChanges: async (id, scenario) => {
     try {
-      // Trigger backend simulation - rely exclusively on SSE to update local state
-      // This prevents race conditions between PATCH response and SSE events
-      const { error } = await api.api.transactions[id].status.patch({
-        status: 'APPLYING',
-        scenario
+      const { error } = await client.PATCH('/api/transactions/{id}/status', {
+        params: { path: { id } },
+        body: { status: 'APPLYING', scenario }
       });
 
       if (error) throw error;
-      // State updates (APPLYING -> APPLIED/FAILED) will arrive via SSE stream
     } catch (err) {
       console.error('Failed to apply transaction', err);
     }
@@ -94,9 +87,8 @@ export const createTransactionSlice: StateCreator<RootState, [], [], Transaction
     if (!selectedIds.length) return;
 
     try {
-      const { error } = await api.api.transactions.bulk.post({
-        ids: selectedIds,
-        action
+      const { error } = await client.POST('/api/transactions/bulk', {
+        body: { ids: selectedIds, action }
       });
 
       if (error) throw error;
@@ -107,10 +99,8 @@ export const createTransactionSlice: StateCreator<RootState, [], [], Transaction
   },
 
   subscribeToUpdates: () => {
-    // Connect to SSE and update transactions when backend pushes updates
     const unsubscribe = connectToSimulationStream(
       (event) => {
-        // Merge incoming event data into existing transaction list
         set((state) => ({
           transactions: state.transactions.map((t) => 
             t.id === event.transactionId 
@@ -120,7 +110,6 @@ export const createTransactionSlice: StateCreator<RootState, [], [], Transaction
         }));
       },
       (isConnected) => {
-        // Track connection state for UI feedback
         set({ isConnected });
       },
       (_error, isNetworkError) => {
@@ -138,13 +127,15 @@ export const createTransactionSlice: StateCreator<RootState, [], [], Transaction
   fetchTransactions: async (params) => {
     set({ isLoading: true, page: 1, hasMore: true });
     try {
-      const { data, error } = await api.api.transactions.get({
-        $query: {
-          page: 1,
-          limit: 15,
-          ...(params?.search && { search: params.search }),
-          ...(params?.status && { status: params.status })
-        }
+      const queryParams: Record<string, string | number> = {
+        page: 1,
+        limit: 15,
+      };
+      if (params?.search) queryParams.search = params.search;
+      if (params?.status) queryParams.status = params.status;
+
+      const { data, error } = await client.GET('/api/transactions', {
+        params: { query: queryParams }
       });
       
       if (error) throw error;
@@ -160,8 +151,8 @@ export const createTransactionSlice: StateCreator<RootState, [], [], Transaction
 
   searchTransactions: async (query: string) => {
     try {
-      const { data, error } = await api.api.transactions.get({
-        $query: { search: query, limit: 5, page: 1 }
+      const { data, error } = await client.GET('/api/transactions', {
+        params: { query: { search: query, limit: 5, page: 1 } }
       });
       if (error) throw error;
       return data || [];
@@ -178,8 +169,8 @@ export const createTransactionSlice: StateCreator<RootState, [], [], Transaction
     set({ isFetchingNextPage: true });
     try {
       const nextPage = page + 1;
-      const { data, error } = await api.api.transactions.get({
-        $query: { page: nextPage, limit: 15 }
+      const { data, error } = await client.GET('/api/transactions', {
+        params: { query: { page: nextPage, limit: 15 } }
       });
       
       if (error) throw error;
