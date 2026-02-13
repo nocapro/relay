@@ -1,4 +1,4 @@
-import { t } from 'elysia';
+import { t, type Static } from 'elysia';
 
 export const TransactionStatus = t.Union([
   t.Literal('PENDING'),
@@ -8,6 +8,7 @@ export const TransactionStatus = t.Union([
   t.Literal('REVERTED'),
   t.Literal('FAILED')
 ]);
+export type TransactionStatus = Static<typeof TransactionStatus>;
 
 export const PromptStatus = t.Union([
   t.Literal('DRAFT'),
@@ -15,6 +16,7 @@ export const PromptStatus = t.Union([
   t.Literal('COMPLETED'),
   t.Literal('ARCHIVED')
 ]);
+export type PromptStatus = Static<typeof PromptStatus>;
 
 export const FileStatus = t.Union([
   t.Literal('modified'),
@@ -22,6 +24,7 @@ export const FileStatus = t.Union([
   t.Literal('deleted'),
   t.Literal('renamed')
 ]);
+export type FileStatus = Static<typeof FileStatus>;
 
 export const TransactionFile = t.Object({
   path: t.String(),
@@ -29,6 +32,7 @@ export const TransactionFile = t.Object({
   language: t.String(),
   diff: t.String()
 });
+export type TransactionFile = Static<typeof TransactionFile>;
 
 export const TransactionBlock = t.Union([
   t.Object({
@@ -40,6 +44,7 @@ export const TransactionBlock = t.Union([
     file: TransactionFile
   })
 ]);
+export type TransactionBlock = Static<typeof TransactionBlock>;
 
 export const Transaction = t.Object({
   id: t.String(),
@@ -59,6 +64,7 @@ export const Transaction = t.Object({
   tokens: t.String(),
   reasoning: t.String()
 });
+export type Transaction = Static<typeof Transaction>;
 
 export const Prompt = t.Object({
   id: t.String(),
@@ -67,3 +73,4 @@ export const Prompt = t.Object({
   timestamp: t.String(),
   status: PromptStatus
 });
+export type Prompt = Static<typeof Prompt>;

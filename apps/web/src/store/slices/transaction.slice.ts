@@ -15,7 +15,8 @@ export interface TransactionSlice {
   setExpandedId: (id: string | null) => void;
   setHoveredChain: (id: string | null) => void;
   toggleWatching: () => void;
-  fetchTransactions: () => Promise<void>;
+  fetchTransactions: (params?: { search?: string; status?: string }) => Promise<void>;
+  searchTransactions: (query: string) => Promise<Transaction[]>;
   fetchNextPage: () => Promise<void>;
   addTransaction: (tx: Transaction) => void;
   applyTransactionChanges: (id: string) => Promise<void>;
@@ -79,13 +80,20 @@ export const createTransactionSlice: StateCreator<RootState, [], [], Transaction
     }
   },
 
-  fetchTransactions: async () => {
+  fetchTransactions: async (params) => {
     set({ isLoading: true, page: 1, hasMore: true });
     try {
+      // Build query object carefully to avoid sending "undefined" as a string
+      const $query: Record<string, string> = {
+        page: '1',
+        limit: '15'
+      };
+      
+      if (params?.search) $query.search = params.search;
+      if (params?.status) $query.status = params.status;
+
       // Eden Treaty: GET /api/transactions
-      const { data, error } = await api.api.transactions.get({
-        $query: { page: '1', limit: '15' }
-      });
+      const { data, error } = await api.api.transactions.get({ $query });
       
       if (error) throw error;
 
@@ -96,6 +104,19 @@ export const createTransactionSlice: StateCreator<RootState, [], [], Transaction
       console.error('Failed to fetch transactions', error);
     }
     set({ isLoading: false });
+  },
+
+  searchTransactions: async (query: string) => {
+    try {
+      const { data, error } = await api.api.transactions.get({
+        $query: { search: query, limit: '5' }
+      });
+      if (error) throw error;
+      return data || [];
+    } catch (error) {
+      console.error('Failed to search transactions', error);
+      return [];
+    }
   },
 
   fetchNextPage: async () => {

@@ -6,10 +6,32 @@ class Store {
   private transactions = JSON.parse(JSON.stringify(mockData.transactions));
   private prompts = JSON.parse(JSON.stringify(mockData.prompts));
 
-  getTransactions(limit = 15, page = 1) {
+  getTransactions(limit = 15, page = 1, search?: string, status?: string) {
+    let result = [...this.transactions];
+
+    // Defensive check against stringified "undefined" from query params
+    const activeStatus = (status && status !== 'undefined' && status !== 'null') ? status : null;
+    const activeSearch = (search && search !== 'undefined' && search !== 'null') ? search.trim() : null;
+
+    if (activeStatus) {
+      result = result.filter((t: any) => t.status === activeStatus);
+    }
+
+    if (activeSearch) {
+      const q = activeSearch.toLowerCase();
+      result = result.filter((t: any) => 
+        t.description.toLowerCase().includes(q) ||
+        t.author.toLowerCase().includes(q) ||
+        (t.blocks && t.blocks.some((b: any) => 
+          (b.type === 'markdown' && b.content.toLowerCase().includes(q)) ||
+          (b.type === 'file' && b.file.path.toLowerCase().includes(q))
+        ))
+      );
+    }
+
     const start = (page - 1) * limit;
     const end = start + limit;
-    return this.transactions.slice(start, end);
+    return result.slice(start, end);
   }
 
   getPrompts() {

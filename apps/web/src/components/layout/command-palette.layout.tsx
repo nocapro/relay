@@ -1,34 +1,51 @@
-import { Search, Play, CheckCircle2, FileText, Code2 } from 'lucide-react';
+import { Search, Play, CheckCircle2, FileText, Code2, Loader2 } from 'lucide-react';
 import { motion } from 'framer-motion';
 import { useStore } from "@/store/root.store";
-import { useState, useMemo } from 'react';
+import { useState, useEffect } from 'react';
 
 export const CommandPalette = () => {
   const isCmdOpen = useStore((state) => state.isCmdOpen);
   const setCmdOpen = useStore((state) => state.setCmdOpen);
-  const transactions = useStore((state) => state.transactions);
+  const searchTransactions = useStore((state) => state.searchTransactions);
   const [query, setQuery] = useState("");
+  const [results, setResults] = useState<any[]>([]);
+  const [isSearching, setIsSearching] = useState(false);
 
-  const results = useMemo(() => {
-    if (!query || query.length < 2) return [];
-    const matches: any[] = [];
+  useEffect(() => {
+    if (!query || query.length < 2) {
+      setResults([]);
+      return;
+    }
 
-    transactions.forEach(tx => {
-      if (tx.description.toLowerCase().includes(query.toLowerCase())) {
-        matches.push({ type: 'tx', id: tx.id, title: tx.description, subtitle: 'Transaction' });
-      }
+    setIsSearching(true);
+    const timeout = setTimeout(async () => {
+      const txs = await searchTransactions(query);
+      const matches: any[] = [];
 
-      tx.blocks?.forEach((block: any) => {
-        if (block.type === 'markdown' && block.content.toLowerCase().includes(query.toLowerCase())) {
-          matches.push({ type: 'doc', id: tx.id, title: 'Reasoning match...', subtitle: tx.description });
+      txs.forEach(tx => {
+        if (tx.description.toLowerCase().includes(query.toLowerCase())) {
+          matches.push({ type: 'tx', id: tx.id, title: tx.description, subtitle: 'Transaction' });
         }
-        if (block.type === 'file' && block.file.path.toLowerCase().includes(query.toLowerCase())) {
-          matches.push({ type: 'file', id: tx.id, title: block.file.path, subtitle: tx.description });
-        }
+
+        tx.blocks?.forEach((block: any) => {
+          if (block.type === 'markdown' && block.content.toLowerCase().includes(query.toLowerCase())) {
+            // Avoid duplicates if we already matched the transaction
+            if (!matches.some(m => m.id === tx.id)) {
+               matches.push({ type: 'doc', id: tx.id, title: 'Reasoning match...', subtitle: tx.description });
+            }
+          }
+          if (block.type === 'file' && block.file.path.toLowerCase().includes(query.toLowerCase())) {
+            matches.push({ type: 'file', id: tx.id, title: block.file.path, subtitle: tx.description });
+          }
+        });
       });
-    });
-    return matches.slice(0, 5);
-  }, [query, transactions]);
+      
+      setResults(matches.slice(0, 5));
+      setIsSearching(false);
+    }, 300);
+
+    return () => clearTimeout(timeout);
+  }, [query, searchTransactions]);
 
   if (!isCmdOpen) return null;
 
@@ -42,7 +59,11 @@ export const CommandPalette = () => {
         className="relative w-full max-w-lg bg-zinc-900 border border-zinc-800 rounded-xl shadow-2xl overflow-hidden flex flex-col"
       >
         <div className="flex items-center gap-3 px-4 py-3 border-b border-zinc-800">
-          <Search className="w-5 h-5 text-zinc-500" />
+          {isSearching ? (
+            <Loader2 className="w-5 h-5 text-indigo-500 animate-spin" />
+          ) : (
+            <Search className="w-5 h-5 text-zinc-500" />
+          )}
           <input
             value={query}
             onChange={(e) => setQuery(e.target.value)}

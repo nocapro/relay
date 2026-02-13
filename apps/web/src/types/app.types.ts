@@ -10,8 +10,23 @@ import {
   RefreshCw,
   LucideIcon
 } from 'lucide-react';
+import type { 
+  TransactionStatus, 
+  TransactionFile, 
+  PromptStatus, 
+  Prompt, 
+  TransactionBlock, 
+  Transaction 
+} from '@relaycode/api';
 
-export type TransactionStatus = 'PENDING' | 'APPLYING' | 'APPLIED' | 'COMMITTED' | 'REVERTED' | 'FAILED';
+export type { 
+  TransactionStatus, 
+  TransactionFile, 
+  PromptStatus, 
+  Prompt, 
+  TransactionBlock, 
+  Transaction 
+};
 
 export const STATUS_CONFIG: Record<TransactionStatus, { 
   icon: LucideIcon; 
@@ -33,47 +48,6 @@ export const FILE_STATUS_CONFIG = {
   deleted:  { color: 'bg-red-500',     icon: Trash2,     label: 'Deleted' },
   renamed:  { color: 'bg-blue-500',    icon: RefreshCw,  label: 'Renamed' },
 } as const;
-
-export interface TransactionFile {
-  path: string;
-  status: 'modified' | 'created' | 'deleted' | 'renamed';
-  language: string;
-  diff: string;
-}
-
-export type PromptStatus = 'DRAFT' | 'ACTIVE' | 'COMPLETED' | 'ARCHIVED';
-
-// New: Prompt entity to support grouping
-export interface Prompt {
-  id: string;
-  title: string;
-  content: string;
-  timestamp: string;
-  status: PromptStatus;
-}
-
-export type TransactionBlock =
-  | { type: 'markdown'; content: string }
-  | { type: 'file'; file: TransactionFile };
-
-export interface Transaction {
-  id: string;
-  status: TransactionStatus;
-  description: string;
-  timestamp: string;
-  createdAt: string;
-  promptId: string;
-  parentId?: string;   // For chaining
-  isChainRoot?: boolean; // To identify entry points
-  author: string;
-  blocks: TransactionBlock[]; // New narrative structure
-  files: TransactionFile[];   // Keep for compatibility/summaries
-  provider: string;
-  model: string;
-  cost: string;
-  tokens: string;
-  reasoning: string; // Legacy fallback
-}
 
 // New: Grouping Strategies
 export type GroupByStrategy = 'prompt' | 'date' | 'author' | 'status' | 'files' | 'none';

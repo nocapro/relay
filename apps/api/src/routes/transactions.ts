@@ -4,13 +4,15 @@ import { Transaction, TransactionStatus } from '../models';
 
 export const transactionsRoutes = new Elysia({ prefix: '/transactions' })
   .get('/', ({ query }) => {
-    const page = query.page ? parseInt(query.page) : 1;
-    const limit = query.limit ? parseInt(query.limit) : 15;
-    return db.getTransactions(limit, page);
+    const page = Number(query.page) || 1;
+    const limit = Number(query.limit) || 15;
+    return db.getTransactions(limit, page, query.search, query.status);
   }, {
     query: t.Object({
       page: t.Optional(t.String()),
-      limit: t.Optional(t.String())
+      limit: t.Optional(t.String()),
+      search: t.Optional(t.String()),
+      status: t.Optional(t.String())
     }),
     response: t.Array(Transaction)
   })
