@@ -24,6 +24,7 @@ import { calculateTotalStats } from "@/utils/diff.util";
 import { DiffStat } from "@/components/ui/diff-stat.ui";
 import { FileSection } from "./file-section.component";
 import { Metric } from "@/components/ui/metric.ui";
+import { useScrollSpy } from "@/hooks/scroll-spy.hook";
 
 interface TransactionCardProps {
   id: string;
@@ -117,9 +118,9 @@ export const TransactionCard = memo(({
   const hasFiles = fileInfos.length > 0;
   
   // Track active section in view
-  const [activeFileIndex, setActiveFileIndex] = useState<number>(0);
   const fileBlockRefs = useRef<Map<number, HTMLDivElement>>(new Map());
   const outlineRef = useRef<HTMLDivElement>(null);
+  const { activeFileIndex, scrollToBlock } = useScrollSpy(fileBlockRefs, expanded, fileInfos.length);
   
   const onToggle = useCallback(() => setExpandedId(expanded ? null : id), [expanded, setExpandedId, id]);
 
@@ -150,51 +151,6 @@ export const TransactionCard = memo(({
       longPressTimer.current = null;
     }
   }, []);
-
-  const scrollToBlock = useCallback((blockIndex: number, fileIndex: number) => {
-    const el = fileBlockRefs.current.get(blockIndex);
-    if (el) {
-      const offset = 100;
-      const bodyRect = document.body.getBoundingClientRect().top;
-      const elementRect = el.getBoundingClientRect().top;
-      const elementPosition = elementRect - bodyRect;
-      const offsetPosition = elementPosition - offset;
-
-      window.scrollTo({
-        top: offsetPosition,
-        behavior: 'smooth'
-      });
-      setActiveFileIndex(fileIndex);
-    }
-  }, []);
-
-  // IntersectionObserver to track which file is in view
-  useEffect(() => {
-    if (!expanded) return;
-
-    const observerOptions = {
-      root: null,
-      rootMargin: '-100px 0px -60% 0px',
-      threshold: 0
-    };
-
-    const observerCallback: IntersectionObserverCallback = (entries) => {
-      entries.forEach((entry) => {
-        if (entry.isIntersecting) {
-          const fileIndex = parseInt(entry.target.getAttribute('data-file-index') || '0', 10);
-          setActiveFileIndex(fileIndex);
-        }
-      });
-    };
-
-    const observer = new IntersectionObserver(observerCallback, observerOptions);
-
-    fileBlockRefs.current.forEach((ref) => {
-      if (ref) observer.observe(ref);
-    });
-
-    return () => observer.disconnect();
-  }, [expanded, fileInfos.length]);
 
   const stats = useMemo(() => calculateTotalStats(fileInfos.map(i => i.file)), [fileInfos]);
 
@@ -241,7 +197,7 @@ export const TransactionCard = memo(({
             : "p-3 md:p-4"
         )}
       >
-        <div className="grid grid-cols-[auto_1fr_auto] items-start md:items-center gap-3 md:gap-4">
+        <div className="grid grid-cols-[auto_1fr_auto] items-start md:items-center gap-2 md:gap-4">
           {/* Selection Checkbox & Collapse Icon */}
           <div className="flex items-center">
              {/* Desktop Checkbox: Width animates from 0 to 5 on hover/select */}
@@ -251,7 +207,7 @@ export const TransactionCard = memo(({
                   "hidden md:flex items-center justify-center h-5 rounded-md border transition-all duration-300 ease-out mt-1 md:mt-0 overflow-hidden",
                   isSelected 
                     ? "w-5 mr-3 bg-indigo-500 border-indigo-500 text-white shadow-[0_0_10px_rgba(99,102,241,0.5)] opacity-100" 
-                    : "w-0 mr-0 border-zinc-700 bg-zinc-800/50 text-transparent opacity-0 group-hover:w-5 group-hover:mr-3 group-hover:opacity-100 group-hover:hover:border-zinc-500"
+                    : "w-0 mr-0 border-0 p-0 text-transparent opacity-0 group-hover:w-5 group-hover:mr-3 group-hover:opacity-100 group-hover:border group-hover:border-zinc-700"
                 )}
               >
                 <Check className="w-3.5 h-3.5" strokeWidth={3} />

@@ -20,7 +20,7 @@ promptSummary: Improve Dashboard page features and UI/UX based on readme.md phil
 gitCommitMsg: "feat: enhance dashboard UI with TUI-inspired stream view and shortcut hints"
 ```
 
-=== 
+=== DONE
 
 we need multi select feature for transaction list. so that user can having very granular actions like revert, super granular copy (deep granular metadata), etc. make sure the UI amazing and the feature has super cohesive UX
 
@@ -147,5 +147,5 @@ give me the most comprehensive detailed diff patches with very valid accurate fo
 
 
 === DONE
-
+/
 setup this as proper monorepoed project with amazing architecture and filenaming pattern, pages, with placeholders stubs of elysiajs client services to communicate with backend, zustand stores slices management, all without causing ui look regression... give me super valid diff patches

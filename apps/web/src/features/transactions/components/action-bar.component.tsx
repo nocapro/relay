@@ -90,7 +90,7 @@ export const FloatingActionBar = () => {
   return (
     <AnimatePresence>
       {showBar && (
-        <div className="fixed bottom-24 md:bottom-8 left-1/2 md:left-[calc(50%+8rem)] -translate-x-1/2 z-40 w-full max-w-sm md:w-fit md:max-w-[90vw] px-4">
+        <div className="fixed bottom-24 md:bottom-8 left-1/2 md:left-[calc(50%+8rem)] -translate-x-1/2 z-40 w-fit max-w-[calc(100vw-2rem)] px-0">
           <motion.div 
             initial={{ y: 50, opacity: 0 }}
             animate={{ 
@@ -99,7 +99,7 @@ export const FloatingActionBar = () => {
             }}
             exit={{ y: 50, opacity: 0 }}
             transition={{ type: "spring", stiffness: 300, damping: 30 }}
-            className="bg-zinc-900/90 backdrop-blur-xl border border-zinc-700/50 shadow-2xl shadow-black/50 rounded-2xl p-2 flex items-center gap-3 px-3 md:px-4 ring-1 ring-white/10 overflow-hidden"
+            className="bg-zinc-900/90 backdrop-blur-xl border border-zinc-700/50 shadow-2xl shadow-black/50 rounded-2xl p-2 flex items-center gap-3 px-3 md:px-4 ring-1 ring-white/10 overflow-hidden mx-auto"
           >
             {isSelectionMode ? (
               showReportConfig ? (
@@ -201,11 +201,11 @@ export const FloatingActionBar = () => {
                   <span className="text-xs font-semibold text-zinc-300">{pendingCount} Pending</span>
                 </div>
                 
-                <div className="flex items-center gap-2 w-full md:w-auto justify-between md:justify-start">
+                <div className="flex items-center gap-2">
                   <button 
                     disabled={isApplyingAny}
                     className={cn(
-                      "flex-1 md:flex-none px-4 py-2.5 md:py-2 bg-zinc-100 text-zinc-950 hover:bg-white text-sm font-bold rounded-xl shadow-lg transition-colors flex items-center justify-center gap-2",
+                      "px-4 py-2.5 md:py-2 bg-zinc-100 text-zinc-950 hover:bg-white text-sm font-bold rounded-xl shadow-lg transition-colors flex items-center justify-center gap-2 whitespace-nowrap",
                       isApplyingAny && "opacity-50 cursor-not-allowed"
                     )}
                   >
@@ -213,7 +213,7 @@ export const FloatingActionBar = () => {
                     {isApplyingAny ? 'Applying...' : 'Approve'}
                   </button>
                   
-                  <button className="flex-1 md:flex-none px-4 py-2.5 md:py-2 bg-zinc-800 hover:bg-zinc-700 text-zinc-200 text-sm font-medium rounded-xl border border-zinc-700 transition-colors flex items-center justify-center gap-2">
+                  <button className="px-4 py-2.5 md:py-2 bg-zinc-800 hover:bg-zinc-700 text-zinc-200 text-sm font-medium rounded-xl border border-zinc-700 transition-colors flex items-center justify-center gap-2 whitespace-nowrap">
                     <GitCommit className="w-4 h-4" />
                     Commit
                   </button>

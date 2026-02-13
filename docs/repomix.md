@@ -11,127 +11,200 @@ apps/
   web/
     src/
       features/
+        prompts/
+          components/
+            prompt-card.component.tsx
         transactions/
           components/
-            action-bar.component.tsx
+            file-section.component.tsx
             transaction-card.component.tsx
-      services/
-        api.service.ts
-      store/
-        slices/
-          transaction.slice.ts
-        root.store.ts
-      styles/
-        main.style.css
-      types/
-        app.types.ts
+      hooks/
+        mobile.hook.ts
       utils/
         cn.util.ts
 ```
 
 # Files
 
-## File: apps/web/src/features/transactions/components/action-bar.component.tsx
+## File: apps/web/src/features/prompts/components/prompt-card.component.tsx
 ```typescript
-import { useState, useEffect, useRef } from 'react';
-import { motion, AnimatePresence } from 'framer-motion';
-import { CheckCircle2, GitCommit } from 'lucide-react';
-import { cn } from "@/utils/cn.util";
-import { useStore } from "@/store/root.store";
-import { useIsMobile } from "@/hooks/mobile.hook";
+import { motion } from 'framer-motion';
+import { Clock, GitBranch } from 'lucide-react';
+import { Prompt, Transaction } from '@/types/app.types';
 
-export const FloatingActionBar = () => {
-  const transactions = useStore((state) => state.transactions);
-  const pendingCount = transactions.filter(t => t.status === 'PENDING').length;
-  const appliedCount = transactions.filter(t => t.status === 'APPLIED').length;
-  const isApplyingAny = transactions.some(t => t.status === 'APPLYING');
-  const showBar = pendingCount > 0 || appliedCount > 0 || isApplyingAny;
+interface PromptCardProps {
+  prompt: Prompt;
+  transactions: Transaction[];
+}
+
+export const PromptCard = ({ prompt, transactions }: PromptCardProps) => {
+  const transactionCount = transactions.filter(t => t.promptId === prompt.id).length;
   
-  const isMobile = useIsMobile();
-  const [isVisible, setIsVisible] = useState(true);
-  const scrollTimeoutRef = useRef<NodeJS.Timeout | null>(null);
-  const lastScrollY = useRef(0);
-
-  // Mobile-only: hide on scroll, show on stop
-  useEffect(() => {
-    if (!isMobile) {
-      setIsVisible(true);
-      return;
-    }
-
-    const handleScroll = () => {
-      const currentScrollY = window.scrollY;
-      
-      // Hide immediately when scrolling (either direction)
-      if (Math.abs(currentScrollY - lastScrollY.current) > 5) {
-        setIsVisible(false);
-      }
-      
-      lastScrollY.current = currentScrollY;
-
-      // Clear existing timeout
-      if (scrollTimeoutRef.current) {
-        clearTimeout(scrollTimeoutRef.current);
-      }
-
-      // Show after scroll stops
-      scrollTimeoutRef.current = setTimeout(() => {
-        setIsVisible(true);
-      }, 150);
-    };
-
-    window.addEventListener('scroll', handleScroll, { passive: true });
-    
-    return () => {
-      window.removeEventListener('scroll', handleScroll);
-      if (scrollTimeoutRef.current) {
-        clearTimeout(scrollTimeoutRef.current);
-      }
-    };
-  }, [isMobile]);
-
   return (
-    <AnimatePresence>
-      {showBar && (
-        <div className="fixed bottom-24 md:bottom-8 left-1/2 md:left-[calc(50%+8rem)] -translate-x-1/2 z-40 w-full max-w-xs md:max-w-md px-4">
-          <motion.div 
-            initial={{ y: 50, opacity: 0 }}
-            animate={{ 
-              y: isVisible ? 0 : 100, 
-              opacity: isVisible ? 1 : 0 
-            }}
-            exit={{ y: 50, opacity: 0 }}
-            transition={{ type: "spring", stiffness: 300, damping: 30 }}
-            className="bg-zinc-900/90 backdrop-blur-xl border border-zinc-700/50 shadow-2xl shadow-black/50 rounded-2xl p-2 flex items-center px-3 md:px-4 ring-1 ring-white/10"
-          >
-            <div className="hidden md:flex items-center gap-2 border-r border-zinc-700/50 pr-4 mr-auto">
-              <div className="w-2 h-2 rounded-full bg-amber-500 animate-pulse" />
-              <span className="text-xs font-semibold text-zinc-300">{pendingCount} Pending</span>
-            </div>
-            
-            <div className="flex items-center gap-2 w-full md:w-auto justify-between md:justify-start">
-              <button 
-                disabled={isApplyingAny}
-                className={cn(
-                  "flex-1 md:flex-none px-4 py-2.5 md:py-2 bg-zinc-100 text-zinc-950 hover:bg-white text-sm font-bold rounded-xl shadow-lg transition-colors flex items-center justify-center gap-2",
-                  isApplyingAny && "opacity-50 cursor-not-allowed"
-                )}
-              >
-                <CheckCircle2 className={cn("w-4 h-4", isApplyingAny && "animate-spin")} />
-                {isApplyingAny ? 'Applying...' : 'Approve'}
-              </button>
-              
-              <button className="flex-1 md:flex-none px-4 py-2.5 md:py-2 bg-zinc-800 hover:bg-zinc-700 text-zinc-200 text-sm font-medium rounded-xl border border-zinc-700 transition-colors flex items-center justify-center gap-2">
-                <GitCommit className="w-4 h-4" />
-                Commit
-              </button>
-            </div>
-          </motion.div>
+    <motion.div
+      layout
+      layoutId={prompt.id}
+      initial={{ opacity: 0, scale: 0.95 }}
+      animate={{ opacity: 1, scale: 1 }}
+      exit={{ opacity: 0, scale: 0.95 }}
+      whileHover={{ y: -2, transition: { duration: 0.2 } }}
+      className="group relative bg-zinc-900 border border-zinc-800 hover:border-zinc-700 rounded-xl p-4 shadow-sm hover:shadow-md transition-all cursor-grab active:cursor-grabbing"
+    >
+      <div className="flex items-start justify-between gap-3 mb-3">
+        <h3 className="text-sm font-semibold text-zinc-200 leading-snug line-clamp-2 group-hover:text-indigo-400 transition-colors">
+          {prompt.title}
+        </h3>
+      </div>
+      
+      <p className="text-xs text-zinc-500 line-clamp-3 mb-4 leading-relaxed">
+        {prompt.content}
+      </p>
+
+      <div className="flex items-center justify-between text-[10px] text-zinc-500 font-medium">
+        <div className="flex items-center gap-3">
+          <div className="flex items-center gap-1.5" title="Associated Transactions">
+            <GitBranch className="w-3 h-3" />
+            <span>{transactionCount}</span>
+          </div>
+          <div className="flex items-center gap-1.5" title="Time Logged">
+            <Clock className="w-3 h-3" />
+            <span>{prompt.timestamp}</span>
+          </div>
         </div>
-      )}
-    </AnimatePresence>
+        
+        {transactionCount > 0 && (
+          <div className="flex -space-x-1.5">
+            {[...Array(Math.min(3, transactionCount))].map((_, i) => (
+              <div key={i} className="w-4 h-4 rounded-full bg-zinc-800 border border-zinc-900 flex items-center justify-center text-[6px] text-zinc-400">
+                <div className="w-1.5 h-1.5 bg-indigo-500 rounded-full opacity-50" />
+              </div>
+            ))}
+          </div>
+        )}
+      </div>
+    </motion.div>
   );
 };
+```
+
+## File: apps/web/src/hooks/mobile.hook.ts
+```typescript
+import { useState, useEffect } from 'react';
+
+export function useIsMobile() {
+  const [isMobile, setIsMobile] = useState(false);
+
+  useEffect(() => {
+    const checkMobile = () => setIsMobile(window.innerWidth < 768);
+    checkMobile();
+    window.addEventListener('resize', checkMobile);
+    return () => window.removeEventListener('resize', checkMobile);
+  }, []);
+
+  return isMobile;
+}
+```
+
+## File: apps/web/src/utils/cn.util.ts
+```typescript
+import { clsx, type ClassValue } from "clsx";
+import { twMerge } from "tailwind-merge";
+
+export function cn(...inputs: ClassValue[]) {
+  return twMerge(clsx(inputs));
+}
+```
+
+## File: apps/web/src/features/transactions/components/file-section.component.tsx
+```typescript
+import { memo, useState, useCallback, useMemo } from 'react';
+import { motion, AnimatePresence } from 'framer-motion';
+import { ChevronDown, Copy } from 'lucide-react';
+import { cn } from "@/utils/cn.util";
+import { TransactionFile, FILE_STATUS_CONFIG } from "@/types/app.types";
+import { DiffViewer } from "@/components/ui/diff-viewer.ui.tsx";
+import { getDiffStats } from "@/utils/diff.util";
+import { DiffStat } from "@/components/ui/diff-stat.ui";
+
+export const FileSection = memo(({ file, isApplying }: { file: TransactionFile; isApplying?: boolean }) => {
+  const [isExpanded, setIsExpanded] = useState(true);
+  
+  const stats = useMemo(() => getDiffStats(file.diff), [file.diff]);
+
+  const toggleExpanded = useCallback(() => setIsExpanded(prev => !prev), []);
+
+  const stopPropagation = useCallback((e: React.MouseEvent) => {
+    e.stopPropagation();
+  }, []);
+
+  return (
+    <div className="relative mb-10 group/file">
+      <div 
+        className={cn(
+          "sticky top-36 z-10 flex items-center justify-between px-4 py-2.5 bg-zinc-900/95 backdrop-blur-sm border border-zinc-800/60 transition-all duration-300 cursor-pointer select-none overflow-hidden",
+          isExpanded ? "rounded-t-xl border-b-zinc-800/30" : "rounded-xl"
+        )}
+        onClick={toggleExpanded}
+      >
+        {/* Progress Bar Overlay - now controlled purely by backend status */}
+        {isApplying && (
+          <div className="absolute bottom-0 left-0 right-0 h-[2px] bg-indigo-500/30">
+            <div className="h-full bg-indigo-500 shadow-[0_0_8px_rgba(99,102,241,0.5)] animate-pulse" />
+          </div>
+        )}
+
+        <div className="flex items-center gap-3 min-w-0">
+          <div className={cn(
+            "w-1.5 h-1.5 rounded-full shrink-0 transition-all duration-300", 
+            isApplying ? "bg-indigo-400 animate-pulse shadow-[0_0_8px_rgba(129,140,248,0.8)]" :
+            FILE_STATUS_CONFIG[file.status].color
+          )} />
+          <div className="flex flex-col md:flex-row md:items-center gap-1 md:gap-3 min-w-0">
+            <span className="text-xs font-mono text-zinc-300 truncate">{file.path}</span>
+            <div className="flex items-center gap-2">
+              <DiffStat 
+                adds={stats.adds} 
+                subs={stats.subs} 
+                className="hidden sm:flex text-[10px] opacity-60" 
+              />
+            </div>
+          </div>
+        </div>
+        
+        <div className="flex items-center gap-1 ml-4" onClick={stopPropagation}>
+          <button 
+            onClick={toggleExpanded}
+            className="p-1.5 text-zinc-500 hover:text-white hover:bg-zinc-800 rounded-md transition-all"
+            title={isExpanded ? "Collapse" : "Expand"}
+          >
+            <ChevronDown className={cn("w-3.5 h-3.5 transition-transform duration-300", !isExpanded && "-rotate-90")} />
+          </button>
+          <button className="p-1.5 text-zinc-500 hover:text-white hover:bg-zinc-800 rounded-md transition-all">
+            <Copy className="w-3.5 h-3.5" />
+          </button>
+        </div>
+      </div>
+
+      <AnimatePresence initial={false}>
+        {isExpanded ? (
+          <motion.div
+            initial={{ height: 0, opacity: 0 }}
+            animate={{ height: "auto", opacity: 1 }}
+            exit={{ height: 0, opacity: 0 }}
+            className="relative z-0 overflow-hidden border-x border-b border-zinc-800/60 rounded-b-xl bg-zinc-950"
+          >
+            <DiffViewer 
+              diff={file.diff} 
+              language={file.language} 
+              className="min-h-0" 
+              isApplying={isApplying} 
+            />
+          </motion.div>
+        ) : null}
+      </AnimatePresence>
+    </div>
+  );
+});
 ```
 
 ## File: apps/web/src/features/transactions/components/transaction-card.component.tsx
@@ -150,7 +223,8 @@ import {
   ExternalLink,
   ListTree,
   FileCode,
-  Layers
+  Layers,
+  Check
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { cn } from "@/utils/cn.util";
@@ -205,6 +279,11 @@ export const TransactionCard = memo(({
   const hoveredChainId = useStore((state) => state.hoveredChainId);
   const setHoveredChain = useStore((state) => state.setHoveredChain);
   const applyTransactionChanges = useStore((state) => state.applyTransactionChanges);
+  
+  const selectedIds = useStore((state) => state.selectedIds);
+  const toggleSelection = useStore((state) => state.toggleSelection);
+  const isSelected = selectedIds.includes(id);
+
   const expanded = expandedId === id;
 
   const [totalTime, setTotalTime] = useState<number>(0);
@@ -259,6 +338,29 @@ export const TransactionCard = memo(({
     e.stopPropagation();
     applyTransactionChanges(id);
   }, [id, applyTransactionChanges]);
+
+  const handleSelect = useCallback((e?: React.MouseEvent | React.TouchEvent) => {
+    e?.stopPropagation();
+    toggleSelection(id);
+  }, [id, toggleSelection]);
+
+  // Long Press Logic for Mobile
+  const longPressTimer = useRef<NodeJS.Timeout | null>(null);
+  
+  const handleTouchStart = useCallback(() => {
+    longPressTimer.current = setTimeout(() => {
+      handleSelect();
+      // Vibrate if supported
+      if (navigator.vibrate) navigator.vibrate(50);
+    }, 500);
+  }, [handleSelect]);
+
+  const handleTouchEnd = useCallback(() => {
+    if (longPressTimer.current) {
+      clearTimeout(longPressTimer.current);
+      longPressTimer.current = null;
+    }
+  }, []);
 
   const scrollToBlock = useCallback((blockIndex: number, fileIndex: number) => {
     const el = fileBlockRefs.current.get(blockIndex);
@@ -319,15 +421,19 @@ export const TransactionCard = memo(({
       animate={{ opacity: 1, y: 0 }}
       onMouseEnter={() => setHoveredChain(parentId || id)}
       onMouseLeave={() => setHoveredChain(null)}
+      onTouchStart={handleTouchStart}
+      onTouchEnd={handleTouchEnd}
+      onTouchMove={handleTouchEnd}
       data-expanded={expanded}
       className={cn(
-        "transaction-card rounded-2xl border transition-all duration-300 relative isolate",
+        "transaction-card rounded-2xl border transition-all duration-300 relative isolate group select-none md:select-auto touch-manipulation",
         STATUS_CONFIG[status].border,
         expanded
           ? "bg-zinc-900/80 z-10 my-12 shadow-xl shadow-indigo-900/10 ring-1 ring-indigo-500/20"
           : "bg-zinc-900/40 hover:bg-zinc-900/60 shadow-sm",
         isChainHovered && "chain-highlight ring-1 ring-indigo-500/40",
-        status === 'APPLYING' && "ring-2 ring-indigo-500/50 shadow-[0_0_30px_rgba(99,102,241,0.2)]"
+        status === 'APPLYING' && "ring-2 ring-indigo-500/50 shadow-[0_0_30px_rgba(99,102,241,0.2)]",
+        isSelected && "ring-2 ring-indigo-500 bg-indigo-500/5"
       )}
     >
       {/* Centered Thread Connector */}
@@ -346,13 +452,27 @@ export const TransactionCard = memo(({
             : "p-3 md:p-4"
         )}
       >
-        <div className="grid grid-cols-[auto_1fr_auto] items-start md:items-center gap-3 md:gap-4">
-          {/* Collapse Icon */}
-          <div className={cn(
-            "p-1 rounded-md transition-colors mt-1 md:mt-0",
-            expanded ? "bg-indigo-500/10 text-indigo-400" : "text-zinc-600"
-          )}>
-            <ChevronDown className={cn("w-4 h-4 transition-transform", expanded ? "rotate-0" : "-rotate-90")} />
+        <div className="grid grid-cols-[auto_1fr_auto] items-start md:items-center gap-2 md:gap-4">
+          {/* Selection Checkbox & Collapse Icon */}
+          <div className="flex items-center">
+             {/* Desktop Checkbox: Width animates from 0 to 5 on hover/select */}
+             <button
+                onClick={handleSelect}
+                className={cn(
+                  "hidden md:flex items-center justify-center h-5 rounded-md border transition-all duration-300 ease-out mt-1 md:mt-0 overflow-hidden",
+                  isSelected 
+                    ? "w-5 mr-3 bg-indigo-500 border-indigo-500 text-white shadow-[0_0_10px_rgba(99,102,241,0.5)] opacity-100" 
+                    : "w-0 mr-0 border-0 p-0 text-transparent opacity-0 group-hover:w-5 group-hover:mr-3 group-hover:opacity-100 group-hover:border group-hover:border-zinc-700"
+                )}
+              >
+                <Check className="w-3.5 h-3.5" strokeWidth={3} />
+              </button>
+            <div className={cn(
+              "p-1 rounded-md transition-colors mt-1 md:mt-0",
+              expanded ? "bg-indigo-500/10 text-indigo-400" : "text-zinc-600"
+            )}>
+              <ChevronDown className={cn("w-4 h-4 transition-transform", expanded ? "rotate-0" : "-rotate-90")} />
+            </div>
           </div>
 
           {/* Core Info */}
@@ -555,319 +675,51 @@ export const TransactionCard = memo(({
 });
 ```
 
-## File: apps/web/src/styles/main.style.css
-```css
-@import "tailwindcss";
-@plugin "@tailwindcss/typography";
+## File: apps/api/src/index.ts
+```typescript
+import { Elysia } from 'elysia';
+import { cors } from '@elysiajs/cors';
+import { swagger } from '@elysiajs/swagger';
+import { transactionsRoutes } from './routes/transactions';
+import { promptsRoutes } from './routes/prompts';
+import { eventsRoutes } from './routes/events';
 
-@layer utilities {
-  /* Shimmer/Shine effect for selected cards */
-  .shimmer {
-    position: relative;
-    overflow: hidden;
-  }
-  
-  .shimmer::before {
-    content: '';
-    position: absolute;
-    top: 0;
-    left: -100%;
-    width: 100%;
-    height: 100%;
-    background: linear-gradient(
-      90deg,
-      transparent,
-      rgba(255, 255, 255, 0.03),
-      rgba(255, 255, 255, 0.05),
-      rgba(255, 255, 255, 0.03),
-      transparent
-    );
-    animation: shimmer 3s infinite;
-    pointer-events: none;
-    z-index: 1;
-  }
-  
-  @keyframes shimmer {
-    0% {
-      left: -100%;
+const port = Number(process.env.PORT) || 3000;
+const host = process.env.HOST || 'localhost';
+
+const app = new Elysia()
+  .use(cors())
+  .use(swagger({
+    documentation: {
+      info: {
+        title: 'Relaycode API Documentation',
+        version: '1.0.0'
+      }
     }
-    100% {
-      left: 100%;
-    }
-  }
+  }))
+  .get('/health', () => ({ status: 'ok', timestamp: new Date().toISOString() }))
+  .group('/api', (app) => 
+    app
+      .get('/version', () => ({ version: '1.2.4', environment: 'stable' }))
+      .use(transactionsRoutes)
+      .use(promptsRoutes)
+      .use(eventsRoutes)
+  )
+  .listen({ port, hostname: host });
 
+console.log(
+  `🦊 Elysia is running at ${app.server?.hostname}:${app.server?.port}`
+);
 
-  .custom-scrollbar::-webkit-scrollbar {
-    width: 10px;
-    height: 10px;
-  }
-  
-  .custom-scrollbar::-webkit-scrollbar-track {
-    background: #09090b; /* zinc-950 */
-  }
-  
-  .custom-scrollbar::-webkit-scrollbar-thumb {
-    background: #27272a; /* zinc-800 */
-    border-radius: 5px;
-    border: 2px solid #09090b; /* zinc-950 */
-  }
-  
-  .custom-scrollbar::-webkit-scrollbar-thumb:hover {
-    background: #3f3f46; /* zinc-700 */
-  }
-
-  /* Hide scrollbar but keep scroll functionality */
-  .scrollbar-hide {
-    -ms-overflow-style: none;
-    scrollbar-width: none;
-  }
-  
-  .scrollbar-hide::-webkit-scrollbar {
-    display: none;
-  }
-
-  .pb-safe {
-    padding-bottom: env(safe-area-inset-bottom);
-  }
-
-  /* Hierarchical Vertical Connectors - The "Backbone" */
-  .thread-connector-v {
-    position: absolute;
-    left: 50%;
-    width: 2px;
-    background: linear-gradient(to bottom, var(--color-zinc-800), var(--color-zinc-700));
-    transform: translateX(-50%);
-    z-index: -1;
-    transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
-    
-    /* Default gap: matches parent space-y-6 (1.5rem / 24px) */
-    top: -24px;
-    height: 24px;
-  }
-
-  /* Stretching Logic: Adapts to expanded card margins (my-12 = 48px mt/mb) */
-  
-  /* 1. If the CURRENT card is expanded, it adds 48px top margin */
-  .transaction-card[data-expanded="true"] > .thread-connector-v {
-    top: -48px;
-    height: 48px;
-  }
-
-  /* 2. If the PREVIOUS sibling is expanded, it adds 48px bottom margin. 
-        Normal gap (24px) + Prev expansion (48px) = 72px total gap. */
-  .transaction-card[data-expanded="true"] + .transaction-card > .thread-connector-v {
-    top: -72px;
-    height: 72px;
-  }
-
-  /* 3. Both are expanded: Prev mb-12 (48px) + Current mt-12 (48px) = 96px total gap. */
-  .transaction-card[data-expanded="true"] + .transaction-card[data-expanded="true"] > .thread-connector-v {
-    top: -96px;
-    height: 96px;
-  }
-
-  .chain-highlight .thread-connector-v {
-    background: var(--color-indigo-500);
-    box-shadow: 0 0 15px var(--color-indigo-500);
-    width: 3px;
-    opacity: 1;
-  }
-
-  html {
-    scroll-behavior: smooth;
-    height: 100%;
-  }
-
-  body {
-    min-height: 100%;
-  }
-
-  .prose p { margin-bottom: 1.5em; line-height: 1.75; }
-  .prose strong { color: var(--color-white); font-weight: 600; }
-
-  /* Writing State Animations */
-  @keyframes writing-glow {
-    0%, 100% { border-color: var(--color-zinc-800); box-shadow: 0 0 0 rgba(99, 102, 241, 0); }
-    50% { border-color: var(--color-indigo-400); box-shadow: 0 0 30px rgba(99, 102, 241, 0.15); }
-  }
-
-  .writing-mode {
-    animation: writing-glow 1.5s ease-in-out infinite;
-    position: relative;
-    z-index: 1;
-  }
-
-  .line-scan {
-    position: relative;
-    overflow: hidden;
-  }
-
-  .line-scan::after {
-    content: "";
-    position: absolute;
-    top: 0;
-    left: 0;
-    width: 100%;
-    height: 100%;
-    background: linear-gradient(90deg, 
-      transparent 0%, 
-      rgba(99, 102, 241, 0.08) 45%, 
-      rgba(99, 102, 241, 0.15) 50%, 
-      rgba(99, 102, 241, 0.08) 55%, 
-      transparent 100%
-    );
-    animation: scan 0.8s cubic-bezier(0.4, 0, 0.2, 1) infinite;
-  }
-
-  @keyframes scan {
-    0% { transform: translateX(-100%); opacity: 0; }
-    20% { opacity: 1; }
-    80% { opacity: 1; }
-    100% { transform: translateX(100%); opacity: 0; }
-  }
-  .prose blockquote {
-    border-left-color: var(--color-indigo-500);
-    background: rgba(99, 102, 241, 0.05);
-    padding: 1rem;
-    border-radius: 0.5rem;
-    font-style: normal;
-  }
-}
-
-/* Typography & Prose Overrides */
-.prose {
-  --tw-prose-body: var(--color-zinc-300);
-  --tw-prose-headings: var(--color-white);
-  --tw-prose-links: var(--color-indigo-400);
-  --tw-prose-bold: var(--color-zinc-100);
-  --tw-prose-counters: var(--color-zinc-500);
-  --tw-prose-bullets: var(--color-zinc-600);
-  --tw-prose-hr: var(--color-zinc-800);
-  --tw-prose-quotes: var(--color-zinc-200);
-  --tw-prose-quote-borders: var(--color-zinc-700);
-  --tw-prose-captions: var(--color-zinc-400);
-  --tw-prose-code: var(--color-indigo-300);
-  --tw-prose-pre-code: var(--color-zinc-200);
-  --tw-prose-pre-bg: var(--color-zinc-900);
-  --tw-prose-th-borders: var(--color-zinc-700);
-  --tw-prose-td-borders: var(--color-zinc-800);
-}
-
-/* Custom Scrollbar Thin */
-.custom-scrollbar-thin::-webkit-scrollbar {
-  width: 4px;
-  height: 4px;
-}
-.custom-scrollbar-thin::-webkit-scrollbar-thumb {
-  background: #27272a;
-  border-radius: 10px;
-}
-.custom-scrollbar-thin::-webkit-scrollbar-thumb:hover {
-  background: #3f3f46;
-}
-```
-
-## File: apps/web/src/utils/cn.util.ts
-```typescript
-import { clsx, type ClassValue } from "clsx";
-import { twMerge } from "tailwind-merge";
-
-export function cn(...inputs: ClassValue[]) {
-  return twMerge(clsx(inputs));
-}
-```
-
-## File: apps/web/src/store/root.store.ts
-```typescript
-import { create } from 'zustand';
-import { createUiSlice, UiSlice } from './slices/ui.slice';
-import { createTransactionSlice, TransactionSlice } from './slices/transaction.slice';
-import { createPromptSlice, PromptSlice } from './slices/prompt.slice';
-
-export type RootState = UiSlice & TransactionSlice & PromptSlice;
-
-export const useStore = create<RootState>()((...a) => ({
-  ...createUiSlice(...a),
-  ...createTransactionSlice(...a),
-  ...createPromptSlice(...a),
-}));
-
-// Export specialized selectors for cleaner global usage
-export const useUiActions = () => useStore((state) => ({
-  setCmdOpen: state.setCmdOpen,
-  toggleCmd: state.toggleCmd,
-}));
-
-export const useTransactionActions = () => useStore((state) => ({
-  setExpandedId: state.setExpandedId,
-  setHoveredChain: state.setHoveredChain,
-  init: state.init,
-  fetchTransactions: state.fetchTransactions,
-}));
-```
-
-## File: apps/web/src/types/app.types.ts
-```typescript
-import { 
-  CheckCircle2, 
-  XCircle, 
-  Loader2, 
-  GitCommit, 
-  RotateCcw,
-  PlusCircle,
-  FileEdit,
-  Trash2,
-  RefreshCw,
-  LucideIcon
-} from 'lucide-react';
-import type { 
-  TransactionStatus, 
-  TransactionFile, 
-  PromptStatus, 
-  Prompt, 
-  TransactionBlock, 
-  Transaction 
-} from '@relaycode/api';
-
-export type { 
-  TransactionStatus, 
-  TransactionFile, 
-  PromptStatus, 
-  Prompt, 
-  TransactionBlock, 
-  Transaction 
-};
-
-export const STATUS_CONFIG: Record<TransactionStatus, { 
-  icon: LucideIcon; 
-  color: string; 
-  border: string; 
-  animate?: boolean;
-}> = {
-  PENDING:   { icon: Loader2,      color: 'text-amber-500',   border: 'border-amber-500/20 bg-amber-500/5', animate: true },
-  APPLYING:  { icon: RefreshCw,    color: 'text-indigo-400',  border: 'border-indigo-500/20 bg-indigo-500/10', animate: true },
-  APPLIED:   { icon: CheckCircle2, color: 'text-emerald-500', border: 'border-emerald-500/20 bg-emerald-500/5' },
-  COMMITTED: { icon: GitCommit,    color: 'text-blue-500',    border: 'border-blue-500/20 bg-blue-500/5' },
-  REVERTED:  { icon: RotateCcw,    color: 'text-zinc-400',    border: 'border-zinc-500/20 bg-zinc-500/5' },
-  FAILED:    { icon: XCircle,      color: 'text-red-500',     border: 'border-red-500/20 bg-red-500/5' },
-};
-
-export const FILE_STATUS_CONFIG = {
-  created:  { color: 'bg-emerald-500', icon: PlusCircle, label: 'Added' },
-  modified: { color: 'bg-amber-500',   icon: FileEdit,   label: 'Modified' },
-  deleted:  { color: 'bg-red-500',     icon: Trash2,     label: 'Deleted' },
-  renamed:  { color: 'bg-blue-500',    icon: RefreshCw,  label: 'Renamed' },
-} as const;
-
-// New: Grouping Strategies
-export type GroupByStrategy = 'prompt' | 'date' | 'author' | 'status' | 'files' | 'none';
+export type App = typeof app;
+export * from './models';
 ```
 
 ## File: apps/api/src/routes/transactions.ts
 ```typescript
 import { Elysia, t } from 'elysia';
 import { db } from '../store';
-import { Transaction, TransactionStatus } from '../models';
+import { Transaction, TransactionStatus, BulkActionRequest, BulkActionResponse } from '../models';
 
 export const transactionsRoutes = new Elysia({ prefix: '/transactions' })
   .get('/', ({ query }) => {
@@ -910,47 +762,14 @@ export const transactionsRoutes = new Elysia({ prefix: '/transactions' })
       ]))
     }),
     response: Transaction
+  })
+  .post('/bulk', ({ body: { ids, action } }) => {
+    const updatedIds = db.updateTransactionStatusBulk(ids, action);
+    return { success: true, updatedIds };
+  }, {
+    body: BulkActionRequest,
+    response: BulkActionResponse
   });
-```
-
-## File: apps/api/src/index.ts
-```typescript
-import { Elysia } from 'elysia';
-import { cors } from '@elysiajs/cors';
-import { swagger } from '@elysiajs/swagger';
-import { transactionsRoutes } from './routes/transactions';
-import { promptsRoutes } from './routes/prompts';
-import { eventsRoutes } from './routes/events';
-
-const port = Number(process.env.PORT) || 3000;
-const host = process.env.HOST || 'localhost';
-
-const app = new Elysia()
-  .use(cors())
-  .use(swagger({
-    documentation: {
-      info: {
-        title: 'Relaycode API Documentation',
-        version: '1.0.0'
-      }
-    }
-  }))
-  .get('/health', () => ({ status: 'ok', timestamp: new Date().toISOString() }))
-  .group('/api', (app) => 
-    app
-      .get('/version', () => ({ version: '1.2.4', environment: 'stable' }))
-      .use(transactionsRoutes)
-      .use(promptsRoutes)
-      .use(eventsRoutes)
-  )
-  .listen({ port, hostname: host });
-
-console.log(
-  `🦊 Elysia is running at ${app.server?.hostname}:${app.server?.port}`
-);
-
-export type App = typeof app;
-export * from './models';
 ```
 
 ## File: apps/api/src/models.ts
@@ -1022,6 +841,18 @@ export const Transaction = t.Object({
   reasoning: t.String()
 });
 export type Transaction = Static<typeof Transaction>;
+
+export const BulkActionRequest = t.Object({
+  ids: t.Array(t.String()),
+  action: TransactionStatus
+});
+export type BulkActionRequest = Static<typeof BulkActionRequest>;
+
+export const BulkActionResponse = t.Object({
+  success: t.Boolean(),
+  updatedIds: t.Array(t.String())
+});
+export type BulkActionResponse = Static<typeof BulkActionResponse>;
 
 export const Prompt = t.Object({
   id: t.String(),
@@ -1112,6 +943,18 @@ class Store {
     return null;
   }
 
+  updateTransactionStatusBulk(ids: string[], status: TransactionStatus): string[] {
+    const updatedIds: string[] = [];
+    this.transactions.forEach((tx: any) => {
+      if (ids.includes(tx.id)) {
+        tx.status = status;
+        this.notify(tx);
+        updatedIds.push(tx.id);
+      }
+    });
+    return updatedIds;
+  }
+
   // Subscription system for SSE/streaming updates
   subscribe(callback: Subscriber): () => void {
     this.subscribers.add(callback);
@@ -1171,272 +1014,4 @@ class Store {
 }
 
 export const db = new Store();
-```
-
-## File: apps/web/src/services/api.service.ts
-```typescript
-import { edenTreaty } from '@elysiajs/eden';
-import type { App } from '@relaycode/api';
-import type { SimulationEvent } from '@relaycode/api';
-
-const getBaseUrl = () => {
-  if (typeof window !== 'undefined') {
-    return window.location.origin;
-  }
-  return 'http://localhost:3000';
-};
-
-const api: ReturnType<typeof edenTreaty<App>> = edenTreaty<App>(getBaseUrl());
-
-// SSE Connection for real-time simulation updates
-export const connectToSimulationStream = (
-  onEvent: (event: SimulationEvent) => void,
-  onConnectionChange?: (isConnected: boolean) => void,
-  onError?: (error: Event, isNetworkError: boolean) => void
-): (() => void) => {
-  const baseUrl = getBaseUrl();
-  let eventSource: EventSource | null = null;
-  let reconnectAttempts = 0;
-  let reconnectTimeout: NodeJS.Timeout | null = null;
-  const maxReconnectAttempts = 5;
-  const baseReconnectDelay = 1000;
-  let intentionalClose = false;
-
-  const connect = () => {
-    if (eventSource) {
-      eventSource.close();
-    }
-
-    eventSource = new EventSource(`${baseUrl}/api/events`);
-    
-    eventSource.onopen = () => {
-      reconnectAttempts = 0;
-      onConnectionChange?.(true);
-    };
-
-    eventSource.onmessage = (event) => {
-      try {
-        const data: SimulationEvent = JSON.parse(event.data);
-        onEvent(data);
-      } catch (err) {
-        console.error('Failed to parse SSE event:', err);
-      }
-    };
-
-    eventSource.onerror = (error) => {
-      // Check if eventSource is closed (network error) or just no data (server timeout)
-      const isNetworkError = eventSource?.readyState === EventSource.CLOSED;
-      
-      if (!intentionalClose) {
-        onConnectionChange?.(false);
-      }
-      
-      if (onError) onError(error, isNetworkError);
-      
-      // Attempt to reconnect with exponential backoff (only for network errors)
-      if (isNetworkError && !intentionalClose && reconnectAttempts < maxReconnectAttempts) {
-        const delay = Math.min(baseReconnectDelay * Math.pow(2, reconnectAttempts), 30000);
-        reconnectAttempts++;
-        
-        if (reconnectTimeout) clearTimeout(reconnectTimeout);
-        reconnectTimeout = setTimeout(() => {
-          console.log(`Attempting to reconnect... (${reconnectAttempts}/${maxReconnectAttempts})`);
-          connect();
-        }, delay);
-      } else if (reconnectAttempts >= maxReconnectAttempts) {
-        console.error('Max reconnection attempts reached');
-      }
-    };
-  };
-
-  connect();
-
-  // Return cleanup function
-  return () => {
-    intentionalClose = true;
-    if (reconnectTimeout) clearTimeout(reconnectTimeout);
-    if (eventSource) {
-      eventSource.close();
-      eventSource = null;
-    }
-  };
-};
-
-export { api };
-```
-
-## File: apps/web/src/store/slices/transaction.slice.ts
-```typescript
-import { StateCreator } from 'zustand';
-import { Transaction } from '@/types/app.types';
-import { api, connectToSimulationStream } from '@/services/api.service';
-import { RootState } from '../root.store';
-
-export interface TransactionSlice {
-  transactions: Transaction[];
-  isLoading: boolean;
-  isFetchingNextPage: boolean;
-  hasMore: boolean;
-  page: number;
-  expandedId: string | null;
-  hoveredChainId: string | null;
-  isConnected: boolean;
-  setExpandedId: (id: string | null) => void;
-  setHoveredChain: (id: string | null) => void;
-  init: () => (() => void);
-  fetchTransactions: (params?: { search?: string; status?: string }) => Promise<void>;
-  searchTransactions: (query: string) => Promise<Transaction[]>;
-  fetchNextPage: () => Promise<void>;
-  addTransaction: (tx: Transaction) => void;
-  applyTransactionChanges: (id: string, scenario?: 'fast-success' | 'simulated-failure' | 'long-running') => Promise<void>;
-  subscribeToUpdates: () => (() => void);
-}
-
-let unsubscribeFromStream: (() => void) | null = null;
-
-export const createTransactionSlice: StateCreator<RootState, [], [], TransactionSlice> = (set, get) => ({
-  transactions: [],
-  isLoading: false,
-  isFetchingNextPage: false,
-  hasMore: true,
-  page: 1,
-  expandedId: null,
-  hoveredChainId: null,
-  isConnected: false,
-
-  setExpandedId: (id) => set({ expandedId: id }),
-  setHoveredChain: (id) => set({ hoveredChainId: id }),
-  
-  init: () => {
-    // Initialize SSE connection on app load (idempotent)
-    if (!unsubscribeFromStream) {
-      const unsubscribe = get().subscribeToUpdates();
-      unsubscribeFromStream = unsubscribe;
-      
-      // Also fetch initial data immediately
-      get().fetchTransactions();
-    }
-    // Return cleanup function for root unmount
-    return () => {
-      if (unsubscribeFromStream) {
-        unsubscribeFromStream();
-        unsubscribeFromStream = null;
-      }
-    };
-  },
-
-  addTransaction: (tx) => set((state) => ({ 
-    transactions: [tx, ...state.transactions] 
-  })),
-
-  applyTransactionChanges: async (id, scenario) => {
-    try {
-      // Trigger backend simulation - rely exclusively on SSE to update local state
-      // This prevents race conditions between PATCH response and SSE events
-      const { error } = await api.api.transactions[id].status.patch({
-        status: 'APPLYING',
-        scenario
-      });
-
-      if (error) throw error;
-      // State updates (APPLYING -> APPLIED/FAILED) will arrive via SSE stream
-    } catch (err) {
-      console.error('Failed to apply transaction', err);
-    }
-  },
-
-  subscribeToUpdates: () => {
-    // Connect to SSE and update transactions when backend pushes updates
-    const unsubscribe = connectToSimulationStream(
-      (event) => {
-        // Merge incoming event data into existing transaction list
-        set((state) => ({
-          transactions: state.transactions.map((t) => 
-            t.id === event.transactionId 
-              ? { ...t, status: event.status }
-              : t
-          )
-        }));
-      },
-      (isConnected) => {
-        // Track connection state for UI feedback
-        set({ isConnected });
-      },
-      (_error, isNetworkError) => {
-        if (isNetworkError) {
-          console.error('Network connection lost, attempting to reconnect...');
-        } else {
-          console.warn('SSE server timeout or error');
-        }
-      }
-    );
-
-    return unsubscribe;
-  },
-
-  fetchTransactions: async (params) => {
-    set({ isLoading: true, page: 1, hasMore: true });
-    try {
-      const $query: Record<string, string> = {
-        page: '1',
-        limit: '15'
-      };
-      
-      if (params?.search) $query.search = params.search;
-      if (params?.status) $query.status = params.status;
-
-      const { data, error } = await api.api.transactions.get({ $query });
-      
-      if (error) throw error;
-
-      if (data) {
-        set({ transactions: data, hasMore: data.length === 15 });
-      }
-    } catch (error) {
-      console.error('Failed to fetch transactions', error);
-    }
-    set({ isLoading: false });
-  },
-
-  searchTransactions: async (query: string) => {
-    try {
-      const { data, error } = await api.api.transactions.get({
-        $query: { search: query, limit: '5' }
-      });
-      if (error) throw error;
-      return data || [];
-    } catch (error) {
-      console.error('Failed to search transactions', error);
-      return [];
-    }
-  },
-
-  fetchNextPage: async () => {
-    const { page, hasMore, isFetchingNextPage, transactions } = get();
-    if (!hasMore || isFetchingNextPage) return;
-
-    set({ isFetchingNextPage: true });
-    try {
-      const nextPage = page + 1;
-      const { data, error } = await api.api.transactions.get({
-        $query: { page: nextPage.toString(), limit: '15' }
-      });
-      
-      if (error) throw error;
-
-      if (data && data.length > 0) {
-        set({ 
-          transactions: [...transactions, ...data], 
-          page: nextPage,
-          hasMore: data.length === 15
-        });
-      } else {
-        set({ hasMore: false });
-      }
-    } catch (error) {
-      console.error('Failed to fetch next page', error);
-    }
-    set({ isFetchingNextPage: false });
-  },
-});
 ```

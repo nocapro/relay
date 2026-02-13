@@ -138,15 +138,14 @@ export const createTransactionSlice: StateCreator<RootState, [], [], Transaction
   fetchTransactions: async (params) => {
     set({ isLoading: true, page: 1, hasMore: true });
     try {
-      const $query: Record<string, string> = {
-        page: '1',
-        limit: '15'
-      };
-      
-      if (params?.search) $query.search = params.search;
-      if (params?.status) $query.status = params.status;
-
-      const { data, error } = await api.api.transactions.get({ $query });
+      const { data, error } = await api.api.transactions.get({
+        $query: {
+          page: 1,
+          limit: 15,
+          ...(params?.search && { search: params.search }),
+          ...(params?.status && { status: params.status })
+        }
+      });
       
       if (error) throw error;
 
@@ -162,7 +161,7 @@ export const createTransactionSlice: StateCreator<RootState, [], [], Transaction
   searchTransactions: async (query: string) => {
     try {
       const { data, error } = await api.api.transactions.get({
-        $query: { search: query, limit: '5' }
+        $query: { search: query, limit: 5, page: 1 }
       });
       if (error) throw error;
       return data || [];
@@ -180,7 +179,7 @@ export const createTransactionSlice: StateCreator<RootState, [], [], Transaction
     try {
       const nextPage = page + 1;
       const { data, error } = await api.api.transactions.get({
-        $query: { page: nextPage.toString(), limit: '15' }
+        $query: { page: nextPage, limit: 15 }
       });
       
       if (error) throw error;

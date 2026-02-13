@@ -13,19 +13,15 @@ class Store {
   private subscribers: Set<Subscriber> = new Set();
   private activeSimulations: Set<string> = new Set();
 
-  getTransactions(limit = 15, page = 1, search?: string, status?: string) {
+  getTransactions(limit: number, page: number, search?: string, status?: string) {
     let result = [...this.transactions];
 
-    // Defensive check against stringified "undefined" from query params
-    const activeStatus = (status && status !== 'undefined' && status !== 'null') ? status : null;
-    const activeSearch = (search && search !== 'undefined' && search !== 'null') ? search.trim() : null;
-
-    if (activeStatus) {
-      result = result.filter((t: any) => t.status === activeStatus);
+    if (status) {
+      result = result.filter((t: any) => t.status === status);
     }
 
-    if (activeSearch) {
-      const q = activeSearch.toLowerCase();
+    if (search?.trim()) {
+      const q = search.trim().toLowerCase();
       result = result.filter((t: any) => 
         t.description.toLowerCase().includes(q) ||
         t.author.toLowerCase().includes(q) ||

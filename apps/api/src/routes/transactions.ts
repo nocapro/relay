@@ -3,14 +3,12 @@ import { db } from '../store';
 import { Transaction, TransactionStatus, BulkActionRequest, BulkActionResponse } from '../models';
 
 export const transactionsRoutes = new Elysia({ prefix: '/transactions' })
-  .get('/', ({ query }) => {
-    const page = Number(query.page) || 1;
-    const limit = Number(query.limit) || 15;
-    return db.getTransactions(limit, page, query.search, query.status);
+  .get('/', ({ query: { page, limit, search, status } }) => {
+    return db.getTransactions(limit, page, search, status);
   }, {
     query: t.Object({
-      page: t.Optional(t.String()),
-      limit: t.Optional(t.String()),
+      page: t.Numeric({ default: 1 }),
+      limit: t.Numeric({ default: 15 }),
       search: t.Optional(t.String()),
       status: t.Optional(t.String())
     }),
