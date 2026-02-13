@@ -43,7 +43,7 @@
     "useDotIgnore": true,
     "useDefaultPatterns": true,
     "customPatterns": [
-//       "src/services"
+       "src/services"
     ]
   },
   "security": {

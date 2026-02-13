@@ -60,7 +60,8 @@ export const createTransactionSlice: StateCreator<RootState, [], [], Transaction
     }));
 
     // 2. Simulate disk I/O / worker latency
-    await new Promise(resolve => setTimeout(resolve, 1800));
+    // Bumped to 3s to ensure individual file timers (max 2s) can finish visually
+    await new Promise(resolve => setTimeout(resolve, 3000));
 
     // 3. Finalize to APPLIED
     set((state) => ({

@@ -68,6 +68,21 @@ export const TransactionCard = memo(({
   const setHoveredChain = useStore((state) => state.setHoveredChain);
   const applyTransactionChanges = useStore((state) => state.applyTransactionChanges);
   const expanded = expandedId === id;
+
+  const [totalTime, setTotalTime] = useState<number>(0);
+
+  useEffect(() => {
+    let timer: NodeJS.Timeout;
+    if (status === 'APPLYING') {
+      const startTime = Date.now();
+      timer = setInterval(() => {
+        setTotalTime(Date.now() - startTime);
+      }, 50);
+    } else if (status === 'PENDING') {
+      setTotalTime(0);
+    }
+    return () => clearInterval(timer);
+  }, [status]);
   
   // Build file info list with correct block indices for navigation
   const fileInfos: FileInfo[] = useMemo(() => {
@@ -253,6 +268,11 @@ export const TransactionCard = memo(({
 
           {/* Actions */}
           <div className="flex items-center gap-1 md:gap-2">
+            {status === 'APPLYING' && (
+              <div className="px-2 py-1 bg-indigo-500/10 border border-indigo-500/20 rounded-lg text-[10px] font-mono text-indigo-400 animate-pulse">
+                {(totalTime / 1000).toFixed(1)}s
+              </div>
+            )}
             {status === 'PENDING' && (
               <button
                 onClick={handleApprove}

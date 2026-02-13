@@ -1,6 +1,7 @@
 {pkgs}: {
   channel = "stable-24.05";
   packages = [
+    pkgs.bun
     pkgs.nodejs_20
   ];
   idx.extensions = [
@@ -11,7 +12,7 @@
     previews = {
       web = {
         command = [
-          "npm"
+          "bun"
           "run"
           "dev"
           "--"

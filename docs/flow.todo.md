@@ -37,6 +37,12 @@ simulated backend with json mock data, logic , and services , real elysiajs serv
 
 === DONE
 
+- transaction card: code block should full height based on content so no need vertical scrollable
+- add loading animation to files changes of codeblock so that user know which file applied and which still loading. so each files actually can go in parallel but having different weight.
+- add time took seconds while transaction card loading applying, also its individual files  
+
+=== DONE
+
 transaction:
 1. lets change the data and naming convention shape, transaction card title = git commit message (truncated) 
 2. add one more transaction status which is loading state (applying file changes)
