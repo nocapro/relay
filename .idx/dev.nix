@@ -11,31 +11,9 @@
     previews = {
       web = {
         command = [
-          "bun"
-          "run"
-          "--filter"
-          "relay"
-          "dev"
-          "--"
-          "--port"
-          "$PORT"
-          "--host"
-          "0.0.0.0"
-        ];
-        manager = "web";
-      };
-      api = {
-        command = [
-          "bun"
-          "run"
-          "--filter"
-          "@relaycode/api"
-          "dev"
-          "--"
-          "--port"
-          "$PORT"
-          "--host"
-          "0.0.0.0"
+          "sh"
+          "-c"
+          "bun run --filter '@relaycode/api' dev & sleep 2 && bun run --filter 'relay' dev -- --host 0.0.0.0"
         ];
         manager = "web";
       };
