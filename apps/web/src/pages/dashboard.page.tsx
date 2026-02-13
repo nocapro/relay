@@ -20,6 +20,7 @@ export const Dashboard = () => {
   const fetchPrompts = useStore((state) => state.fetchPrompts);
   const isWatching = useStore((state) => state.isWatching);
   const toggleWatching = useStore((state) => state.toggleWatching);
+  const subscribeToUpdates = useStore((state) => state.subscribeToUpdates);
   
   // Get groupBy from URL search params
   const groupByParam = searchParams.get('groupBy');
@@ -52,15 +53,22 @@ export const Dashboard = () => {
     });
     
     if (newIds.size > 0) {
-      // Delay marking as seen to allow enter animation to complete
       const timer = setTimeout(() => {
         newIds.forEach(id => seenTransactionIdsRef.current.add(id));
         setSeenTransactionIds(new Set(seenTransactionIdsRef.current));
-      }, 500); // Wait for animation to complete
+      }, 500);
       
       return () => clearTimeout(timer);
     }
   }, [transactions]);
+
+  // Connect to real-time updates when monitoring is active
+  useEffect(() => {
+    if (isWatching) {
+      const unsubscribe = subscribeToUpdates();
+      return () => unsubscribe();
+    }
+  }, [isWatching, subscribeToUpdates]);
 
   const toggleGroupCollapse = (groupId: string) => {
     setCollapsedGroups((prev) => {

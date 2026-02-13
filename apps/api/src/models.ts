@@ -74,3 +74,12 @@ export const Prompt = t.Object({
   status: PromptStatus
 });
 export type Prompt = Static<typeof Prompt>;
+
+// SSE Event Types for Real-Time Simulation Updates
+export const SimulationEvent = t.Object({
+  transactionId: t.String(),
+  status: TransactionStatus,
+  timestamp: t.String(),
+  progress: t.Optional(t.Number())
+});
+export type SimulationEvent = Static<typeof SimulationEvent>;

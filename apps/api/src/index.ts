@@ -3,6 +3,7 @@ import { cors } from '@elysiajs/cors';
 import { swagger } from '@elysiajs/swagger';
 import { transactionsRoutes } from './routes/transactions';
 import { promptsRoutes } from './routes/prompts';
+import { eventsRoutes } from './routes/events';
 
 const port = Number(process.env.PORT) || 3000;
 const host = process.env.HOST || 'localhost';
@@ -23,6 +24,7 @@ const app = new Elysia()
       .get('/version', () => ({ version: '1.2.4', environment: 'stable' }))
       .use(transactionsRoutes)
       .use(promptsRoutes)
+      .use(eventsRoutes)
   )
   .listen({ port, hostname: host });
 

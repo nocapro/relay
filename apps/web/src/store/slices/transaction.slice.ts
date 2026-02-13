@@ -1,6 +1,6 @@
 import { StateCreator } from 'zustand';
 import { Transaction } from '@/types/app.types';
-import { api } from '@/services/api.service';
+import { api, connectToSimulationStream } from '@/services/api.service';
 import { RootState } from '../root.store';
 
 export interface TransactionSlice {
@@ -20,7 +20,10 @@ export interface TransactionSlice {
   fetchNextPage: () => Promise<void>;
   addTransaction: (tx: Transaction) => void;
   applyTransactionChanges: (id: string) => Promise<void>;
+  subscribeToUpdates: () => (() => void);
 }
+
+let unsubscribeFromStream: (() => void) | null = null;
 
 export const createTransactionSlice: StateCreator<RootState, [], [], TransactionSlice> = (set, get) => ({
   transactions: [],
@@ -30,7 +33,7 @@ export const createTransactionSlice: StateCreator<RootState, [], [], Transaction
   page: 1,
   expandedId: null,
   hoveredChainId: null,
-  isWatching: false, // Default to false to show the "Start" state
+  isWatching: false,
 
   setExpandedId: (id) => set({ expandedId: id }),
   setHoveredChain: (id) => set({ hoveredChainId: id }),
@@ -38,7 +41,18 @@ export const createTransactionSlice: StateCreator<RootState, [], [], Transaction
   toggleWatching: () => {
     const isNowWatching = !get().isWatching;
     set({ isWatching: isNowWatching });
-    // Real websocket implementation would go here
+    
+    if (isNowWatching) {
+      // Start listening to SSE updates when monitoring begins
+      const unsubscribe = get().subscribeToUpdates();
+      unsubscribeFromStream = unsubscribe;
+    } else {
+      // Stop listening when monitoring pauses
+      if (unsubscribeFromStream) {
+        unsubscribeFromStream();
+        unsubscribeFromStream = null;
+      }
+    }
   },
 
   addTransaction: (tx) => set((state) => ({ 
@@ -46,22 +60,15 @@ export const createTransactionSlice: StateCreator<RootState, [], [], Transaction
   })),
 
   applyTransactionChanges: async (id) => {
-    // 1. Optimistic Update: Transition to APPLYING
-    set((state) => ({
-      transactions: state.transactions.map((t) => 
-        t.id === id ? { ...t, status: 'APPLYING' as const } : t
-      )
-    }));
-
     try {
-      // 2. Call API (backend handles latency simulation)
+      // Trigger backend simulation - backend handles the state transitions
       const { data, error } = await api.api.transactions[id].status.patch({
-        status: 'APPLIED'
+        status: 'APPLYING'
       });
 
       if (error) throw error;
 
-      // 3. Finalize with server response
+      // Initial update: transaction is now APPLYING
       if (data) {
         set((state) => ({
           transactions: state.transactions.map((t) => 
@@ -69,21 +76,30 @@ export const createTransactionSlice: StateCreator<RootState, [], [], Transaction
           )
         }));
       }
+      // Note: Further updates (APPLIED) will come via SSE stream
     } catch (err) {
       console.error('Failed to apply transaction', err);
-      // Revert on error
+    }
+  },
+
+  subscribeToUpdates: () => {
+    // Connect to SSE and update transactions when backend pushes updates
+    const unsubscribe = connectToSimulationStream((event) => {
       set((state) => ({
         transactions: state.transactions.map((t) => 
-          t.id === id ? { ...t, status: 'PENDING' as const } : t
+          t.id === event.transactionId 
+            ? { ...t, status: event.status }
+            : t
         )
       }));
-    }
+    });
+
+    return unsubscribe;
   },
 
   fetchTransactions: async (params) => {
     set({ isLoading: true, page: 1, hasMore: true });
     try {
-      // Build query object carefully to avoid sending "undefined" as a string
       const $query: Record<string, string> = {
         page: '1',
         limit: '15'
@@ -92,7 +108,6 @@ export const createTransactionSlice: StateCreator<RootState, [], [], Transaction
       if (params?.search) $query.search = params.search;
       if (params?.status) $query.status = params.status;
 
-      // Eden Treaty: GET /api/transactions
       const { data, error } = await api.api.transactions.get({ $query });
       
       if (error) throw error;

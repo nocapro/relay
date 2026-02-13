@@ -17,11 +17,18 @@ export const transactionsRoutes = new Elysia({ prefix: '/transactions' })
     response: t.Array(Transaction)
   })
   .patch('/:id/status', async ({ params: { id }, body: { status } }) => {
-    // Simulate backend latency for "Applying" logic
-    if (status === 'APPLIED') {
-      await new Promise(resolve => setTimeout(resolve, 3000));
+    // If transitioning to APPLYING, start the background simulation instead of immediate update
+    if (status === 'APPLYING') {
+      // Trigger the async simulation (runs in background, returns immediately)
+      db.startSimulation(id);
+      
+      // Return the transaction in its current state (now APPLYING)
+      const tx = db.getTransactions(1, 1).find((t: any) => t.id === id);
+      if (!tx) throw new Error('Transaction not found');
+      return tx;
     }
     
+    // For other status changes, update immediately
     const updated = db.updateTransactionStatus(id, status);
     if (!updated) throw new Error('Transaction not found');
     
