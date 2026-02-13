@@ -28,13 +28,18 @@
     }
   },
   "include": [
-    "apps/web/src/",
-    "apps/web/package.json",
-    "apps/web/vite.config.ts",
-    "apps/web/tsconfig.json",
-    "apps/api/src/",
-    "apps/api/package.json",
-    "package.json"
+   "apps/api/src/index.ts",
+  "apps/api/src/models.ts",
+  "apps/api/src/routes/transactions.ts",
+  "apps/api/src/store.ts",
+  "apps/web/src/features/transactions/components/action-bar.component.tsx",
+  "apps/web/src/features/transactions/components/transaction-card.component.tsx",
+  "apps/web/src/services/api.service.ts",
+  "apps/web/src/store/root.store.ts",
+  "apps/web/src/store/slices/transaction.slice.ts",
+  "apps/web/src/styles/main.style.css",
+  "apps/web/src/types/app.types.ts",
+  "apps/web/src/utils/cn.util.ts"
   ],
   "ignore": {
     "useGitignore": true,

@@ -1,6 +1,6 @@
 import { Elysia, t } from 'elysia';
 import { db } from '../store';
-import { Transaction, TransactionStatus } from '../models';
+import { Transaction, TransactionStatus, BulkActionRequest, BulkActionResponse } from '../models';
 
 export const transactionsRoutes = new Elysia({ prefix: '/transactions' })
   .get('/', ({ query }) => {
@@ -43,4 +43,11 @@ export const transactionsRoutes = new Elysia({ prefix: '/transactions' })
       ]))
     }),
     response: Transaction
+  })
+  .post('/bulk', ({ body: { ids, action } }) => {
+    const updatedIds = db.updateTransactionStatusBulk(ids, action);
+    return { success: true, updatedIds };
+  }, {
+    body: BulkActionRequest,
+    response: BulkActionResponse
   });

@@ -55,6 +55,18 @@ class Store {
     return null;
   }
 
+  updateTransactionStatusBulk(ids: string[], status: TransactionStatus): string[] {
+    const updatedIds: string[] = [];
+    this.transactions.forEach((tx: any) => {
+      if (ids.includes(tx.id)) {
+        tx.status = status;
+        this.notify(tx);
+        updatedIds.push(tx.id);
+      }
+    });
+    return updatedIds;
+  }
+
   // Subscription system for SSE/streaming updates
   subscribe(callback: Subscriber): () => void {
     this.subscribers.add(callback);

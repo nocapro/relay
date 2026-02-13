@@ -12,7 +12,8 @@ import {
   ExternalLink,
   ListTree,
   FileCode,
-  Layers
+  Layers,
+  Check
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { cn } from "@/utils/cn.util";
@@ -67,6 +68,11 @@ export const TransactionCard = memo(({
   const hoveredChainId = useStore((state) => state.hoveredChainId);
   const setHoveredChain = useStore((state) => state.setHoveredChain);
   const applyTransactionChanges = useStore((state) => state.applyTransactionChanges);
+  
+  const selectedIds = useStore((state) => state.selectedIds);
+  const toggleSelection = useStore((state) => state.toggleSelection);
+  const isSelected = selectedIds.includes(id);
+
   const expanded = expandedId === id;
 
   const [totalTime, setTotalTime] = useState<number>(0);
@@ -121,6 +127,29 @@ export const TransactionCard = memo(({
     e.stopPropagation();
     applyTransactionChanges(id);
   }, [id, applyTransactionChanges]);
+
+  const handleSelect = useCallback((e?: React.MouseEvent | React.TouchEvent) => {
+    e?.stopPropagation();
+    toggleSelection(id);
+  }, [id, toggleSelection]);
+
+  // Long Press Logic for Mobile
+  const longPressTimer = useRef<NodeJS.Timeout | null>(null);
+  
+  const handleTouchStart = useCallback(() => {
+    longPressTimer.current = setTimeout(() => {
+      handleSelect();
+      // Vibrate if supported
+      if (navigator.vibrate) navigator.vibrate(50);
+    }, 500);
+  }, [handleSelect]);
+
+  const handleTouchEnd = useCallback(() => {
+    if (longPressTimer.current) {
+      clearTimeout(longPressTimer.current);
+      longPressTimer.current = null;
+    }
+  }, []);
 
   const scrollToBlock = useCallback((blockIndex: number, fileIndex: number) => {
     const el = fileBlockRefs.current.get(blockIndex);
@@ -181,15 +210,19 @@ export const TransactionCard = memo(({
       animate={{ opacity: 1, y: 0 }}
       onMouseEnter={() => setHoveredChain(parentId || id)}
       onMouseLeave={() => setHoveredChain(null)}
+      onTouchStart={handleTouchStart}
+      onTouchEnd={handleTouchEnd}
+      onTouchMove={handleTouchEnd}
       data-expanded={expanded}
       className={cn(
-        "transaction-card rounded-2xl border transition-all duration-300 relative isolate",
+        "transaction-card rounded-2xl border transition-all duration-300 relative isolate group select-none md:select-auto touch-manipulation",
         STATUS_CONFIG[status].border,
         expanded
           ? "bg-zinc-900/80 z-10 my-12 shadow-xl shadow-indigo-900/10 ring-1 ring-indigo-500/20"
           : "bg-zinc-900/40 hover:bg-zinc-900/60 shadow-sm",
         isChainHovered && "chain-highlight ring-1 ring-indigo-500/40",
-        status === 'APPLYING' && "ring-2 ring-indigo-500/50 shadow-[0_0_30px_rgba(99,102,241,0.2)]"
+        status === 'APPLYING' && "ring-2 ring-indigo-500/50 shadow-[0_0_30px_rgba(99,102,241,0.2)]",
+        isSelected && "ring-2 ring-indigo-500 bg-indigo-500/5"
       )}
     >
       {/* Centered Thread Connector */}
@@ -209,12 +242,26 @@ export const TransactionCard = memo(({
         )}
       >
         <div className="grid grid-cols-[auto_1fr_auto] items-start md:items-center gap-3 md:gap-4">
-          {/* Collapse Icon */}
-          <div className={cn(
-            "p-1 rounded-md transition-colors mt-1 md:mt-0",
-            expanded ? "bg-indigo-500/10 text-indigo-400" : "text-zinc-600"
-          )}>
-            <ChevronDown className={cn("w-4 h-4 transition-transform", expanded ? "rotate-0" : "-rotate-90")} />
+          {/* Selection Checkbox & Collapse Icon */}
+          <div className="flex items-center">
+             {/* Desktop Checkbox: Width animates from 0 to 5 on hover/select */}
+             <button
+                onClick={handleSelect}
+                className={cn(
+                  "hidden md:flex items-center justify-center h-5 rounded-md border transition-all duration-300 ease-out mt-1 md:mt-0 overflow-hidden",
+                  isSelected 
+                    ? "w-5 mr-3 bg-indigo-500 border-indigo-500 text-white shadow-[0_0_10px_rgba(99,102,241,0.5)] opacity-100" 
+                    : "w-0 mr-0 border-zinc-700 bg-zinc-800/50 text-transparent opacity-0 group-hover:w-5 group-hover:mr-3 group-hover:opacity-100 group-hover:hover:border-zinc-500"
+                )}
+              >
+                <Check className="w-3.5 h-3.5" strokeWidth={3} />
+              </button>
+            <div className={cn(
+              "p-1 rounded-md transition-colors mt-1 md:mt-0",
+              expanded ? "bg-indigo-500/10 text-indigo-400" : "text-zinc-600"
+            )}>
+              <ChevronDown className={cn("w-4 h-4 transition-transform", expanded ? "rotate-0" : "-rotate-90")} />
+            </div>
           </div>
 
           {/* Core Info */}

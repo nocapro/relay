@@ -66,6 +66,18 @@ export const Transaction = t.Object({
 });
 export type Transaction = Static<typeof Transaction>;
 
+export const BulkActionRequest = t.Object({
+  ids: t.Array(t.String()),
+  action: TransactionStatus
+});
+export type BulkActionRequest = Static<typeof BulkActionRequest>;
+
+export const BulkActionResponse = t.Object({
+  success: t.Boolean(),
+  updatedIds: t.Array(t.String())
+});
+export type BulkActionResponse = Static<typeof BulkActionResponse>;
+
 export const Prompt = t.Object({
   id: t.String(),
   title: t.String(),

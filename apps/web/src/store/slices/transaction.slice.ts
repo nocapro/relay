@@ -1,10 +1,11 @@
 import { StateCreator } from 'zustand';
-import { Transaction } from '@/types/app.types';
+import { Transaction, TransactionStatus } from '@/types/app.types';
 import { api, connectToSimulationStream } from '@/services/api.service';
 import { RootState } from '../root.store';
 
 export interface TransactionSlice {
   transactions: Transaction[];
+  selectedIds: string[];
   isLoading: boolean;
   isFetchingNextPage: boolean;
   hasMore: boolean;
@@ -14,12 +15,15 @@ export interface TransactionSlice {
   isConnected: boolean;
   setExpandedId: (id: string | null) => void;
   setHoveredChain: (id: string | null) => void;
+  toggleSelection: (id: string) => void;
+  clearSelection: () => void;
   init: () => (() => void);
   fetchTransactions: (params?: { search?: string; status?: string }) => Promise<void>;
   searchTransactions: (query: string) => Promise<Transaction[]>;
   fetchNextPage: () => Promise<void>;
   addTransaction: (tx: Transaction) => void;
   applyTransactionChanges: (id: string, scenario?: 'fast-success' | 'simulated-failure' | 'long-running') => Promise<void>;
+  executeBulkAction: (action: TransactionStatus) => Promise<void>;
   subscribeToUpdates: () => (() => void);
 }
 
@@ -27,6 +31,7 @@ let unsubscribeFromStream: (() => void) | null = null;
 
 export const createTransactionSlice: StateCreator<RootState, [], [], TransactionSlice> = (set, get) => ({
   transactions: [],
+  selectedIds: [],
   isLoading: false,
   isFetchingNextPage: false,
   hasMore: true,
@@ -37,6 +42,14 @@ export const createTransactionSlice: StateCreator<RootState, [], [], Transaction
 
   setExpandedId: (id) => set({ expandedId: id }),
   setHoveredChain: (id) => set({ hoveredChainId: id }),
+
+  toggleSelection: (id) => set((state) => ({
+    selectedIds: state.selectedIds.includes(id)
+      ? state.selectedIds.filter(pid => pid !== id)
+      : [...state.selectedIds, id]
+  })),
+
+  clearSelection: () => set({ selectedIds: [] }),
   
   init: () => {
     // Initialize SSE connection on app load (idempotent)
@@ -73,6 +86,23 @@ export const createTransactionSlice: StateCreator<RootState, [], [], Transaction
       // State updates (APPLYING -> APPLIED/FAILED) will arrive via SSE stream
     } catch (err) {
       console.error('Failed to apply transaction', err);
+    }
+  },
+
+  executeBulkAction: async (action) => {
+    const { selectedIds, clearSelection } = get();
+    if (!selectedIds.length) return;
+
+    try {
+      const { error } = await api.api.transactions.bulk.post({
+        ids: selectedIds,
+        action
+      });
+
+      if (error) throw error;
+      clearSelection();
+    } catch (err) {
+      console.error('Failed to execute bulk action', err);
     }
   },
 
