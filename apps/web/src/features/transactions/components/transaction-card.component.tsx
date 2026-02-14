@@ -293,26 +293,6 @@ export const TransactionCard = memo(({
                 <span className="hidden xs:inline">Apply</span>
               </button>
             )}
-            <button
-              onClick={() => setHideReasoning(!hideReasoning)}
-              className={cn(
-                "p-2 transition-colors",
-                hideReasoning ? "text-amber-500" : "text-zinc-600 hover:text-white"
-              )}
-              title={hideReasoning ? "Show reasoning" : "Hide reasoning"}
-            >
-              {hideReasoning ? <Eye className="w-4 h-4" /> : <EyeOff className="w-4 h-4" />}
-            </button>
-            <button
-              onClick={() => setAllCodeblocksCollapsed(!allCodeblocksCollapsed)}
-              className={cn(
-                "p-2 transition-colors",
-                allCodeblocksCollapsed ? "text-indigo-400" : "text-zinc-600 hover:text-white"
-              )}
-              title={allCodeblocksCollapsed ? "Expand all codeblocks" : "Collapse all codeblocks"}
-            >
-              {allCodeblocksCollapsed ? <ChevronsUpDown className="w-4 h-4" /> : <ChevronsDownUp className="w-4 h-4" />}
-            </button>
             <button className="p-2 text-zinc-600 hover:text-white transition-colors">
               <MoreHorizontal className="w-4 h-4" />
             </button>
@@ -338,6 +318,34 @@ export const TransactionCard = memo(({
                   <ExternalLink className="w-3 h-3" />
                   <span>Report v2.4</span>
                </div>
+            </div>
+
+            {/* View Controls Toolbar */}
+            <div className="flex items-center gap-2 px-8 py-2 bg-zinc-950 border-b border-zinc-900/30">
+              <button
+                onClick={() => setHideReasoning(!hideReasoning)}
+                className={cn(
+                  "flex items-center gap-1.5 px-2 py-1 rounded-md text-[10px] font-medium transition-all",
+                  hideReasoning 
+                    ? "bg-amber-500/10 text-amber-400 border border-amber-500/20" 
+                    : "text-zinc-500 hover:text-white hover:bg-zinc-800"
+                )}
+              >
+                {hideReasoning ? <Eye className="w-3.5 h-3.5" /> : <EyeOff className="w-3.5 h-3.5" />}
+                {hideReasoning ? "Show Reasoning" : "Hide Reasoning"}
+              </button>
+              <button
+                onClick={() => setAllCodeblocksCollapsed(!allCodeblocksCollapsed)}
+                className={cn(
+                  "flex items-center gap-1.5 px-2 py-1 rounded-md text-[10px] font-medium transition-all",
+                  allCodeblocksCollapsed 
+                    ? "bg-indigo-500/10 text-indigo-400 border border-indigo-500/20" 
+                    : "text-zinc-500 hover:text-white hover:bg-zinc-800"
+                )}
+              >
+                {allCodeblocksCollapsed ? <ChevronsUpDown className="w-3.5 h-3.5" /> : <ChevronsDownUp className="w-3.5 h-3.5" />}
+                {allCodeblocksCollapsed ? "Expand All" : "Collapse All"}
+              </button>
             </div>
 
             <div className="flex flex-col lg:flex-row gap-0 lg:gap-10 p-4 md:p-10 max-w-[1400px] mx-auto bg-zinc-950 rounded-b-xl">

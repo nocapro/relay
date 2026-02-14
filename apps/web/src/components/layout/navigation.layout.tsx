@@ -107,21 +107,21 @@ export const Navigation = () => {
             </div>
           </div>
         )}
-        <button
-          onClick={toggleSidebar}
-          className={cn(
-            "w-full flex items-center justify-center p-2 text-zinc-500 hover:text-white hover:bg-zinc-800 rounded-lg transition-all mt-2",
-            isSidebarCollapsed && "w-full"
-          )}
-          title={isSidebarCollapsed ? "Expand sidebar" : "Collapse sidebar"}
-        >
-          {isSidebarCollapsed ? (
-            <ChevronRight className="w-4 h-4" />
-          ) : (
-            <ChevronLeft className="w-4 h-4" />
-          )}
-        </button>
       </div>
+      
+      <button
+        onClick={toggleSidebar}
+        className={cn(
+          "absolute top-1/2 -translate-y-1/2 -right-3 w-6 h-10 bg-zinc-900 border border-zinc-800 rounded-r-lg flex items-center justify-center text-zinc-500 hover:text-white hover:bg-zinc-800 transition-all z-30",
+        )}
+        title={isSidebarCollapsed ? "Expand sidebar" : "Collapse sidebar"}
+      >
+        {isSidebarCollapsed ? (
+          <ChevronRight className="w-3.5 h-3.5" />
+        ) : (
+          <ChevronLeft className="w-3.5 h-3.5" />
+        )}
+      </button>
     </div>
   );
 };
