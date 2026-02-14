@@ -8,7 +8,7 @@
     "build": "npm run generate-types && react-router build",
     "preview": "react-router-serve ./build/server/index.js",
     "typecheck": "tsc --noEmit",
-    "generate-types": "openapi-typescript ../api/openapi.json --output src/types/api.d.ts"
+    "generate-types": "openapi-typescript ../../openapi.json --output src/types/api.d.ts"
   },
   "dependencies": {
     "@react-router/dev": "^7.13.0",

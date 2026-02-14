@@ -7,4 +7,4 @@ export const client = createClient<paths>({
     : 'http://localhost:3000',
 });
 
-export const api = client as any;
+export const api = client;

@@ -47,7 +47,14 @@ async fn main() {
     tracing_subscriber::fmt::init();
 
     let openapi = ApiDoc::openapi();
-    fs::write("openapi.json", openapi.to_pretty_json().unwrap()).unwrap();
+    let manifest_dir = std::env::var("CARGO_MANIFEST_DIR").unwrap();
+    let openapi_path = std::path::Path::new(&manifest_dir)
+        .parent()
+        .unwrap()
+        .parent()
+        .unwrap()
+        .join("openapi.json");
+    fs::write(&openapi_path, openapi.to_pretty_json().unwrap()).unwrap();
 
     relaycode_core::STORE.load_data();
 
