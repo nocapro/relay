@@ -74,6 +74,7 @@ export const TransactionCard = memo(({
   const hoveredChainId = useStore((state) => state.hoveredChainId);
   const setHoveredChain = useStore((state) => state.setHoveredChain);
   const applyTransactionChanges = useStore((state) => state.applyTransactionChanges);
+  const activeScenario = useStore((state) => state.activeScenario);
   const reapplyFile = useStore((state) => state.reapplyFile);
   const reapplyAllFailed = useStore((state) => state.reapplyAllFailed);
   
@@ -135,8 +136,8 @@ export const TransactionCard = memo(({
 
   const handleApprove = useCallback((e: React.MouseEvent) => {
     e.stopPropagation();
-    applyTransactionChanges(id);
-  }, [id, applyTransactionChanges]);
+    applyTransactionChanges(id, activeScenario ?? undefined);
+  }, [id, applyTransactionChanges, activeScenario]);
 
   const handleSelect = useCallback((e?: React.MouseEvent | React.TouchEvent) => {
     e?.stopPropagation();

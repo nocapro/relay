@@ -6,6 +6,7 @@ import { useStore } from '@/store/root.store';
 import { CommandPalette } from '@/components/layout/command-palette.layout';
 import { Navigation } from '@/components/layout/navigation.layout';
 import { Header } from '@/components/layout/header.layout';
+import { DevToolbar } from '@/components/dev/dev-toolbar.component';
 import { useIsMobile } from '@/hooks/mobile.hook';
 
 import '@/styles/main.style.css';
@@ -68,6 +69,7 @@ export function Layout({ children }: { children: React.ReactNode }) {
             </main>
           </div>
         </div>
+        {import.meta.env.DEV && <DevToolbar />}
         <ScrollRestoration />
         <Scripts />
       </body>

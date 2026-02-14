@@ -20,6 +20,7 @@ use utoipa_scalar::{Scalar, Servable};
         routes::transactions::reapply_all_failed_files,
         routes::prompts::list_prompts,
         routes::events::events_stream,
+        routes::dev::reset_mock_data,
     ),
     components(
         schemas(
@@ -71,6 +72,7 @@ async fn main() {
         .nest("/api", routes::transactions::router())
         .nest("/api", routes::prompts::router())
         .nest("/api", routes::events::router())
+        .nest("/api", routes::dev::router())
         .layer(cors);
 
     let listener = tokio::net::TcpListener::bind("0.0.0.0:3000").await.unwrap();
