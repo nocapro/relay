@@ -7,12 +7,17 @@ import { DiffViewer } from "@/components/ui/diff-viewer.ui.tsx";
 import { getDiffStats } from "@/utils/diff.util";
 import { DiffStat } from "@/components/ui/diff-stat.ui";
 
-export const FileSection = memo(({ file, isApplying }: { file: TransactionFile; isApplying?: boolean }) => {
-  const [isExpanded, setIsExpanded] = useState(true);
+export const FileSection = memo(({ file, isApplying, forceCollapsed }: { file: TransactionFile; isApplying?: boolean; forceCollapsed?: boolean }) => {
+  const [internalExpanded, setInternalExpanded] = useState(true);
+  
+  const isExpanded = forceCollapsed !== undefined ? !forceCollapsed : internalExpanded;
+
+  const toggleExpanded = useCallback(() => {
+    if (forceCollapsed !== undefined) return;
+    setInternalExpanded(prev => !prev);
+  }, [forceCollapsed]);
   
   const stats = useMemo(() => getDiffStats(file.diff), [file.diff]);
-
-  const toggleExpanded = useCallback(() => setIsExpanded(prev => !prev), []);
 
   const stopPropagation = useCallback((e: React.MouseEvent) => {
     e.stopPropagation();

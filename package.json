@@ -5,8 +5,9 @@
     "apps/*"
   ],
   "scripts": {
-    "dev": "bun --filter \"*\" dev",
+    "dev": "cargo run --manifest-path crates/relaycode-api/Cargo.toml & bun --filter \"*\" dev",
     "build": "bun --filter \"*\" build",
+    "prebuild": "cargo build --manifest-path crates/relaycode-api/Cargo.toml --release",
     "check": "bun run check:ts && bun run check:rust",
     "check:ts": "bun --filter \"*\" typecheck",
     "check:rust": "cd crates/relaycode-api && cargo check",

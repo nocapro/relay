@@ -13,7 +13,11 @@ import {
   ListTree,
   FileCode,
   Layers,
-  Check
+  Check,
+  EyeOff,
+  Eye,
+  ChevronsDownUp,
+  ChevronsUpDown
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { cn } from "@/utils/cn.util";
@@ -77,6 +81,8 @@ export const TransactionCard = memo(({
   const expanded = expandedId === id;
 
   const [totalTime, setTotalTime] = useState<number>(0);
+  const [hideReasoning, setHideReasoning] = useState(false);
+  const [allCodeblocksCollapsed, setAllCodeblocksCollapsed] = useState(false);
 
   useEffect(() => {
     let timer: NodeJS.Timeout;
@@ -287,6 +293,26 @@ export const TransactionCard = memo(({
                 <span className="hidden xs:inline">Apply</span>
               </button>
             )}
+            <button
+              onClick={() => setHideReasoning(!hideReasoning)}
+              className={cn(
+                "p-2 transition-colors",
+                hideReasoning ? "text-amber-500" : "text-zinc-600 hover:text-white"
+              )}
+              title={hideReasoning ? "Show reasoning" : "Hide reasoning"}
+            >
+              {hideReasoning ? <Eye className="w-4 h-4" /> : <EyeOff className="w-4 h-4" />}
+            </button>
+            <button
+              onClick={() => setAllCodeblocksCollapsed(!allCodeblocksCollapsed)}
+              className={cn(
+                "p-2 transition-colors",
+                allCodeblocksCollapsed ? "text-indigo-400" : "text-zinc-600 hover:text-white"
+              )}
+              title={allCodeblocksCollapsed ? "Expand all codeblocks" : "Collapse all codeblocks"}
+            >
+              {allCodeblocksCollapsed ? <ChevronsUpDown className="w-4 h-4" /> : <ChevronsDownUp className="w-4 h-4" />}
+            </button>
             <button className="p-2 text-zinc-600 hover:text-white transition-colors">
               <MoreHorizontal className="w-4 h-4" />
             </button>
@@ -367,6 +393,7 @@ export const TransactionCard = memo(({
                     // Render blocks with interleaved markdown and files
                     blocks.map((block, blockIdx) => {
                       if (block.type === 'markdown') {
+                        if (hideReasoning) return null;
                         return (
                           <div key={blockIdx} className="prose prose-zinc prose-invert prose-sm max-w-none px-4">
                             <ReactMarkdown remarkPlugins={[remarkGfm]}>
@@ -387,7 +414,7 @@ export const TransactionCard = memo(({
                           }}
                           data-file-index={fileIndex}
                         >
-                          <FileSection file={block.file} isApplying={status === 'APPLYING'} />
+                          <FileSection file={block.file} isApplying={status === 'APPLYING'} forceCollapsed={allCodeblocksCollapsed} />
                         </div>
                       );
                     })
@@ -401,7 +428,7 @@ export const TransactionCard = memo(({
                         }}
                         data-file-index={info.fileIndex}
                       >
-                        <FileSection file={info.file} isApplying={status === 'APPLYING'} />
+                        <FileSection file={info.file} isApplying={status === 'APPLYING'} forceCollapsed={allCodeblocksCollapsed} />
                       </div>
                     ))
                   ) : (

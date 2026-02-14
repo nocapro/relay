@@ -45,6 +45,11 @@ if astro has floating action bar for dev to debug or control things, we should h
 
 ===
 
+- sidebar should be able manually de/collapse
+- transaction card: should has iconbuttons to hide reasoning text and or de/collapse all codeblock
+
+=== DONE
+
 I want the rust be monorepo like crates/relaycode-api crates/relaycode-core crates/relaycode-schema
 
 === DONE

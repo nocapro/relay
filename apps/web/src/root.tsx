@@ -14,6 +14,7 @@ export const links: LinksFunction = () => [];
 
 export function Layout({ children }: { children: React.ReactNode }) {
   const setCmdOpen = useStore((state) => state.setCmdOpen);
+  const isSidebarCollapsed = useStore((state) => state.isSidebarCollapsed);
   const isMobile = useIsMobile();
 
   // Initialize persistent SSE connection on app load
@@ -60,7 +61,7 @@ export function Layout({ children }: { children: React.ReactNode }) {
         <div className="min-h-screen">
           <CommandPalette />
           <Navigation />
-          <div className={cn("flex flex-col min-h-screen transition-all duration-300", isMobile ? "pb-20" : "pl-64")}>
+          <div className={cn("flex flex-col min-h-screen transition-all duration-300", isMobile ? "pb-20" : (isSidebarCollapsed ? "pl-16" : "pl-64"))}>
             <Header />
             <main className="flex-1">
               {children}
