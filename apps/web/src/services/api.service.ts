@@ -11,6 +11,20 @@ export interface SimulationEvent {
   progress?: number;
 }
 
+export interface FileStatusEvent {
+  transactionId: string;
+  filePath: string;
+  applyStatus: 'PENDING' | 'APPLYING' | 'APPLIED' | 'FAILED';
+  errorMessage?: string | null;
+  timestamp: string;
+}
+
+export type SseEvent = SimulationEvent | FileStatusEvent;
+
+const isFileStatusEvent = (event: SseEvent): event is FileStatusEvent => {
+  return 'filePath' in event;
+};
+
 const getBaseUrl = () => {
   if (typeof window !== 'undefined') {
     return window.location.origin;
@@ -19,7 +33,8 @@ const getBaseUrl = () => {
 };
 
 export const connectToSimulationStream = (
-  onEvent: (event: SimulationEvent) => void,
+  onTransactionEvent: (event: SimulationEvent) => void,
+  onFileEvent?: (event: FileStatusEvent) => void,
   onConnectionChange?: (isConnected: boolean) => void,
   onError?: (error: Event, isNetworkError: boolean) => void
 ): (() => void) => {
@@ -45,8 +60,12 @@ export const connectToSimulationStream = (
 
     eventSource.onmessage = (event) => {
       try {
-        const data: SimulationEvent = JSON.parse(event.data);
-        onEvent(data);
+        const data: SseEvent = JSON.parse(event.data);
+        if (isFileStatusEvent(data)) {
+          onFileEvent?.(data);
+        } else {
+          onTransactionEvent(data);
+        }
       } catch (err) {
         console.error('Failed to parse SSE event:', err);
       }

@@ -1,4 +1,4 @@
-use relaycode_schema::Transaction;
+use relaycode_schema::{FileStatusEvent, Transaction};
 use relaycode_core::STORE;
 use axum::{
     response::sse::{Event, Sse},
@@ -11,11 +11,23 @@ use std::time::Duration;
 
 fn tx_to_event(tx: &Transaction) -> String {
     let event = serde_json::json!({
+        "type": "transaction",
         "transactionId": tx.id,
         "status": tx.status,
         "timestamp": chrono::Utc::now().to_rfc3339(),
     });
     event.to_string()
+}
+
+fn file_event_to_sse(event: &FileStatusEvent) -> String {
+    let json = serde_json::json!({
+        "type": "file",
+        "transactionId": event.transaction_id,
+        "filePath": event.file_path,
+        "applyStatus": event.apply_status,
+        "errorMessage": event.error_message,
+    });
+    json.to_string()
 }
 
 #[utoipa::path(
@@ -27,14 +39,33 @@ fn tx_to_event(tx: &Transaction) -> String {
     )
 )]
 pub async fn events_stream() -> Sse<impl Stream<Item = Result<Event, Infallible>>> {
-    let mut rx = STORE.subscribe();
+    let mut tx_rx = STORE.subscribe();
+    let mut file_rx = STORE.subscribe_to_file_events();
 
     let stream = async_stream::stream! {
-        yield Ok(Event::default().data("{\"timestamp\": \"connected\"}"));
+        yield Ok(Event::default().data("{\"type\": \"connected\"}"));
 
-        while let Ok(tx) = rx.recv().await {
-            let json = tx_to_event(&tx);
-            yield Ok(Event::default().data(json));
+        loop {
+            tokio::select! {
+                result = tx_rx.recv() => {
+                    match result {
+                        Ok(tx) => {
+                            let json = tx_to_event(&tx);
+                            yield Ok(Event::default().data(json));
+                        }
+                        Err(_) => break,
+                    }
+                }
+                result = file_rx.recv() => {
+                    match result {
+                        Ok(file_event) => {
+                            let json = file_event_to_sse(&file_event);
+                            yield Ok(Event::default().data(json));
+                        }
+                        Err(_) => break,
+                    }
+                }
+            }
         }
     };
 

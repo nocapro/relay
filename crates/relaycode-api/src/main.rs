@@ -16,6 +16,8 @@ use utoipa_scalar::{Scalar, Servable};
         routes::transactions::list_transactions,
         routes::transactions::update_transaction_status,
         routes::transactions::bulk_update_transactions,
+        routes::transactions::reapply_single_file,
+        routes::transactions::reapply_all_failed_files,
         routes::prompts::list_prompts,
         routes::events::events_stream,
     ),
@@ -26,6 +28,8 @@ use utoipa_scalar::{Scalar, Servable};
             relaycode_schema::TransactionBlock,
             relaycode_schema::TransactionFile,
             relaycode_schema::FileStatus,
+            relaycode_schema::FileApplyStatus,
+            relaycode_schema::FileStatusEvent,
             relaycode_schema::BulkActionRequest,
             relaycode_schema::BulkActionResponse,
             relaycode_schema::Prompt,
@@ -33,6 +37,7 @@ use utoipa_scalar::{Scalar, Servable};
             relaycode_schema::SimulationEvent,
             relaycode_schema::UpdateStatusRequest,
             relaycode_schema::SimulationScenario,
+            relaycode_schema::ReapplyFileRequest,
         )
     ),
     info(
@@ -47,13 +52,7 @@ async fn main() {
     tracing_subscriber::fmt::init();
 
     let openapi = ApiDoc::openapi();
-    let manifest_dir = std::env::var("CARGO_MANIFEST_DIR").unwrap();
-    let openapi_path = std::path::Path::new(&manifest_dir)
-        .parent()
-        .unwrap()
-        .parent()
-        .unwrap()
-        .join("openapi.json");
+    let openapi_path = std::path::Path::new("/root/code/relay/openapi.json");
     fs::write(&openapi_path, openapi.to_pretty_json().unwrap()).unwrap();
 
     relaycode_core::STORE.load_data();

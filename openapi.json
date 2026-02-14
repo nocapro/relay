@@ -134,6 +134,64 @@
         }
       }
     },
+    "/api/transactions/{id}/files/reapply": {
+      "post": {
+        "tags": [
+          "Transactions"
+        ],
+        "operationId": "reapply_single_file",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "description": "Transaction ID",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ReapplyFileRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "File reapply initiated"
+          }
+        }
+      }
+    },
+    "/api/transactions/{id}/reapply-failed": {
+      "post": {
+        "tags": [
+          "Transactions"
+        ],
+        "operationId": "reapply_all_failed_files",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "description": "Transaction ID",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Reapply all failed files initiated"
+          }
+        }
+      }
+    },
     "/api/transactions/{id}/status": {
       "patch": {
         "tags": [
@@ -217,6 +275,15 @@
           }
         }
       },
+      "FileApplyStatus": {
+        "type": "string",
+        "enum": [
+          "PENDING",
+          "APPLYING",
+          "APPLIED",
+          "FAILED"
+        ]
+      },
       "FileStatus": {
         "type": "string",
         "enum": [
@@ -225,6 +292,31 @@
           "deleted",
           "renamed"
         ]
+      },
+      "FileStatusEvent": {
+        "type": "object",
+        "required": [
+          "transactionId",
+          "filePath",
+          "applyStatus"
+        ],
+        "properties": {
+          "applyStatus": {
+            "$ref": "#/components/schemas/FileApplyStatus"
+          },
+          "errorMessage": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "filePath": {
+            "type": "string"
+          },
+          "transactionId": {
+            "type": "string"
+          }
+        }
       },
       "Prompt": {
         "type": "object",
@@ -262,6 +354,17 @@
           "ARCHIVED"
         ]
       },
+      "ReapplyFileRequest": {
+        "type": "object",
+        "required": [
+          "filePath"
+        ],
+        "properties": {
+          "filePath": {
+            "type": "string"
+          }
+        }
+      },
       "SimulationEvent": {
         "type": "object",
         "required": [
@@ -293,7 +396,8 @@
         "enum": [
           "fast-success",
           "simulated-failure",
-          "long-running"
+          "long-running",
+          "partial-failure"
         ]
       },
       "Transaction": {
@@ -413,8 +517,17 @@
           "diff"
         ],
         "properties": {
+          "applyStatus": {
+            "$ref": "#/components/schemas/FileApplyStatus"
+          },
           "diff": {
             "type": "string"
+          },
+          "errorMessage": {
+            "type": [
+              "string",
+              "null"
+            ]
           },
           "language": {
             "type": "string"
@@ -433,6 +546,7 @@
           "PENDING",
           "APPLYING",
           "APPLIED",
+          "PARTIALLYAPPLIED",
           "COMMITTED",
           "REVERTED",
           "FAILED"

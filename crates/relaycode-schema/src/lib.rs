@@ -7,6 +7,7 @@ pub enum TransactionStatus {
     Pending,
     Applying,
     Applied,
+    PartiallyApplied,
     Committed,
     Reverted,
     Failed,
@@ -19,6 +20,15 @@ pub enum PromptStatus {
     Active,
     Completed,
     Archived,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize, ToSchema, PartialEq)]
+#[serde(rename_all = "UPPERCASE")]
+pub enum FileApplyStatus {
+    Pending,
+    Applying,
+    Applied,
+    Failed,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize, ToSchema)]
@@ -39,8 +49,16 @@ pub enum FileStatus {
 pub struct TransactionFile {
     pub path: String,
     pub status: FileStatus,
+    #[serde(default = "default_file_apply_status")]
+    pub apply_status: FileApplyStatus,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub error_message: Option<String>,
     pub language: String,
     pub diff: String,
+}
+
+fn default_file_apply_status() -> FileApplyStatus {
+    FileApplyStatus::Pending
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize, ToSchema)]
@@ -110,11 +128,22 @@ pub struct SimulationEvent {
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize, ToSchema)]
+#[serde(rename_all = "camelCase")]
+pub struct FileStatusEvent {
+    pub transaction_id: String,
+    pub file_path: String,
+    pub apply_status: FileApplyStatus,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub error_message: Option<String>,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize, ToSchema)]
 #[serde(rename_all = "kebab-case")]
 pub enum SimulationScenario {
     FastSuccess,
     SimulatedFailure,
     LongRunning,
+    PartialFailure,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize, ToSchema)]
@@ -123,4 +152,16 @@ pub struct UpdateStatusRequest {
     pub status: TransactionStatus,
     #[serde(skip_serializing_if = "Option::is_none")]
     pub scenario: Option<SimulationScenario>,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize, ToSchema)]
+#[serde(rename_all = "camelCase")]
+pub struct ReapplyFileRequest {
+    pub file_path: String,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize, ToSchema)]
+#[serde(rename_all = "camelCase")]
+pub struct ReapplyAllFailedRequest {
+    pub transaction_id: String,
 }

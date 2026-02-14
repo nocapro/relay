@@ -17,7 +17,8 @@ import {
   EyeOff,
   Eye,
   ChevronsDownUp,
-  ChevronsUpDown
+  ChevronsUpDown,
+  RotateCcw
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { cn } from "@/utils/cn.util";
@@ -73,6 +74,8 @@ export const TransactionCard = memo(({
   const hoveredChainId = useStore((state) => state.hoveredChainId);
   const setHoveredChain = useStore((state) => state.setHoveredChain);
   const applyTransactionChanges = useStore((state) => state.applyTransactionChanges);
+  const reapplyFile = useStore((state) => state.reapplyFile);
+  const reapplyAllFailed = useStore((state) => state.reapplyAllFailed);
   
   const selectedIds = useStore((state) => state.selectedIds);
   const toggleSelection = useStore((state) => state.toggleSelection);
@@ -159,6 +162,19 @@ export const TransactionCard = memo(({
   }, []);
 
   const stats = useMemo(() => calculateTotalStats(fileInfos.map(i => i.file).filter((f): f is NonNullable<typeof f> => f != null)), [fileInfos]);
+
+  const failedFileCount = useMemo(() => {
+    return fileInfos.filter(info => info.file?.applyStatus === 'FAILED').length;
+  }, [fileInfos]);
+
+  const handleReapplyAllFailed = useCallback((e: React.MouseEvent) => {
+    e.stopPropagation();
+    reapplyAllFailed(id);
+  }, [id, reapplyAllFailed]);
+
+  const handleReapplyFile = useCallback((filePath: string) => {
+    reapplyFile(id, filePath);
+  }, [id, reapplyFile]);
 
   const isChainHovered = useMemo(() => {
     if (!hoveredChainId) return false;
@@ -293,6 +309,15 @@ export const TransactionCard = memo(({
                 <span className="hidden xs:inline">Apply</span>
               </button>
             )}
+            {failedFileCount > 0 && status !== 'APPLYING' && (status === 'FAILED' || status === 'PARTIALLYAPPLIED') && (
+              <button
+                onClick={handleReapplyAllFailed}
+                className="flex items-center gap-1.5 px-2 py-1 bg-red-500/10 hover:bg-red-500/20 border border-red-500/20 text-red-400 text-[10px] font-medium rounded-md transition-all"
+              >
+                <RotateCcw className="w-3.5 h-3.5" />
+                Reapply All ({failedFileCount})
+              </button>
+            )}
             <button className="p-2 text-zinc-600 hover:text-white transition-colors">
               <MoreHorizontal className="w-4 h-4" />
             </button>
@@ -422,7 +447,13 @@ export const TransactionCard = memo(({
                           }}
                           data-file-index={fileIndex}
                         >
-                          <FileSection file={block.file} isApplying={status === 'APPLYING'} forceCollapsed={allCodeblocksCollapsed} />
+                          <FileSection 
+                            file={block.file} 
+                            isApplying={status === 'APPLYING'} 
+                            forceCollapsed={allCodeblocksCollapsed}
+                            transactionId={id}
+                            onReapplyFile={handleReapplyFile}
+                          />
                         </div>
                       );
                     })
@@ -436,7 +467,13 @@ export const TransactionCard = memo(({
                         }}
                         data-file-index={info.fileIndex}
                       >
-                        <FileSection file={info.file} isApplying={status === 'APPLYING'} forceCollapsed={allCodeblocksCollapsed} />
+                        <FileSection 
+                          file={info.file} 
+                          isApplying={status === 'APPLYING'} 
+                          forceCollapsed={allCodeblocksCollapsed}
+                          transactionId={id}
+                          onReapplyFile={handleReapplyFile}
+                        />
                       </div>
                     ))
                   ) : (

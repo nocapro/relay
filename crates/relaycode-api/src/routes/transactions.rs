@@ -1,5 +1,5 @@
-use relaycode_schema::{BulkActionRequest, BulkActionResponse, Transaction, UpdateStatusRequest};
-use relaycode_core::{start_simulation, STORE};
+use relaycode_schema::{BulkActionRequest, BulkActionResponse, Transaction, UpdateStatusRequest, ReapplyFileRequest};
+use relaycode_core::{reapply_file, reapply_all_failed, start_simulation, STORE};
 use axum::{
     extract::Query,
     routing::{get, patch, post},
@@ -100,9 +100,49 @@ pub async fn bulk_update_transactions(
     })
 }
 
+#[utoipa::path(
+    post,
+    path = "/api/transactions/{id}/files/reapply",
+    tag = "Transactions",
+    params(
+        ("id" = String, Path, description = "Transaction ID")
+    ),
+    request_body = ReapplyFileRequest,
+    responses(
+        (status = 200, description = "File reapply initiated")
+    )
+)]
+pub async fn reapply_single_file(
+    axum::extract::Path(id): axum::extract::Path<String>,
+    Json(body): Json<ReapplyFileRequest>,
+) -> Result<Json<serde_json::Value>, axum::http::StatusCode> {
+    reapply_file(id, body.file_path);
+    Ok(Json(serde_json::json!({ "success": true })))
+}
+
+#[utoipa::path(
+    post,
+    path = "/api/transactions/{id}/reapply-failed",
+    tag = "Transactions",
+    params(
+        ("id" = String, Path, description = "Transaction ID")
+    ),
+    responses(
+        (status = 200, description = "Reapply all failed files initiated")
+    )
+)]
+pub async fn reapply_all_failed_files(
+    axum::extract::Path(id): axum::extract::Path<String>,
+) -> Result<Json<serde_json::Value>, axum::http::StatusCode> {
+    reapply_all_failed(id);
+    Ok(Json(serde_json::json!({ "success": true })))
+}
+
 pub fn router() -> Router {
     Router::new()
         .route("/transactions", get(list_transactions))
         .route("/transactions/{id}/status", patch(update_transaction_status))
         .route("/transactions/bulk", post(bulk_update_transactions))
+        .route("/transactions/{id}/files/reapply", post(reapply_single_file))
+        .route("/transactions/{id}/reapply-failed", post(reapply_all_failed_files))
 }

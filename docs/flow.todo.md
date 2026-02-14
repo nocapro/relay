@@ -43,7 +43,7 @@ based on readme.md, we need amazing onboarding/initialization page. make sure UI
 
 if astro has floating action bar for dev to debug or control things, we should have it to control the scenarios, so we can prepare the frontend to be production ready
 
-===
+=== DONE
 
 - sidebar should be able manually de/collapse
 - transaction card: should has iconbuttons to hide reasoning text and or de/collapse all codeblock
@@ -73,7 +73,7 @@ lets separate the concern, simulated backend with json mock data, logic , and se
 
 ===
 
-fix feature ask agentic code like claude etc
+in a transaction sometimes one or more file changes failed to apply... add reapply feature for all reapply failed files or individual
 
 === DONE
 

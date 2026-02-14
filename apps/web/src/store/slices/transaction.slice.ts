@@ -1,6 +1,6 @@
 import { StateCreator } from 'zustand';
-import { Transaction, TransactionStatus } from '@/types/app.types';
-import { client, connectToSimulationStream } from '@/services/api.service';
+import { Transaction, TransactionStatus, TransactionFile, FileApplyStatus } from '@/types/app.types';
+import { client, connectToSimulationStream, FileStatusEvent, SimulationEvent } from '@/services/api.service';
 import { RootState } from '../root.store';
 
 export interface TransactionSlice {
@@ -22,8 +22,10 @@ export interface TransactionSlice {
   searchTransactions: (query: string) => Promise<Transaction[]>;
   fetchNextPage: () => Promise<void>;
   addTransaction: (tx: Transaction) => void;
-  applyTransactionChanges: (id: string, scenario?: 'fast-success' | 'simulated-failure' | 'long-running') => Promise<void>;
+  applyTransactionChanges: (id: string, scenario?: 'fast-success' | 'simulated-failure' | 'long-running' | 'partial-failure') => Promise<void>;
   executeBulkAction: (action: TransactionStatus) => Promise<void>;
+  reapplyFile: (transactionId: string, filePath: string) => Promise<void>;
+  reapplyAllFailed: (transactionId: string) => Promise<void>;
   subscribeToUpdates: () => (() => void);
 }
 
@@ -98,17 +100,79 @@ export const createTransactionSlice: StateCreator<RootState, [], [], Transaction
     }
   },
 
+  reapplyFile: async (transactionId, filePath) => {
+    try {
+      const { error } = await client.POST('/api/transactions/{id}/files/reapply', {
+        params: { path: { id: transactionId } },
+        body: { filePath }
+      });
+      if (error) throw error;
+    } catch (err) {
+      console.error('Failed to reapply file', err);
+    }
+  },
+
+  reapplyAllFailed: async (transactionId) => {
+    try {
+      const { error } = await client.POST('/api/transactions/{id}/reapply-failed', {
+        params: { path: { id: transactionId } }
+      });
+      if (error) throw error;
+    } catch (err) {
+      console.error('Failed to reapply all failed files', err);
+    }
+  },
+
   subscribeToUpdates: () => {
+    const handleTransactionEvent = (event: SimulationEvent) => {
+      set((state) => ({
+        transactions: state.transactions.map((t) => 
+          t.id === event.transactionId 
+            ? { ...t, status: event.status }
+            : t
+        )
+      }));
+    };
+
+    const handleFileEvent = (event: FileStatusEvent) => {
+      set((state) => ({
+        transactions: state.transactions.map((t) => {
+          if (t.id !== event.transactionId) return t;
+          
+          const updateFileApplyStatus = (files: TransactionFile[]): TransactionFile[] => {
+            return files.map(f => 
+              f.path === event.filePath 
+                ? { ...f, applyStatus: event.applyStatus as FileApplyStatus, errorMessage: event.errorMessage }
+                : f
+            );
+          };
+
+          const updatedBlocks = t.blocks?.map(block => {
+            if (block.type === 'file' && block.file?.path === event.filePath) {
+              return {
+                ...block,
+                file: { 
+                  ...block.file, 
+                  applyStatus: event.applyStatus as FileApplyStatus,
+                  errorMessage: event.errorMessage 
+                }
+              };
+            }
+            return block;
+          });
+
+          return {
+            ...t,
+            files: updateFileApplyStatus(t.files || []),
+            blocks: updatedBlocks
+          };
+        })
+      }));
+    };
+
     const unsubscribe = connectToSimulationStream(
-      (event) => {
-        set((state) => ({
-          transactions: state.transactions.map((t) => 
-            t.id === event.transactionId 
-              ? { ...t, status: event.status }
-              : t
-          )
-        }));
-      },
+      handleTransactionEvent,
+      handleFileEvent,
       (isConnected) => {
         set({ isConnected });
       },

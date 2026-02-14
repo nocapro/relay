@@ -52,6 +52,81 @@
   ],
   "transactions": [
     {
+      "id": "tx-partial-failure",
+      "status": "PARTIALLYAPPLIED",
+      "description": "feat: add user profile settings page",
+      "timestamp": "2 mins ago",
+      "createdAt": "2026-02-12T12:28:00.000Z",
+      "promptId": "prompt-ui-redesign",
+      "author": "frontend-dev",
+      "provider": "Anthropic",
+      "model": "claude-3.5-sonnet",
+      "cost": "$0.089",
+      "tokens": "4,200",
+      "reasoning": "Adding user profile settings with partial failures due to merge conflicts.",
+      "files": [],
+      "blocks": [
+        {
+          "type": "markdown",
+          "content": "### User Profile Settings\n\nI'm adding a new user profile settings page. Starting with the settings component."
+        },
+        {
+          "type": "file",
+          "file": {
+            "path": "src/pages/settings.page.tsx",
+            "status": "created",
+            "applyStatus": "APPLIED",
+            "language": "typescript",
+            "diff": "@@ -0,0 +1,20 @@\n+export default function SettingsPage() {\n+  return (\n+    <div className=\"p-6\">\n+      <h1>Settings</h1>\n+      <UserProfileForm />\n+    </div>\n+  );\n+}"
+          }
+        },
+        {
+          "type": "markdown",
+          "content": "Now creating the user profile form component."
+        },
+        {
+          "type": "file",
+          "file": {
+            "path": "src/components/UserProfileForm.tsx",
+            "status": "created",
+            "applyStatus": "FAILED",
+            "errorMessage": "Patch conflict: file content mismatch",
+            "language": "typescript",
+            "diff": "@@ -0,0 +1,15 @@\n+export function UserProfileForm() {\n+  const [name, setName] = useState('');\n+  return (\n+    <form>\n+      <input value={name} onChange={e => setName(e.target.value)} />\n+      <button type=\"submit\">Save</button>\n+    </form>\n+  );\n+}"
+          }
+        },
+        {
+          "type": "markdown",
+          "content": "Adding API route for profile updates."
+        },
+        {
+          "type": "file",
+          "file": {
+            "path": "src/app/api/profile/route.ts",
+            "status": "created",
+            "applyStatus": "APPLIED",
+            "language": "typescript",
+            "diff": "@@ -0,0 +1,10 @@\n+export async function POST(req: Request) {\n+  const body = await req.json();\n+  // Update user profile\n+  return Response.json({ success: true });\n+}"
+          }
+        },
+        {
+          "type": "markdown",
+          "content": "Updating the types to include profile fields."
+        },
+        {
+          "type": "file",
+          "file": {
+            "path": "src/types/user.ts",
+            "status": "modified",
+            "applyStatus": "FAILED",
+            "errorMessage": "Patch conflict: file content mismatch",
+            "language": "typescript",
+            "diff": "@@ -5,3 +5,6 @@\n export interface User {\n   id: string;\n+  name?: string;\n+  avatar?: string;\n }"
+          }
+        }
+      ]
+    },
+    {
       "id": "tx-infra-k8s",
       "status": "APPLYING",
       "description": "infra: migrate relaycode-web to k8s with helm charts",
@@ -270,10 +345,132 @@
               "language": "typescript",
               "diff": "@@ -10,12 +10,4 @@\n   updated_at: string;\n }\n-\n-export interface InternalSession {\n-  sessionId: string;\n-  expires: number;\n-  userId: string;\n-}"
             }
+        }
+      ]
+    },
+    {
+      "id": "tx-full-failure",
+      "status": "FAILED",
+      "description": "feat: add notifications system",
+      "timestamp": "5 mins ago",
+      "createdAt": "2026-02-12T12:25:00.000Z",
+      "promptId": "prompt-ui-redesign",
+      "author": "frontend-dev",
+      "provider": "Anthropic",
+      "model": "claude-3.5-sonnet",
+      "cost": "$0.125",
+      "tokens": "5,800",
+      "reasoning": "Adding a notification system with multiple channel support.",
+      "files": [],
+      "blocks": [
+        {
+          "type": "markdown",
+          "content": "### Notification System\n\nI'm implementing a new notification system that supports email, SMS, and push notifications."
+        },
+        {
+          "type": "file",
+          "file": {
+            "path": "src/lib/notifications.ts",
+            "status": "created",
+            "applyStatus": "FAILED",
+            "errorMessage": "Patch conflict: existing file has incompatible changes",
+            "language": "typescript",
+            "diff": "@@ -0,0 +1,45 @@\n+export type NotificationChannel = 'email' | 'sms' | 'push';\n+\n+export interface Notification {\n+  id: string;\n+  channel: NotificationChannel;\n+  recipient: string;\n+  message: string;\n+  sentAt?: Date;\n+}\n+\nexport async function sendNotification(notif: Notification) {\n+  // Implementation here\n+}"
           }
-        ]
-      },
-      {
+        },
+        {
+          "type": "markdown",
+          "content": "Now adding the notification queue for async processing."
+        },
+        {
+          "type": "file",
+          "file": {
+            "path": "src/lib/notification-queue.ts",
+            "status": "created",
+            "applyStatus": "FAILED",
+            "errorMessage": "Patch conflict: existing file has incompatible changes",
+            "language": "typescript",
+            "diff": "@@ -0,0 +1,30 @@\n+import { Notification } from './notifications';\n+\n+const queue: Notification[] = [];\n+\nexport function enqueue(notif: Notification) {\n+  queue.push(notif);\n+}\n+\nexport function dequeue(): Notification | undefined {\n+  return queue.shift();\n+}"
+          }
+        },
+        {
+          "type": "markdown",
+          "content": "Adding the notification API routes."
+        },
+        {
+          "type": "file",
+          "file": {
+            "path": "src/app/api/notifications/route.ts",
+            "status": "created",
+            "applyStatus": "FAILED",
+            "errorMessage": "Patch conflict: existing file has incompatible changes",
+            "language": "typescript",
+            "diff": "@@ -0,0 +1,20 @@\n+import { sendNotification } from '@/lib/notifications';\n+\n+export async function POST(req: Request) {\n+  const body = await req.json();\n+  await sendNotification(body);\n+  return Response.json({ success: true });\n+}"
+          }
+        }
+      ]
+    },
+    {
+      "id": "tx-reapply-success",
+      "status": "PARTIALLYAPPLIED",
+      "description": "fix: resolve authentication middleware",
+      "timestamp": "8 mins ago",
+      "createdAt": "2026-02-12T12:22:00.000Z",
+      "promptId": "prompt-security-oidc",
+      "author": "security-bot",
+      "provider": "OpenRouter",
+      "model": "anthropic/claude-3-opus",
+      "cost": "$0.045",
+      "tokens": "2,100",
+      "reasoning": "Fixing auth middleware issues. Some files were re-applied successfully.",
+      "files": [],
+      "blocks": [
+        {
+          "type": "markdown",
+          "content": "### Auth Middleware Fix\n\nFixing the authentication middleware to properly handle token refresh."
+        },
+        {
+          "type": "file",
+          "file": {
+            "path": "src/middleware.ts",
+            "status": "modified",
+            "applyStatus": "APPLIED",
+            "language": "typescript",
+            "diff": "@@ -10,8 +10,10 @@\n export async function middleware(req: Request) {\n   const token = getToken(req);\n-  if (!token) return new Response('Unauthorized', { status: 401 });\n-  return NextResponse.next();\n+  if (!token) {\n+    return new Response('Unauthorized', { status: 401 });\n+  }\n+  const refreshed = await refreshToken(token);\n+  return NextResponse.next();\n }"
+          }
+        },
+        {
+          "type": "markdown",
+          "content": "Adding the token refresh utility."
+        },
+        {
+          "type": "file",
+          "file": {
+            "path": "src/lib/auth/refresh.ts",
+            "status": "created",
+            "applyStatus": "FAILED",
+            "errorMessage": "Patch conflict: directory already exists with different contents",
+            "language": "typescript",
+            "diff": "@@ -0,0 +1,15 @@\n+export async function refreshToken(token: string): Promise<string> {\n+  const response = await fetch('/api/auth/refresh', {\n+    method: 'POST',\n+    headers: { Authorization: `Bearer ${token}` }\n+  });\n+  const data = await response.json();\n+  return data.accessToken;\n+}"
+          }
+        },
+        {
+          "type": "markdown",
+          "content": "Updating the auth types."
+        },
+        {
+          "type": "file",
+          "file": {
+            "path": "src/types/auth.ts",
+            "status": "modified",
+            "applyStatus": "APPLIED",
+            "language": "typescript",
+            "diff": "@@ -5,3 +5,7 @@\n export interface User {\n   id: string;\n   email: string;\n+  accessToken?: string;\n+  refreshToken?: string;\n+  tokenExpiresAt?: number;\n }"
+          }
+        }
+      ]
+    },
+    {
           "id": "tx-perf-redis",
           "status": "APPLIED",
         "description": "perf: implement redis cache layer for dashboard stats",
