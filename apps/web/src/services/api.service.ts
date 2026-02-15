@@ -1,5 +1,6 @@
 import { client } from '@/lib/api.client';
 import type { components } from '../types/api';
+import type { ConnectionState } from '@/store/slices/transaction.slice';
 
 export type Transaction = components["schemas"]["Transaction"];
 export type TransactionStatus = components["schemas"]["TransactionStatus"];
@@ -32,10 +33,45 @@ const getBaseUrl = () => {
   return 'http://localhost:3000';
 };
 
+export async function apiCall<T>(
+  promise: Promise<{ data?: T; error?: unknown }>,
+  onError?: (error: unknown) => void
+): Promise<T | undefined> {
+  try {
+    const { data, error } = await promise;
+    if (error) {
+      onError?.(error);
+      return undefined;
+    }
+    return data;
+  } catch (err) {
+    onError?.(err);
+    return undefined;
+  }
+}
+
+export async function fetchJson<T>(
+  input: RequestInfo | URL,
+  init?: RequestInit,
+  onError?: (error: unknown) => void
+): Promise<T | undefined> {
+  try {
+    const response = await fetch(input, init);
+    if (!response.ok) {
+      onError?.(new Error(`HTTP ${response.status}`));
+      return undefined;
+    }
+    return response.json();
+  } catch (err) {
+    onError?.(err);
+    return undefined;
+  }
+}
+
 export const connectToSimulationStream = (
   onTransactionEvent: (event: SimulationEvent) => void,
   onFileEvent?: (event: FileStatusEvent) => void,
-  onConnectionChange?: (isConnected: boolean) => void,
+  onConnectionChange?: (state: ConnectionState) => void,
   onError?: (error: Event, isNetworkError: boolean) => void
 ): (() => void) => {
   const baseUrl = getBaseUrl();
@@ -51,11 +87,12 @@ export const connectToSimulationStream = (
       eventSource.close();
     }
 
+    onConnectionChange?.('connecting');
     eventSource = new EventSource(`${baseUrl}/api/events`);
     
     eventSource.onopen = () => {
       reconnectAttempts = 0;
-      onConnectionChange?.(true);
+      onConnectionChange?.('connected');
     };
 
     eventSource.onmessage = (event) => {
@@ -75,7 +112,7 @@ export const connectToSimulationStream = (
       const isNetworkError = eventSource?.readyState === EventSource.CLOSED;
       
       if (!intentionalClose) {
-        onConnectionChange?.(false);
+        onConnectionChange?.('disconnected');
       }
       
       if (onError) onError(error, isNetworkError);

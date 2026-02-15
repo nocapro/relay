@@ -22,7 +22,7 @@ import {
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { cn } from "@/utils/cn.util";
-import { TransactionStatus, TransactionBlock, TransactionFile, STATUS_CONFIG, FILE_STATUS_CONFIG } from "@/types/app.types";
+import { TransactionStatus, TransactionBlock, TransactionFile, STATUS_CONFIG, FILE_STATUS_CONFIG, FileApplyStatus } from "@/types/app.types";
 import { StatusBadge } from "@/components/ui/status-badge.ui";
 import { useStore } from "@/store/root.store";
 import { calculateTotalStats } from "@/utils/diff.util";
@@ -74,7 +74,6 @@ export const TransactionCard = memo(({
   const hoveredChainId = useStore((state) => state.hoveredChainId);
   const setHoveredChain = useStore((state) => state.setHoveredChain);
   const applyTransactionChanges = useStore((state) => state.applyTransactionChanges);
-  const activeScenario = useStore((state) => state.activeScenario);
   const reapplyFile = useStore((state) => state.reapplyFile);
   const reapplyAllFailed = useStore((state) => state.reapplyAllFailed);
   
@@ -136,8 +135,8 @@ export const TransactionCard = memo(({
 
   const handleApprove = useCallback((e: React.MouseEvent) => {
     e.stopPropagation();
-    applyTransactionChanges(id, activeScenario ?? undefined);
-  }, [id, applyTransactionChanges, activeScenario]);
+    applyTransactionChanges(id);
+  }, [id, applyTransactionChanges]);
 
   const handleSelect = useCallback((e?: React.MouseEvent | React.TouchEvent) => {
     e?.stopPropagation();
@@ -393,26 +392,47 @@ export const TransactionCard = memo(({
                     <nav className="space-y-0.5 pb-4">
                       {fileInfos.filter((info): info is FileInfo & { file: NonNullable<typeof info.file> } => info.file != null).map((info) => {
                         const isActive = activeFileIndex === info.fileIndex;
+                        const applyStatus = info.file.applyStatus as FileApplyStatus | undefined;
+                        const isFileApplying = applyStatus === 'APPLYING';
+                        const isFileFailed = applyStatus === 'FAILED';
+                        const statusColor = FILE_STATUS_CONFIG[info.file.status].color;
+                        
+                        const dotColor = isFileApplying 
+                          ? "bg-indigo-400 animate-pulse shadow-[0_0_8px_rgba(129,140,248,0.8)]"
+                          : isFileFailed 
+                            ? "bg-red-400 shadow-[0_0_8px_rgba(248,113,113,0.8)]"
+                            : statusColor;
+                        
+                        const activeBorderColor = isFileApplying 
+                          ? "border-indigo-400"
+                          : isFileFailed 
+                            ? "border-red-400"
+                            : statusColor.replace('bg-', 'border-');
+                        
+                        const activeTextColor = isFileApplying 
+                          ? "text-indigo-400"
+                          : isFileFailed 
+                            ? "text-red-400"
+                            : statusColor.replace('bg-', 'text-');
+                        
                         return (
                           <button
                             key={info.blockIndex}
                             onClick={() => scrollToBlock(info.blockIndex, info.fileIndex)}
                             className={cn(
-                              "w-full text-left px-3 py-2 rounded-lg text-[11px] font-mono transition-all truncate group flex items-center gap-2",
+                              "w-full text-left px-3 py-2 rounded-lg text-[11px] font-mono transition-all group flex items-center gap-2",
                               isActive 
-                                ? cn("bg-zinc-800/80 border-l-2", 
-                                     FILE_STATUS_CONFIG[info.file.status].color.replace('bg-', 'border-'), 
-                                     FILE_STATUS_CONFIG[info.file.status].color.replace('bg-', 'text-'))
+                                ? cn("bg-zinc-800/80 border-l-2", activeBorderColor, activeTextColor)
                                 : "text-zinc-500 hover:text-zinc-300 hover:bg-zinc-800/50 border-l-2 border-transparent"
                             )}
                           >
                             <span className={cn(
                               "w-1.5 h-1.5 rounded-full shrink-0 transition-all",
                               isActive 
-                                ? cn(FILE_STATUS_CONFIG[info.file.status].color, "shadow-[0_0_8px_currentColor]")
+                                ? cn(dotColor, isFileApplying || isFileFailed ? "" : "shadow-[0_0_8px_currentColor]")
                                 : "bg-zinc-700 group-hover:bg-zinc-500"
                             )} />
-                            <span className="truncate">{info.file.path}</span>
+                            <span className="break-all">{info.file.path}</span>
                           </button>
                         );
                       })}

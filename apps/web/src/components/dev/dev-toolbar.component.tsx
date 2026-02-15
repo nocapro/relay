@@ -37,13 +37,17 @@ export const DevToolbar = () => {
 
   const activeScenario = useStore((state) => state.activeScenario);
   const setScenario = useStore((state) => state.setScenario);
-  const isConnected = useStore((state) => state.isConnected);
+  const connectionState = useStore((state) => state.connectionState);
   const resetMockData = useStore((state) => state.resetMockData);
 
   const handleReset = async () => {
     setIsResetting(true);
     await resetMockData();
     setIsResetting(false);
+  };
+
+  const handleScenarioChange = async (scenario: SimulationScenario | null) => {
+    await setScenario(scenario);
   };
 
   return (
@@ -67,7 +71,8 @@ export const DevToolbar = () => {
             <span className="text-zinc-300">Dev</span>
             <div className={cn(
               "w-2 h-2 rounded-full",
-              isConnected ? "bg-green-500" : "bg-red-500"
+              connectionState === 'connected' ? "bg-green-500" : 
+              connectionState === 'connecting' ? "bg-amber-500" : "bg-red-500"
             )} />
           </motion.button>
         ) : (
@@ -101,10 +106,15 @@ export const DevToolbar = () => {
 
             <div className="p-4 space-y-4">
               <div className="flex items-center gap-2">
-                {isConnected ? (
+                {connectionState === 'connected' ? (
                   <>
                     <Wifi className="w-4 h-4 text-green-500" />
                     <span className="text-xs text-zinc-400">Connected (SSE)</span>
+                  </>
+                ) : connectionState === 'connecting' ? (
+                  <>
+                    <Wifi className="w-4 h-4 text-amber-500 animate-pulse" />
+                    <span className="text-xs text-zinc-400">Connecting...</span>
                   </>
                 ) : (
                   <>
@@ -125,7 +135,7 @@ export const DevToolbar = () => {
                     return (
                       <button
                         key={scenario.value ?? 'null'}
-                        onClick={() => setScenario(scenario.value)}
+                        onClick={() => handleScenarioChange(scenario.value)}
                         className={cn(
                           "flex items-center gap-3 px-3 py-2 rounded-lg text-left transition-all",
                           isActive
